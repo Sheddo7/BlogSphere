@@ -102,3 +102,5 @@ NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')  # ✅ Fixed (was incorrect sy
 # --- APScheduler ---
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
+
+CSRF_TRUSTED_ORIGINS = ['https://web-production-6658d.up.railway.app']
