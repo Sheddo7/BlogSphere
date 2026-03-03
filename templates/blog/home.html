@@ -13,14 +13,19 @@
                 <div class="col-md-4 mb-4">
                     <div class="card post-card h-100 featured-post">
                         {% if post.featured_image %}
-                        <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                            {% with img=post.featured_image.name %}
+                                {% if img|slice:":4" == "http" %}
+                                <img src="{{ img }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                                {% else %}
+                                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                                {% endif %}
+                            {% endwith %}
                         {% endif %}
                         <div class="card-body">
                             <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
                             <h5 class="card-title mt-2">
                                 <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title }}</a>
                             </h5>
-
                             <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
                                 {% if user.is_staff %}
@@ -45,7 +50,13 @@
                 <div class="col-lg-3 col-md-6 mb-4">
                     <div class="card post-card h-100">
                         {% if post.featured_image %}
-                        <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
+                            {% with img=post.featured_image.name %}
+                                {% if img|slice:":4" == "http" %}
+                                <img src="{{ img }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
+                                {% else %}
+                                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
+                                {% endif %}
+                            {% endwith %}
                         {% else %}
                         <div class="card-img-top bg-secondary" style="height: 150px;"></div>
                         {% endif %}
