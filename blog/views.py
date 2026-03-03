@@ -8,6 +8,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
+from django.core.files import File
+import tempfile
 
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
@@ -553,7 +555,7 @@ def update_post_image(request):
                     f'blog_images/{post.slug}_{image_file.name}',
                     ContentFile(image_file.read())
                 )
-                post.featured_image = file_name
+                post.featured_image.name = file_name
                 post.save()
 
                 return JsonResponse({
