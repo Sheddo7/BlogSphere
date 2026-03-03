@@ -86,22 +86,22 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
-        "OPTIONS": {
-            "aws_access_key_id": os.environ.get('SUPABASE_ACCESS_KEY_ID'),
-            "aws_secret_access_key": os.environ.get('SUPABASE_SECRET_ACCESS_KEY'),
-            "bucket_name": os.environ.get('SUPABASE_BUCKET'),
-            "endpoint_url": "https://oqqrptqnairmerdfbdgi.supabase.co/storage/v1/s3",
-            "region_name": "eu-west-1",
-            "file_overwrite": False,
-            "default_acl": "public-read",
-            "querystring_auth": False,
-            "addressing_style": "path",
-        },
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# Supabase S3 credentials
+AWS_ACCESS_KEY_ID = os.environ.get('SUPABASE_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET')
+AWS_S3_ENDPOINT_URL = "https://oqqrptqnairmerdfbdgi.supabase.co/storage/v1/s3"
+AWS_S3_REGION_NAME = "eu-west-1"
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = "public-read"
+AWS_QUERYSTRING_AUTH = False
+AWS_S3_ADDRESSING_STYLE = "path"
 
 MEDIA_URL = "https://oqqrptqnairmerdfbdgi.supabase.co/storage/v1/object/public/media/"
 
