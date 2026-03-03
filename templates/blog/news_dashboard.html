@@ -1,0 +1,115 @@
+<!-- templates/blog/news_dashboard.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">📰 News Dashboard</h1>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Articles</h5>
+                    <h2>{{ total_articles }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Quick Actions</h5>
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn btn-primary">
+                            📋 Manage Articles
+                        </a>
+                        <a href="{% url 'admin:blog_newsarticle_add' %}" class="btn btn-success">
+                            ➕ Add Manually
+                        </a>
+                        <button onclick="fetchNews()" class="btn btn-info">
+                            🔄 Fetch Latest News
+                        </button>
+                        <a href="{% url 'admin:blog_post_add' %}" class="btn btn-warning">
+                            ✏️ Create Post
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Articles -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Recent News Articles</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Source</th>
+                            <th>Category</th>
+                            <th>Published</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in recent_articles %}
+                        <tr>
+                            <td>{{ article.title|truncatechars:80 }}</td>
+                            <td><span class="badge bg-secondary">{{ article.source }}</span></td>
+                            <td><span class="badge bg-info">{{ article.category }}</span></td>
+                            <td>{{ article.published_at|date:"M d, Y"|default:"N/A" }}</td>
+                            <td>
+                                <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    🔗 Source
+                                </a>
+                                <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="btn btn-sm btn-outline-secondary">
+                                    ✏️ Edit
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No articles yet. Fetch some news!</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Stats -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Articles by Category</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for stat in category_stats %}
+                <div class="col-md-2 mb-2">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">{{ stat.category }}</h5>
+                            <p class="card-text display-6">{{ stat.count }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function fetchNews() {
+    if (confirm('Fetch latest news from Google News RSS? This might take a moment.')) {
+        // You can implement AJAX call here
+        window.location.href = "{% url 'admin:blog_newsarticle_changelist' %}?fetch_news=1";
+    }
+}
+</script>
+{% endblock %}

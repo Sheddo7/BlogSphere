@@ -1,0 +1,96 @@
+<!-- templates/blog/home.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Featured Posts -->
+    {% if featured_posts %}
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4 border-bottom pb-2">Featured Stories</h2>
+            <div class="row">
+                {% for post in featured_posts %}
+                <div class="col-md-4 mb-4">
+                    <div class="card post-card h-100 featured-post">
+                        {% if post.featured_image %}
+                        <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
+                        {% endif %}
+                        <div class="card-body">
+                            <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
+                            <h5 class="card-title mt-2">
+                                <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title }}</a>
+                            </h5>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
+                                {% if user.is_staff %}
+                                <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }} views</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Latest Posts -->
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4 border-bottom pb-2">Latest News</h2>
+            <div class="row">
+                {% for post in latest_posts %}
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="card post-card h-100">
+                        {% if post.featured_image %}
+                        <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
+                        {% else %}
+                        <div class="card-img-top bg-secondary" style="height: 150px;"></div>
+                        {% endif %}
+                        <div class="card-body">
+                            <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
+                            <h6 class="card-title mt-2">
+                                <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title|truncatechars:60 }}</a>
+                            </h6>
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
+                                {% if user.is_staff %}
+                                <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }}</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        No posts available yet. <a href="/admin/">Add some posts</a> or run <code>python manage.py populate_blog</code>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Section -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="mb-4 border-bottom pb-2">Browse by Category</h2>
+            <div class="row">
+                {% for category in categories %}
+                <div class="col-md-2 col-sm-4 col-6 mb-3">
+                    <a href="{% url 'category_posts' category.slug %}" class="text-decoration-none">
+                        <div class="card text-center p-3 category-card">
+                            <h5 class="mb-0">{{ category.name }}</h5>
+                            <small class="text-muted">{{ category.posts.count }} posts</small>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
