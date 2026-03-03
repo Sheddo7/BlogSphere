@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- Security ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['*']  # Railway handles security at their edge
+ALLOWED_HOSTS = ['blogsphere.up.railway.app']  # Railway handles security at their edge
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -103,4 +103,4 @@ NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')  # ✅ Fixed (was incorrect sy
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
-CSRF_TRUSTED_ORIGINS = ['https://web-production-6658d.up.railway.app']
+CSRF_TRUSTED_ORIGINS = ['https://blogsphere.up.railway.app']
