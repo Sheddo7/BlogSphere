@@ -92,7 +92,7 @@ STORAGES = {
     },
 }
 
-# Supabase S3 credentials
+# --- Supabase S3 Credentials ---
 AWS_ACCESS_KEY_ID = os.environ.get('SUPABASE_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = os.environ.get('SUPABASE_SECRET_ACCESS_KEY')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('SUPABASE_BUCKET')
@@ -102,7 +102,7 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_DEFAULT_ACL = "public-read"
 AWS_QUERYSTRING_AUTH = False
 AWS_S3_ADDRESSING_STYLE = "path"
-
+AWS_S3_CUSTOM_DOMAIN = "oqqrptqnairmerdfbdgi.supabase.co/storage/v1/object/public/media"
 MEDIA_URL = "https://oqqrptqnairmerdfbdgi.supabase.co/storage/v1/object/public/media/"
 
 # --- Crispy Forms ---
