@@ -87,8 +87,8 @@ STORAGES = {
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
         "OPTIONS": {
-            "access_key": os.environ.get('SUPABASE_ACCESS_KEY_ID'),
-            "secret_key": os.environ.get('SUPABASE_SECRET_ACCESS_KEY'),
+            "aws_access_key_id": os.environ.get('SUPABASE_ACCESS_KEY_ID'),
+            "aws_secret_access_key": os.environ.get('SUPABASE_SECRET_ACCESS_KEY'),
             "bucket_name": os.environ.get('SUPABASE_BUCKET'),
             "endpoint_url": "https://oqqrptqnairmerdfbdgi.supabase.co/storage/v1/s3",
             "region_name": "eu-west-1",
