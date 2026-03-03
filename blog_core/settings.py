@@ -3,12 +3,13 @@ import os
 import dj_database_url
 from pathlib import Path
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # --- Security ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['blogsphere.up.railway.app']  # Railway handles security at their edge
+ALLOWED_HOSTS = ['blogsphere.up.railway.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -16,7 +17,9 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',        # ← Added (must be ABOVE staticfiles)
     'django.contrib.staticfiles',
+    'cloudinary',                # ← Added
     'blog',
     'accounts',
     'taggit',
@@ -27,7 +30,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',  # ✅ Already in correct position!
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -58,11 +61,10 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'blog_core.wsgi.application'
 
-# --- Database (Switches automatically between local SQLite & Railway PostgreSQL) ---
+# --- Database ---
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
-    # Railway PostgreSQL
     DATABASES = {
         'default': dj_database_url.config(
             default=DATABASE_URL,
@@ -70,7 +72,6 @@ if DATABASE_URL:
         )
     }
 else:
-    # Local development SQLite
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -82,11 +83,16 @@ else:
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'  # ✅ Added
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# --- Media Files ---
+# --- Cloudinary Media Storage ---
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # --- Crispy Forms ---
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
@@ -97,7 +103,7 @@ LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
 # --- NewsAPI ---
-NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')  # ✅ Fixed (was incorrect syntax)
+NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')
 
 # --- APScheduler ---
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
