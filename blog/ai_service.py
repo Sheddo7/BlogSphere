@@ -1,4 +1,4 @@
-# blog/ai_service.py - ENHANCED VERSION WITH NIGERIAN NEWS SOURCES
+# blog/ai_service.py - ENHANCED VERSION WITH NEWSAPI
 import os
 import requests
 import json
@@ -27,50 +27,6 @@ class EnhancedNewsFetcher:
                 'politics': 'https://news.google.com/rss/headlines/section/topic/POLITICS',
                 'technology': 'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY',
             }
-        },
-        'google_nigeria': {
-            'category_urls': {
-                'news': 'https://news.google.com/rss/search?q=Nigeria&hl=en-NG&gl=NG&ceid=NG:en',
-                'sport': 'https://news.google.com/rss/search?q=Nigeria+sport&hl=en-NG&gl=NG&ceid=NG:en',
-                'entertainment': 'https://news.google.com/rss/search?q=Nigeria+entertainment+nollywood&hl=en-NG&gl=NG&ceid=NG:en',
-                'economy': 'https://news.google.com/rss/search?q=Nigeria+economy+business&hl=en-NG&gl=NG&ceid=NG:en',
-                'politics': 'https://news.google.com/rss/search?q=Nigeria+politics&hl=en-NG&gl=NG&ceid=NG:en',
-                'technology': 'https://news.google.com/rss/search?q=Nigeria+technology&hl=en-NG&gl=NG&ceid=NG:en',
-            }
-        },
-        'nigerian_sources': {
-            'punch': {
-                'news': 'https://punchng.com/feed/',
-                'sport': 'https://punchng.com/category/sports/feed/',
-                'entertainment': 'https://punchng.com/category/entertainment/feed/',
-                'economy': 'https://punchng.com/category/business/feed/',
-                'politics': 'https://punchng.com/category/politics/feed/',
-            },
-            'vanguard': {
-                'news': 'https://www.vanguardngr.com/feed/',
-                'sport': 'https://www.vanguardngr.com/category/sports/feed/',
-                'entertainment': 'https://www.vanguardngr.com/category/entertainment/feed/',
-                'economy': 'https://www.vanguardngr.com/category/business/feed/',
-                'politics': 'https://www.vanguardngr.com/category/politics/feed/',
-            },
-            'channels': {
-                'news': 'https://www.channelstv.com/feed/',
-                'politics': 'https://www.channelstv.com/category/politics/feed/',
-                'economy': 'https://www.channelstv.com/category/business/feed/',
-                'entertainment': 'https://www.channelstv.com/category/entertainment/feed/',
-            },
-            'thisday': {
-                'news': 'https://www.thisdaylive.com/feed/',
-                'economy': 'https://www.thisdaylive.com/category/business/feed/',
-                'politics': 'https://www.thisdaylive.com/category/politics/feed/',
-            },
-            'guardian_ng': {
-                'news': 'https://guardian.ng/feed/',
-                'sport': 'https://guardian.ng/sport/feed/',
-                'entertainment': 'https://guardian.ng/entertainment/feed/',
-                'economy': 'https://guardian.ng/business-services/feed/',
-                'politics': 'https://guardian.ng/politics/feed/',
-            },
         },
         'reddit': {
             'subreddits': {
@@ -150,119 +106,10 @@ class EnhancedNewsFetcher:
             return []
 
     @staticmethod
-    def fetch_news_api_nigeria(category='general', limit=10):
-        """Fetch Nigerian news from NewsAPI"""
-        api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
-
-        if not api_key:
-            print("⚠️  NewsAPI key not found.")
-            return []
-
-        try:
-            # NewsAPI doesn't support country=ng for top-headlines directly
-            # so we use the everything endpoint with Nigerian sources
-            url = "https://newsapi.org/v2/everything"
-            params = {
-                'apiKey': api_key,
-                'q': f'Nigeria {category}',
-                'language': 'en',
-                'sortBy': 'publishedAt',
-                'pageSize': limit,
-            }
-
-            response = requests.get(url, params=params, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                articles = []
-
-                for article in data.get('articles', []):
-                    articles.append({
-                        'title': article.get('title', 'Untitled'),
-                        'description': article.get('description', ''),
-                        'content': article.get('content', ''),
-                        'url': article.get('url', ''),
-                        'image_url': article.get('urlToImage', ''),
-                        'published_at': article.get('publishedAt', ''),
-                        'source': article.get('source', {}).get('name', 'NewsAPI Nigeria'),
-                        'category': category.upper(),
-                    })
-                return articles
-            else:
-                print(f"❌ NewsAPI Nigeria error: {response.status_code}")
-                return []
-        except Exception as e:
-            print(f"❌ Error fetching NewsAPI Nigeria: {e}")
-            return []
-
-    @staticmethod
-    def fetch_nigerian_rss(outlet='punch', category='news', limit=10):
-        """Fetch news from Nigerian RSS feeds (Punch, Vanguard, Channels, etc.)"""
-        try:
-            outlet_sources = EnhancedNewsFetcher.SOURCES['nigerian_sources'].get(outlet, {})
-            feed_url = outlet_sources.get(category) or outlet_sources.get('news')
-
-            if not feed_url:
-                print(f"⚠️ No RSS feed found for {outlet}/{category}")
-                return []
-
-            feed = feedparser.parse(feed_url)
-            news_items = []
-
-            outlet_names = {
-                'punch': 'Punch Nigeria',
-                'vanguard': 'Vanguard Nigeria',
-                'channels': 'Channels TV',
-                'thisday': 'ThisDay Live',
-                'guardian_ng': 'Guardian Nigeria',
-            }
-
-            for entry in feed.entries[:limit]:
-                news_items.append({
-                    'title': entry.title,
-                    'description': entry.get('summary', ''),
-                    'content': entry.get('summary', ''),
-                    'url': entry.link,
-                    'published_at': entry.get('published', ''),
-                    'source': outlet_names.get(outlet, outlet.title()),
-                    'category': category.upper(),
-                    'image_url': '',
-                })
-            return news_items
-        except Exception as e:
-            print(f"❌ Error fetching {outlet} RSS ({category}): {e}")
-            return []
-
-    @staticmethod
-    def fetch_google_nigeria_news(category='news', limit=10):
-        """Fetch Nigeria-specific news from Google News RSS"""
-        try:
-            category_url = EnhancedNewsFetcher.SOURCES['google_nigeria']['category_urls'].get(
-                category,
-                'https://news.google.com/rss/search?q=Nigeria&hl=en-NG&gl=NG&ceid=NG:en'
-            )
-
-            feed = feedparser.parse(category_url)
-            news_items = []
-
-            for entry in feed.entries[:limit]:
-                news_items.append({
-                    'title': entry.title,
-                    'description': entry.get('summary', ''),
-                    'content': entry.get('summary', ''),
-                    'url': entry.link,
-                    'published_at': entry.get('published', ''),
-                    'source': entry.get('source', {}).get('title', 'Google News Nigeria'),
-                    'category': category.upper(),
-                })
-            return news_items
-        except Exception as e:
-            print(f"❌ Error fetching Google Nigeria News ({category}): {e}")
-            return []
-
-    @staticmethod
     def fetch_google_news_by_category(category='news', limit=10):
         """Fetch news from Google News by specific category"""
         try:
+            # Get the category URL or default to general news
             category_url = EnhancedNewsFetcher.SOURCES['google']['category_urls'].get(
                 category,
                 'https://news.google.com/rss'
@@ -353,16 +200,14 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        """Fetch news from multiple sources including Nigerian outlets"""
+        """Fetch news from multiple sources and categories"""
         if categories is None:
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
 
         if sources is None:
-            sources = ['google', 'google_nigeria', 'punch', 'vanguard', 'channels', 'bbc', 'reddit']
+            sources = ['google', 'reddit', 'bbc']
 
         all_articles = []
-
-        nigerian_outlets = ['punch', 'vanguard', 'channels', 'thisday', 'guardian_ng']
 
         for source in sources:
             for category in categories:
@@ -370,19 +215,13 @@ class EnhancedNewsFetcher:
 
                 if source == 'google':
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source)
-                elif source == 'google_nigeria':
-                    articles = EnhancedNewsFetcher.fetch_google_nigeria_news(category, limit_per_source)
-                elif source in nigerian_outlets:
-                    articles = EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source)
+                elif source == 'reddit':
+                    articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
                 elif source == 'newsapi':
                     articles = EnhancedNewsFetcher.fetch_news_api(
                         EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(category, 'general'),
                         limit=limit_per_source
                     )
-                elif source == 'newsapi_nigeria':
-                    articles = EnhancedNewsFetcher.fetch_news_api_nigeria(category, limit_per_source)
-                elif source == 'reddit':
-                    articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
                 elif source == 'bbc':
                     articles = EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source)
                 else:
@@ -407,16 +246,19 @@ class EnhancedNewsFetcher:
         from django.utils import timezone
 
         try:
+            # Get or create category
             category_name = article.get('category', 'NEWS')
             category_obj, created = Category.objects.get_or_create(
                 name=category_name
             )
 
+            # Get admin user
             try:
                 author = User.objects.get(username='admin')
             except User.DoesNotExist:
                 author = User.objects.first()
 
+            # Generate slug
             base_slug = slugify(article['title'][:50])
             slug = base_slug
             counter = 1
@@ -424,6 +266,7 @@ class EnhancedNewsFetcher:
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
+            # Enhance content
             enhanced_content = f"""
             <h1>{article['title']}</h1>
             <div class="alert alert-info">
@@ -446,13 +289,14 @@ class EnhancedNewsFetcher:
             enhanced_content += f"""
             <hr>
             <div class="alert alert-secondary">
-                <em>This article was automatically generated from {article.get('source', 'a news source')}.
+                <em>This article was automatically generated from {article.get('source', 'a news source')}. 
                 <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
                     Read original article
                 </a></em>
             </div>
             """
 
+            # Create blog post
             post = Post.objects.create(
                 title=f"[News] {article['title'][:100]}",
                 slug=slug,
@@ -463,6 +307,7 @@ class EnhancedNewsFetcher:
                 published_date=timezone.now(),
             )
 
+            # Add tags
             post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
 
             print(f"✅ Created blog post: {post.title}")
@@ -481,10 +326,14 @@ class EnhancedNewsFetcher:
 
             soup = BeautifulSoup(response.content, 'html.parser')
 
+            # Remove script and style elements
             for script in soup(["script", "style", "nav", "footer", "header"]):
                 script.decompose()
 
+            # Get text
             text = soup.get_text()
+
+            # Clean up text
             lines = (line.strip() for line in text.splitlines())
             chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
             text = ' '.join(chunk for chunk in chunks if chunk)
@@ -501,32 +350,21 @@ class SimpleNewsFetcher:
 
     @staticmethod
     def fetch_google_news_rss():
-        # Fetch both international and Nigerian news
-        international = EnhancedNewsFetcher.fetch_google_news_by_category('news', 8)
-        nigerian = EnhancedNewsFetcher.fetch_google_nigeria_news('news', 8)
-        punch = EnhancedNewsFetcher.fetch_nigerian_rss('punch', 'news', 5)
-        vanguard = EnhancedNewsFetcher.fetch_nigerian_rss('vanguard', 'news', 5)
-        return international + nigerian + punch + vanguard
+        return EnhancedNewsFetcher.fetch_google_news_by_category('news', 15)
 
     @staticmethod
     def fetch_reddit_news(subreddit='news', limit=10):
         return EnhancedNewsFetcher.fetch_reddit_by_category('news', limit)
 
     @staticmethod
-    def fetch_newsapi():
-        international = EnhancedNewsFetcher.fetch_news_api('general', 'us', 5)
-        nigerian = EnhancedNewsFetcher.fetch_news_api_nigeria('general', 5)
-        return international + nigerian
-
-    @staticmethod
     def categorize_article(title, description):
         text = (title + ' ' + description).lower()
 
         categories = {
-            'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'tv', 'hollywood', 'nollywood', 'afrobeats'],
-            'SPORT': ['sport', 'football', 'basketball', 'soccer', 'game', 'team', 'player', 'score', 'win', 'super eagles', 'afcon', 'laliga', 'premier league'],
-            'POLITICS': ['government', 'president', 'minister', 'election', 'vote', 'party', 'congress', 'senate', 'tinubu', 'nigeria politics', 'abuja', 'aso rock'],
-            'ECONOMY': ['economy', 'market', 'stock', 'price', 'bank', 'money', 'business', 'company', 'dollar', 'naira', 'cbn', 'inflation', 'oil'],
+            'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'tv', 'hollywood'],
+            'SPORT': ['sport', 'football', 'basketball', 'soccer', 'game', 'team', 'player', 'score', 'win'],
+            'POLITICS': ['government', 'president', 'minister', 'election', 'vote', 'party', 'congress', 'senate'],
+            'ECONOMY': ['economy', 'market', 'stock', 'price', 'bank', 'money', 'business', 'company', 'dollar'],
             'NEWS': ['news', 'report', 'announce', 'official', 'statement', 'update', 'latest'],
             'VIRAL GIST': ['viral', 'trending', 'social media', 'tiktok', 'instagram', 'twitter', 'facebook'],
         }
