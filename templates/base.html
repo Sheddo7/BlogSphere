@@ -638,57 +638,6 @@
             margin-top: auto;
         }
 
-        <!-- CSS to add inside <style> in base.html -->
-        id="mobileNavCSS">
-        /* ── Mobile bottom nav ── */
-        .mobile-bottom-nav {
-          position: fixed;
-          bottom: 0; left: 0; right: 0;
-          height: 58px;
-          background: #fff;
-          border-top: 1px solid #e0ddd6;
-          display: flex;
-          align-items: stretch;
-          z-index: 1040;
-          box-shadow: 0 -4px 16px rgba(0,0,0,.07);
-        }
-        .mbn-item {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 3px;
-          text-decoration: none;
-          color: #888;
-          font-size: .6rem;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: .04em;
-          transition: color .18s;
-          padding: 0 4px;
-        }
-        .mbn-item i { font-size: 1.05rem; }
-        .mbn-item:hover,
-        .mbn-item.mbn-active { color: #c0392b; }
-        .mbn-item.mbn-active i { transform: scale(1.15); }
-
-        /* Push page content up so bottom nav doesn't cover it */
-        @media (max-width: 991px) {
-          body { padding-bottom: 66px !important; }
-        }
-
-        /* Dark mode */
-        @media (prefers-color-scheme: dark) {
-          .mobile-bottom-nav {
-            background: #1a1a1a;
-            border-top-color: #2a2a2a;
-            box-shadow: 0 -4px 16px rgba(0,0,0,.3);
-          }
-          .mbn-item { color: #666; }
-          .mbn-item:hover, .mbn-item.mbn-active { color: #e74c3c; }
-        }
-
     </style>
 </head>
 <body>
