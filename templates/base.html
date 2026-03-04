@@ -815,22 +815,6 @@
             }
         }, true);
     </script>
-    <!-- Mobile bottom navigation bar -->
-    <nav class="mobile-bottom-nav d-lg-none" id="mobileBottomNav" aria-label="Mobile navigation">
-      <a href="/" class="mbn-item {% if request.path == '/' %}mbn-active{% endif %}">
-        <i class="fas fa-home"></i>
-        <span>Home</span>
-      </a>
-      {% for cat in categories|slice:":3" %}
-      <a href="{% url 'category_posts' cat.slug %}" class="mbn-item {% if cat.slug in request.path %}mbn-active{% endif %}">
-        <i class="fas fa-tag"></i>
-        <span>{{ cat.name|truncatechars:7 }}</span>
-      </a>
-      {% endfor %}
-      <a href="{% url 'search' %}" class="mbn-item {% if request.path == '/search/' %}mbn-active{% endif %}">
-        <i class="fas fa-search"></i>
-        <span>Search</span>
-      </a>
-    </nav>
+
 </body>
 </html>
