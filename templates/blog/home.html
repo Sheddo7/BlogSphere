@@ -1,107 +1,244 @@
-<!-- templates/blog/home.html -->
 {% extends 'base.html' %}
+{% load static %}
+
+{% block title %}BlogSphere — Today's News{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Featured Posts -->
-    {% if featured_posts %}
-    <div class="row mb-5">
-        <div class="col-12">
-            <h2 class="mb-4 border-bottom pb-2">Featured Stories</h2>
-            <div class="row">
-                {% for post in featured_posts %}
-                <div class="col-md-4 mb-4">
-                    <div class="card post-card h-100 featured-post">
-                        {% if post.featured_image %}
-                            {% with img=post.featured_image.name %}
-                                {% if img|slice:":4" == "http" %}
-                                <img src="{{ img }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
-                                {% else %}
-                                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
-                                {% endif %}
-                            {% endwith %}
-                        {% endif %}
-                        <div class="card-body">
-                            <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
-                            <h5 class="card-title mt-2">
-                                <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title }}</a>
-                            </h5>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
-                                {% if user.is_staff %}
-                                <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }} views</small>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
 
-    <!-- Latest Posts -->
-    <div class="row">
-        <div class="col-12">
-            <h2 class="mb-4 border-bottom pb-2">Latest News</h2>
-            <div class="row">
-                {% for post in latest_posts %}
-                <div class="col-lg-3 col-md-6 mb-4">
-                    <div class="card post-card h-100">
-                        {% if post.featured_image %}
-                            {% with img=post.featured_image.name %}
-                                {% if img|slice:":4" == "http" %}
-                                <img src="{{ img }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
-                                {% else %}
-                                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 150px; object-fit: cover;">
-                                {% endif %}
-                            {% endwith %}
-                        {% else %}
-                        <div class="card-img-top bg-secondary" style="height: 150px;"></div>
-                        {% endif %}
-                        <div class="card-body">
-                            <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
-                            <h6 class="card-title mt-2">
-                                <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title|truncatechars:60 }}</a>
-                            </h6>
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
-                                {% if user.is_staff %}
-                                <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }}</small>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% empty %}
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        No posts available yet. <a href="/admin/">Add some posts</a> or run <code>python manage.py populate_blog</code>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
+  :root {
+    --ink:#111; --paper:#fafaf8; --rule:#e0ddd6;
+    --accent:#c0392b; --mid:#666;
+    --ease:cubic-bezier(0.4,0,0.2,1);
+  }
 
-    <!-- Categories Section -->
-    <div class="row mt-5">
-        <div class="col-12">
-            <h2 class="mb-4 border-bottom pb-2">Browse by Category</h2>
-            <div class="row">
-                {% for category in categories %}
-                <div class="col-md-2 col-sm-4 col-6 mb-3">
-                    <a href="{% url 'category_posts' category.slug %}" class="text-decoration-none">
-                        <div class="card text-center p-3 category-card">
-                            <h5 class="mb-0">{{ category.name }}</h5>
-                            <small class="text-muted">{{ category.posts.count }} posts</small>
-                        </div>
-                    </a>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
+  .page-body { animation: pageIn .35s var(--ease) both; }
+  @keyframes pageIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  .stagger > * { animation: staggerIn .5s var(--ease) both; }
+  .stagger > *:nth-child(1){animation-delay:.04s}.stagger > *:nth-child(2){animation-delay:.09s}
+  .stagger > *:nth-child(3){animation-delay:.14s}.stagger > *:nth-child(4){animation-delay:.19s}
+  .stagger > *:nth-child(5){animation-delay:.24s}.stagger > *:nth-child(6){animation-delay:.29s}
+  .stagger > *:nth-child(7){animation-delay:.34s}.stagger > *:nth-child(8){animation-delay:.39s}
+  @keyframes staggerIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+  .skeleton {
+    background:linear-gradient(90deg,#ede9e0 25%,#ddd9d0 50%,#ede9e0 75%);
+    background-size:600px 100%; animation:shimmer 1.5s infinite; border-radius:3px;
+  }
+
+  /* Ticker */
+  .ticker-bar{background:var(--accent);color:#fff;font-family:'Source Serif 4',Georgia,serif;font-size:.78rem;padding:.4rem 0;overflow:hidden;}
+  .ticker-inner{display:flex;align-items:center;}
+  .ticker-label{font-weight:700;text-transform:uppercase;letter-spacing:.1em;font-size:.68rem;background:rgba(0,0,0,.22);padding:.18rem .7rem;border-radius:2px;margin-right:1rem;white-space:nowrap;flex-shrink:0;}
+  .ticker-scroll{overflow:hidden;flex:1;}
+  .ticker-track{display:inline-block;padding-left:100%;animation:ticker 32s linear infinite;white-space:nowrap;}
+  .ticker-track:hover{animation-play-state:paused;}
+  @keyframes ticker{to{transform:translateX(-100%)}}
+
+  /* Section head */
+  .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
+  .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
+  .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
+  .see-all{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);text-decoration:none;}
+  .see-all:hover{opacity:.65;}
+
+  /* Hero */
+  .hero-main{position:relative;overflow:hidden;border-radius:2px;display:block;text-decoration:none;}
+  .hero-main img{width:100%;height:460px;object-fit:cover;display:block;transition:transform .6s var(--ease);}
+  .hero-main:hover img{transform:scale(1.03);}
+  .hero-fallback{width:100%;height:460px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;border-radius:2px;}
+  .hero-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.18) 55%,transparent 100%);}
+  .hero-body{position:absolute;bottom:0;left:0;right:0;padding:2rem 1.6rem 1.6rem;color:#fff;}
+  .hero-cat{display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:var(--accent);color:#fff;padding:.2rem .65rem;border-radius:2px;margin-bottom:.65rem;}
+  .hero-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,3.2vw,2.1rem);font-weight:700;line-height:1.22;margin:0 0 .65rem;color:#fff;}
+  .hero-meta{font-size:.75rem;opacity:.8;font-family:'Source Serif 4',serif;}
+
+  /* Side stack */
+  .side-card{display:flex;gap:.85rem;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--rule);text-decoration:none;transition:background .18s;}
+  .side-card:last-child{border-bottom:none;padding-bottom:0;}
+  .side-card:hover{background:#f5f3ee;}
+  .side-img{width:88px;height:64px;object-fit:cover;border-radius:2px;flex-shrink:0;}
+  .side-placeholder{width:88px;height:64px;background:#e8e4dc;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#bbb;}
+  .side-cat{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.22rem;}
+  .side-title{font-family:'Playfair Display',Georgia,serif;font-size:.87rem;font-weight:600;color:var(--ink);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .side-date{display:block;font-size:.7rem;color:var(--mid);margin-top:.28rem;font-family:'Source Serif 4',serif;}
+
+  /* News card */
+  .news-card{height:100%;border:none;border-radius:2px;background:#fff;overflow:hidden;transition:box-shadow .25s var(--ease),transform .25s var(--ease);}
+  .news-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10);transform:translateY(-3px);}
+  .nc-img{position:relative;overflow:hidden;height:168px;}
+  .nc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease);}
+  .news-card:hover .nc-img img{transform:scale(1.06);}
+  .nc-placeholder{height:168px;background:linear-gradient(135deg,#ede9e0,#d8d3c8);display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.8rem;}
+  .nc-body{padding:.9rem 1rem 1rem;border-top:1px solid var(--rule);}
+  .nc-cat{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.35rem;display:block;}
+  .nc-title{font-family:'Playfair Display',Georgia,serif;font-size:.9rem;font-weight:600;line-height:1.42;color:var(--ink);text-decoration:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;transition:color .18s;}
+  .nc-title:hover{color:var(--accent);}
+  .nc-meta{font-size:.7rem;color:var(--mid);margin-top:.55rem;font-family:'Source Serif 4',serif;}
+
+  /* Cat pills */
+  .cat-pills{display:flex;flex-wrap:wrap;gap:.5rem;}
+  .cat-pill{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.38rem 1rem;border:1.5px solid var(--rule);border-radius:2px;color:var(--ink);text-decoration:none;transition:all .18s;}
+  .cat-pill:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .cat-count{font-weight:400;opacity:.55;margin-left:.25rem;}
+
+  .rule{border:none;border-top:1px solid var(--rule);margin:2.5rem 0;}
+
+  /* Dark mode */
+  @media (prefers-color-scheme:dark) {
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .news-card{background:#1e1e1e;} .nc-body{border-top-color:#2a2a2a;}
+    .side-card:hover{background:#1a1a1a;} .side-placeholder{background:#2a2a2a;}
+    .nc-placeholder{background:linear-gradient(135deg,#1e1e1e,#2a2a2a);}
+    .cat-pill{color:#d0d0d0;border-color:#333;} .cat-pill:hover{background:#f0f0f0;color:#111;border-color:#f0f0f0;}
+    .skeleton{background:linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%);}
+    .side-title{color:#e0e0e0;}
+  }
+  @media (max-width:767px) {
+    .hero-main img,.hero-fallback{height:260px;}
+    .hero-title{font-size:1.2rem;} .hero-body{padding:1.2rem 1rem 1rem;}
+  }
+</style>
+
+{% if latest_posts %}
+<div class="ticker-bar">
+  <div class="container">
+    <div class="ticker-inner">
+      <span class="ticker-label">Breaking</span>
+      <div class="ticker-scroll">
+        <span class="ticker-track">
+          {% for post in latest_posts|slice:":8" %}{{ post.title }}<span style="margin:0 1.5rem;opacity:.4;">◆</span>{% endfor %}
+        </span>
+      </div>
     </div>
+  </div>
 </div>
+{% endif %}
+
+<div class="container page-body" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <!-- HERO -->
+  {% if featured_posts or latest_posts %}
+  <div style="margin-bottom:2.5rem;">
+    <div class="row g-4">
+      <div class="col-lg-7">
+        {% with hero=featured_posts.0|default:latest_posts.0 %}{% if hero %}
+        <a href="{% url 'post_detail' hero.slug %}" class="hero-main">
+          {% if hero.featured_image %}
+            {% with img=hero.featured_image.name %}
+              {% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ hero.title }}" loading="eager">
+              {% else %}<img src="{{ hero.featured_image.url }}" alt="{{ hero.title }}" loading="eager">{% endif %}
+            {% endwith %}
+          {% else %}
+            <div class="hero-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>
+          {% endif %}
+          <div class="hero-gradient"></div>
+          <div class="hero-body">
+            <span class="hero-cat">{{ hero.category.name }}</span>
+            <div class="hero-title">{{ hero.title }}</div>
+            <div class="hero-meta"><i class="fas fa-user me-1"></i>{{ hero.author.username }}&ensp;·&ensp;<i class="fas fa-calendar me-1"></i>{{ hero.published_date|date:"F d, Y" }}</div>
+          </div>
+        </a>
+        {% endif %}{% endwith %}
+      </div>
+
+      <div class="col-lg-5">
+        {% for post in featured_posts|slice:"1:5" %}
+        <a href="{% url 'post_detail' post.slug %}" class="side-card">
+          {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="side-img" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="side-img" alt="">{% endif %}{% endwith %}{% else %}<div class="side-placeholder"><i class="fas fa-image"></i></div>{% endif %}
+          <div><span class="side-cat">{{ post.category.name }}</span><div class="side-title">{{ post.title }}</div><span class="side-date">{{ post.published_date|date:"M d, Y" }}</span></div>
+        </a>
+        {% empty %}
+        {% for post in latest_posts|slice:"1:5" %}
+        <a href="{% url 'post_detail' post.slug %}" class="side-card">
+          {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="side-img" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="side-img" alt="">{% endif %}{% endwith %}{% else %}<div class="side-placeholder"><i class="fas fa-image"></i></div>{% endif %}
+          <div><span class="side-cat">{{ post.category.name }}</span><div class="side-title">{{ post.title }}</div><span class="side-date">{{ post.published_date|date:"M d, Y" }}</span></div>
+        </a>
+        {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- SKELETON (hidden by default, shown via JS if needed) -->
+  <div id="skeletonGrid" style="display:none;" aria-hidden="true">
+    <div class="row g-3">{% for i in "12345678" %}<div class="col-lg-3 col-md-6"><div class="news-card"><div class="skeleton" style="height:168px;border-radius:2px 2px 0 0;"></div><div class="nc-body"><div class="skeleton" style="height:11px;width:38%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:70%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:42%;margin-top:4px;"></div></div></div></div>{% endfor %}</div>
+  </div>
+
+  <!-- LATEST NEWS -->
+  <section>
+    <div class="section-head"><h2>Latest News</h2></div>
+    <div class="row g-3 stagger" id="latestGrid">
+      {% for post in latest_posts %}
+      <div class="col-lg-3 col-md-6">
+        <div class="news-card">
+          <div class="nc-img">
+            {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="lazy">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="lazy">{% endif %}{% endwith %}{% else %}<div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>{% endif %}
+          </div>
+          <div class="nc-body">
+            <span class="nc-cat">{{ post.category.name }}</span>
+            <a href="{% url 'post_detail' post.slug %}" class="nc-title">{{ post.title|truncatechars:80 }}</a>
+            <div class="nc-meta">{{ post.published_date|date:"M d, Y" }}{% if user.is_staff %}&ensp;·&ensp;<i class="fas fa-eye"></i> {{ post.views }}{% endif %}</div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col-12"><div class="alert alert-info">No posts yet. <a href="/admin/">Add some posts</a>.</div></div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- CATEGORIES -->
+  <section>
+    <div class="section-head"><h2>Browse Topics</h2></div>
+    <div class="cat-pills">
+      {% for category in categories %}
+      <a href="{% url 'category_posts' category.slug %}" class="cat-pill">{{ category.name }}<span class="cat-count">{{ category.posts.count }}</span></a>
+      {% endfor %}
+    </div>
+  </section>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Page exit transition
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
+      a.addEventListener('click', function(e) {
+        var url = this.href;
+        e.preventDefault();
+        var pb = document.querySelector('.page-body');
+        pb.style.transition = 'opacity .24s ease, transform .24s ease';
+        pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+
+  // Lazy image fade-in
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          var img = e.target;
+          img.style.opacity = '0';
+          img.style.transition = 'opacity .4s ease';
+          img.addEventListener('load', function() { img.style.opacity='1'; }, {once:true});
+          if (img.complete) img.style.opacity = '1';
+          io.unobserve(img);
+        }
+      });
+    }, {rootMargin:'80px'});
+    document.querySelectorAll('img[loading="lazy"]').forEach(function(img) { io.observe(img); });
+  }
+});
+</script>
 {% endblock %}

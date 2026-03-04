@@ -1,138 +1,373 @@
-<!-- templates/blog/post_detail.html -->
 {% extends 'base.html' %}
+{% load static %}
 
-{% block title %}{{ post.title }} - BlogSphere{% endblock %}
+{% block title %}{{ post.title }} — BlogSphere{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-lg-8">
-            <!-- Breadcrumb -->
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'category_posts' post.category.slug %}">{{ post.category.name }}</a></li>
-                    <li class="breadcrumb-item active">{{ post.title|truncatechars:30 }}</li>
-                </ol>
-            </nav>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
 
-            <!-- Post Title -->
-            <h1 class="mb-3">{{ post.title }}</h1>
+  :root {
+    --ink:#111; --rule:#e0ddd6; --accent:#c0392b; --mid:#666;
+    --ease:cubic-bezier(0.4,0,0.2,1);
+  }
 
-            <!-- Post Meta -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
-                    <span class="ms-2 text-muted">
-                        <i class="fas fa-user"></i> {{ post.author.username }}
-                        <i class="fas fa-calendar ms-2"></i> {{ post.published_date|date:"F d, Y" }}
-                        {% if user.is_staff %}
-                        <i class="fas fa-eye ms-2"></i> {{ post.views }} views
-                        {% endif %}
-                    </span>
-                </div>
-                <div>
-                    {% for tag in post.tags.all %}
-                    <span class="badge bg-secondary me-1">{{ tag }}</span>
-                    {% endfor %}
-                </div>
-            </div>
+  /* ── Reading progress bar ── */
+  #readProgress {
+    position:fixed; top:0; left:0; height:3px; width:0%;
+    background:var(--accent); z-index:9999;
+    transition:width .1s linear;
+    border-radius:0 2px 2px 0;
+  }
 
-            <!-- Featured Image -->
-            {% if post.featured_image %}
-            <img src="{{ post.featured_image.url }}" class="img-fluid rounded mb-4" alt="{{ post.title }}">
-            {% endif %}
+  /* ── Page entry ── */
+  .article-wrap { animation: articleIn .4s var(--ease) both; }
+  @keyframes articleIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-            <!-- Post Content -->
-            <div class="post-content mb-5">
-                {{ post.content|safe }}
-            </div>
+  /* ── Breadcrumb ── */
+  .bc { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--mid); margin-bottom:1.5rem; flex-wrap:wrap; }
+  .bc a { color:var(--mid); text-decoration:none; }
+  .bc a:hover { color:var(--accent); }
+  .bc-sep { opacity:.4; }
 
-            <!-- Comments Section -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Comments</h5>
-                </div>
-                <div class="card-body">
-                    <!-- Comment Form -->
-                    <form method="post" class="mb-4">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">Add a comment</label>
-                            <textarea class="form-control" rows="3" placeholder="Share your thoughts..."></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Submit Comment</button>
-                    </form>
+  /* ── Article header ── */
+  .art-cat {
+    display:inline-block; font-size:.65rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:.12em;
+    background:var(--accent); color:#fff;
+    padding:.22rem .7rem; border-radius:2px; margin-bottom:1rem;
+    text-decoration:none;
+  }
+  .art-cat:hover { opacity:.85; }
 
-                    <!-- Comments List -->
-                    <div class="comments-list">
-                        {% for comment in post.comments.all %}
-                        <div class="border-bottom pb-3 mb-3">
-                            <div class="d-flex justify-content-between">
-                                <strong>{{ comment.name }}</strong>
-                                <small class="text-muted">{{ comment.created_at|date:"M d, Y" }}</small>
-                            </div>
-                            <p class="mb-0">{{ comment.content }}</p>
-                        </div>
-                        {% empty %}
-                        <p class="text-muted">No comments yet. Be the first to comment!</p>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
+  .art-title {
+    font-family:'Playfair Display', Georgia, serif;
+    font-size:clamp(1.7rem, 4vw, 2.6rem);
+    font-weight:700; line-height:1.2;
+    color:var(--ink); margin-bottom:1.2rem;
+    letter-spacing:-.5px;
+  }
+
+  .art-meta {
+    display:flex; flex-wrap:wrap; align-items:center;
+    gap:.75rem 1.5rem;
+    padding:.85rem 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    margin-bottom:1.5rem; font-size:.8rem; color:var(--mid);
+    font-family:'Source Serif 4', serif;
+  }
+  .art-meta-item { display:flex; align-items:center; gap:.35rem; }
+  .art-meta i { color:var(--accent); font-size:.75rem; }
+  .read-time { font-weight:600; color:var(--ink); }
+
+  /* ── Hero image ── */
+  .art-hero-img {
+    width:100%; max-height:500px; object-fit:cover;
+    border-radius:3px; margin-bottom:1.8rem;
+    display:block;
+  }
+
+  /* ── Article body ── */
+  .art-body {
+    font-family:'Source Serif 4', Georgia, serif;
+    font-size:1.05rem; line-height:1.85; color:#1a1a1a;
+  }
+  .art-body p { margin-bottom:1.4rem; }
+  .art-body h2,h3,h4 { font-family:'Playfair Display', Georgia, serif; color:var(--ink); margin-top:2rem; margin-bottom:.75rem; }
+  .art-body a { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
+  .art-body blockquote {
+    border-left:3px solid var(--accent); margin:1.8rem 0;
+    padding:1rem 1.5rem; background:#faf8f5;
+    font-style:italic; color:#444;
+    border-radius:0 3px 3px 0;
+  }
+  .art-body img { border-radius:3px; margin:1.5rem auto; }
+  .art-body code { background:#f3f0eb; color:#c0392b; padding:.1em .4em; border-radius:3px; font-size:.9em; }
+  .art-body pre { background:#f3f0eb; padding:1.2rem; border-radius:6px; overflow-x:auto; }
+
+  /* ── Tags ── */
+  .art-tags { display:flex; flex-wrap:wrap; gap:.4rem; margin:2rem 0; padding-top:1.5rem; border-top:1px solid var(--rule); }
+  .art-tag {
+    font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em;
+    padding:.28rem .75rem; border:1.5px solid var(--rule); border-radius:2px;
+    color:var(--mid); text-decoration:none; transition:all .18s;
+  }
+  .art-tag:hover { border-color:var(--ink); color:var(--ink); }
+
+  /* ── Share bar ── */
+  .share-bar {
+    display:flex; align-items:center; gap:.6rem;
+    padding:1.2rem 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    margin:1.5rem 0;
+  }
+  .share-label { font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:var(--mid); margin-right:.4rem; }
+  .share-btn {
+    display:inline-flex; align-items:center; gap:.4rem;
+    font-size:.75rem; font-weight:600; padding:.4rem .9rem;
+    border-radius:2px; text-decoration:none; transition:all .18s;
+    border:1.5px solid transparent;
+  }
+  .share-tw { background:#000; color:#fff; }
+  .share-tw:hover { background:#333; color:#fff; }
+  .share-wa { background:#25d366; color:#fff; }
+  .share-wa:hover { background:#128c7e; color:#fff; }
+  .share-fb { background:#1877f2; color:#fff; }
+  .share-fb:hover { background:#0d5fca; color:#fff; }
+  .share-copy { background:#fff; color:var(--ink); border-color:var(--rule); cursor:pointer; }
+  .share-copy:hover { border-color:var(--ink); background:#f5f3ee; }
+
+  /* ── Comments ── */
+  .comments-section { margin-top:2.5rem; }
+  .comments-head {
+    font-family:'Playfair Display', Georgia, serif;
+    font-size:1.3rem; font-weight:700; color:var(--ink);
+    border-bottom:2.5px solid var(--ink); padding-bottom:.6rem; margin-bottom:1.5rem;
+  }
+  .comments-head::before { content:''; display:inline-block; width:4px; height:1.1em; background:var(--accent); margin-right:.55rem; vertical-align:-.1em; border-radius:1px; }
+  .comment-item {
+    padding:1rem 0; border-bottom:1px solid var(--rule);
+  }
+  .comment-item:last-child { border-bottom:none; }
+  .comment-author { font-weight:600; font-size:.9rem; color:var(--ink); }
+  .comment-date { font-size:.75rem; color:var(--mid); margin-left:.6rem; font-family:'Source Serif 4', serif; }
+  .comment-text { margin-top:.4rem; font-size:.95rem; color:#333; line-height:1.65; font-family:'Source Serif 4', serif; }
+  .comment-form-label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--mid); margin-bottom:.4rem; display:block; }
+  .comment-textarea { border:1.5px solid var(--rule); border-radius:3px; padding:.75rem 1rem; font-family:'Source Serif 4', serif; font-size:.95rem; resize:vertical; transition:border-color .18s; }
+  .comment-textarea:focus { outline:none; border-color:var(--ink); }
+  .comment-submit { font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; background:var(--ink); color:#fff; border:none; padding:.65rem 1.6rem; border-radius:2px; cursor:pointer; transition:background .18s; }
+  .comment-submit:hover { background:var(--accent); }
+
+  /* ── Sidebar ── */
+  .sidebar-section { margin-bottom:2rem; }
+  .sidebar-title {
+    font-family:'Playfair Display', Georgia, serif;
+    font-size:.95rem; font-weight:700; color:var(--ink);
+    border-bottom:2px solid var(--ink); padding-bottom:.5rem; margin-bottom:1rem;
+    letter-spacing:-.2px;
+  }
+  .related-item { display:flex; gap:.75rem; padding:.7rem 0; border-bottom:1px solid var(--rule); text-decoration:none; }
+  .related-item:last-child { border-bottom:none; }
+  .related-thumb { width:68px; height:50px; object-fit:cover; border-radius:2px; flex-shrink:0; }
+  .related-placeholder { width:68px; height:50px; background:#ede9e0; border-radius:2px; flex-shrink:0; display:flex; align-items:center; justify-content:center; color:#ccc; }
+  .related-title { font-family:'Playfair Display', Georgia, serif; font-size:.82rem; font-weight:600; color:var(--ink); line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .related-date { font-size:.7rem; color:var(--mid); margin-top:.2rem; font-family:'Source Serif 4', serif; }
+  .related-item:hover .related-title { color:var(--accent); }
+
+  .cat-list-item {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:.55rem 0; border-bottom:1px solid var(--rule);
+    text-decoration:none; color:var(--ink); font-size:.88rem;
+    transition:color .18s;
+  }
+  .cat-list-item:last-child { border-bottom:none; }
+  .cat-list-item:hover { color:var(--accent); }
+  .cat-list-item span { font-size:.72rem; color:var(--mid); font-family:'Source Serif 4', serif; }
+
+  .latest-item { padding:.55rem 0; border-bottom:1px solid var(--rule); }
+  .latest-item:last-child { border-bottom:none; }
+  .latest-item a { font-size:.83rem; color:var(--ink); text-decoration:none; font-family:'Playfair Display', serif; font-weight:600; line-height:1.35; display:block; transition:color .18s; }
+  .latest-item a:hover { color:var(--accent); }
+  .latest-date { font-size:.7rem; color:var(--mid); margin-top:.18rem; font-family:'Source Serif 4', serif; }
+
+  /* ── Dark mode ── */
+  @media (prefers-color-scheme:dark) {
+    :root{--ink:#f0f0f0;--rule:#2a2a2a;--mid:#888;}
+    .art-body{color:#d0d0d0;} .art-body blockquote{background:#1a1a1a;color:#aaa;} .art-body code{background:#2a2a2a;}
+    .related-placeholder,.nc-placeholder{background:#2a2a2a;}
+    .comment-textarea{background:#1e1e1e;border-color:#333;color:#e0e0e0;}
+    .share-copy{background:#1e1e1e;color:#e0e0e0;border-color:#333;}
+    .share-copy:hover{background:#2a2a2a;}
+  }
+</style>
+
+<!-- Reading progress bar -->
+<div id="readProgress"></div>
+
+<div class="container article-wrap" style="padding-top:1.5rem;padding-bottom:3rem;">
+  <div class="row g-4">
+
+    <!-- MAIN ARTICLE -->
+    <div class="col-lg-8">
+
+      <!-- Breadcrumb -->
+      <nav class="bc" aria-label="breadcrumb">
+        <a href="{% url 'home' %}">Home</a>
+        <span class="bc-sep">›</span>
+        <a href="{% url 'category_posts' post.category.slug %}">{{ post.category.name }}</a>
+        <span class="bc-sep">›</span>
+        <span style="color:var(--ink);">{{ post.title|truncatechars:35 }}</span>
+      </nav>
+
+      <!-- Article header -->
+      <a href="{% url 'category_posts' post.category.slug %}" class="art-cat">{{ post.category.name }}</a>
+      <h1 class="art-title">{{ post.title }}</h1>
+
+      <!-- Meta row -->
+      <div class="art-meta">
+        <div class="art-meta-item"><i class="fas fa-user"></i><span>{{ post.author.username }}</span></div>
+        <div class="art-meta-item"><i class="fas fa-calendar"></i><span>{{ post.published_date|date:"F d, Y" }}</span></div>
+        <div class="art-meta-item"><i class="fas fa-clock"></i><span class="read-time" id="readTime">— min read</span></div>
+        {% if user.is_staff %}<div class="art-meta-item"><i class="fas fa-eye"></i><span>{{ post.views }} views</span></div>{% endif %}
+      </div>
+
+      <!-- Hero image -->
+      {% if post.featured_image %}
+        {% with img=post.featured_image.name %}
+          {% if img|slice:":4" == "http" %}
+            <img src="{{ img }}" class="art-hero-img" alt="{{ post.title }}">
+          {% else %}
+            <img src="{{ post.featured_image.url }}" class="art-hero-img" alt="{{ post.title }}">
+          {% endif %}
+        {% endwith %}
+      {% endif %}
+
+      <!-- Body -->
+      <div class="art-body" id="articleBody">
+        {{ post.content|safe }}
+      </div>
+
+      <!-- Tags -->
+      {% if post.tags.all %}
+      <div class="art-tags">
+        {% for tag in post.tags.all %}
+        <a href="#" class="art-tag"># {{ tag }}</a>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Share bar -->
+      <div class="share-bar">
+        <span class="share-label">Share</span>
+        <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-tw"><i class="fab fa-x-twitter"></i> X</a>
+        <a href="https://wa.me/?text={{ post.title|urlencode }}%20{{ request.build_absolute_uri }}" target="_blank" class="share-btn share-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-fb"><i class="fab fa-facebook-f"></i> Facebook</a>
+        <button onclick="copyLink()" class="share-btn share-copy" id="copyBtn"><i class="fas fa-link"></i> Copy link</button>
+      </div>
+
+      <!-- Comments -->
+      <div class="comments-section">
+        <div class="comments-head">Comments</div>
+
+        <form method="post" style="margin-bottom:2rem;">
+          {% csrf_token %}
+          <label class="comment-form-label">Leave a comment</label>
+          <textarea name="content" class="comment-textarea w-100 mb-2" rows="4" placeholder="Share your thoughts..."></textarea>
+          <button type="submit" class="comment-submit">Post Comment</button>
+        </form>
+
+        {% for comment in comments %}
+        <div class="comment-item">
+          <div>
+            <span class="comment-author">{{ comment.name }}</span>
+            <span class="comment-date">{{ comment.created_at|date:"F d, Y" }}</span>
+          </div>
+          <p class="comment-text">{{ comment.content }}</p>
         </div>
-
-        <!-- Sidebar -->
-        <div class="col-lg-4">
-            <!-- Related Posts -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Related Posts</h5>
-                </div>
-                <div class="card-body">
-                    {% for related_post in related_posts %}
-                    <div class="mb-3 pb-3 border-bottom">
-                        <h6><a href="{% url 'post_detail' related_post.slug %}" class="text-decoration-none">{{ related_post.title }}</a></h6>
-                        <small class="text-muted">{{ related_post.published_date|date:"M d, Y" }}</small>
-                    </div>
-                    {% empty %}
-                    <p class="text-muted">No related posts.</p>
-                    {% endfor %}
-                </div>
-            </div>
-
-            <!-- Categories -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5>Categories</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        {% for category in categories %}
-                        <a href="{% url 'category_posts' category.slug %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                            {{ category.name }}
-                            <span class="badge bg-primary rounded-pill">{{ category.posts.count }}</span>
-                        </a>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Latest Posts -->
-            <div class="card">
-                <div class="card-header">
-                    <h5>Latest Stories</h5>
-                </div>
-                <div class="card-body">
-                    {% for latest_post in latest_posts|slice:":5" %}
-                    <div class="mb-3">
-                        <h6><a href="{% url 'post_detail' latest_post.slug %}" class="text-decoration-none">{{ latest_post.title|truncatechars:50 }}</a></h6>
-                        <small class="text-muted">{{ latest_post.published_date|date:"M d" }}</small>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
+        {% empty %}
+        <p style="color:var(--mid);font-family:'Source Serif 4',serif;font-size:.9rem;">No comments yet — be the first!</p>
+        {% endfor %}
+      </div>
     </div>
+
+    <!-- SIDEBAR -->
+    <div class="col-lg-4">
+      <div style="position:sticky;top:80px;">
+
+        <!-- Related posts -->
+        <div class="sidebar-section">
+          <div class="sidebar-title">Related Stories</div>
+          {% for rp in related_posts %}
+          <a href="{% url 'post_detail' rp.slug %}" class="related-item">
+            {% if rp.featured_image %}
+              {% with img=rp.featured_image.name %}
+                {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="related-thumb" alt="">
+                {% else %}<img src="{{ rp.featured_image.url }}" class="related-thumb" alt="">{% endif %}
+              {% endwith %}
+            {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
+            <div>
+              <div class="related-title">{{ rp.title }}</div>
+              <div class="related-date">{{ rp.published_date|date:"M d, Y" }}</div>
+            </div>
+          </a>
+          {% empty %}
+          <p style="color:var(--mid);font-size:.85rem;font-family:'Source Serif 4',serif;">No related stories.</p>
+          {% endfor %}
+        </div>
+
+        <!-- Categories -->
+        <div class="sidebar-section">
+          <div class="sidebar-title">Topics</div>
+          {% for category in categories %}
+          <a href="{% url 'category_posts' category.slug %}" class="cat-list-item">
+            {{ category.name }}
+            <span>{{ category.posts.count }} posts</span>
+          </a>
+          {% endfor %}
+        </div>
+
+        <!-- Latest -->
+        <div class="sidebar-section">
+          <div class="sidebar-title">Latest Stories</div>
+          {% for lp in latest_posts|slice:":6" %}
+          <div class="latest-item">
+            <a href="{% url 'post_detail' lp.slug %}">{{ lp.title|truncatechars:55 }}</a>
+            <div class="latest-date">{{ lp.published_date|date:"M d, Y" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </div>
+  </div>
 </div>
+
+<script>
+(function() {
+  // ── Reading progress ──
+  var bar = document.getElementById('readProgress');
+  window.addEventListener('scroll', function() {
+    var body = document.body, html = document.documentElement;
+    var total = Math.max(body.scrollHeight, html.scrollHeight) - window.innerHeight;
+    bar.style.width = (window.scrollY / total * 100) + '%';
+  }, {passive:true});
+
+  // ── Estimated read time ──
+  var body = document.getElementById('articleBody');
+  if (body) {
+    var words = body.innerText.trim().split(/\s+/).length;
+    var mins = Math.max(1, Math.round(words / 200));
+    document.getElementById('readTime').textContent = mins + ' min read';
+  }
+
+  // ── Copy link ──
+  window.copyLink = function() {
+    navigator.clipboard.writeText(window.location.href).then(function() {
+      var btn = document.getElementById('copyBtn');
+      btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      btn.style.borderColor = '#2a9d8f';
+      btn.style.color = '#2a9d8f';
+      setTimeout(function() {
+        btn.innerHTML = '<i class="fas fa-link"></i> Copy link';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    });
+  };
+
+  // ── Page exit transition ──
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
+      a.addEventListener('click', function(e) {
+        if (this.onclick) return;
+        var url = this.href;
+        e.preventDefault();
+        var wrap = document.querySelector('.article-wrap');
+        wrap.style.transition = 'opacity .24s ease, transform .24s ease';
+        wrap.style.opacity = '0'; wrap.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+})();
+</script>
 {% endblock %}
