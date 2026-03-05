@@ -77,72 +77,14 @@ def search(request):
     }
     return render(request, 'blog/search.html', context)
 
-@login_required
-@user_passes_test(is_staff)
 def news_dashboard(request):
+    """Simple dashboard to view fetched news"""
+    if not request.user.is_authenticated:
+        return redirect('admin:login')
 
     # Get stats
     total_articles = NewsArticle.objects.count()
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:10]
-
-    @csrf_exempt
-    @login_required
-    @user_passes_test(is_staff)
-    def auto_fetch_news(request):
-        """
-        Manual trigger: fetch latest news across all categories.
-        Called from dashboard button OR by the scheduler automatically.
-        """
-        if request.method == 'POST':
-            try:
-                from blog.ai_service import EnhancedNewsFetcher
-
-                # Parse optional overrides from request
-                try:
-                    data = json.loads(request.body)
-                except Exception:
-                    data = {}
-
-                categories = data.get('categories', [
-                    'news', 'sport', 'entertainment', 'economy', 'politics', 'technology'
-                ])
-                sources = data.get('sources', [
-                    'google', 'google_nigeria', 'punch', 'vanguard', 'bbc'
-                ])
-                limit = data.get('limit_per_source', 5)
-
-                articles = EnhancedNewsFetcher.fetch_multiple_sources(
-                    categories=categories,
-                    sources=sources,
-                    limit_per_source=limit
-                )
-
-                saved_count = 0
-                for article in articles:
-                    if article.get('url') and not NewsArticle.objects.filter(url=article['url']).exists():
-                        NewsArticle.objects.create(
-                            title=article.get('title', 'Untitled')[:499],
-                            content=article.get('content', '')[:5000],
-                            summary=article.get('description', '')[:500],
-                            url=article.get('url', ''),
-                            source=article.get('source', 'Unknown'),
-                            category=article.get('category', 'NEWS'),
-                            image_url=article.get('image_url', ''),
-                            published_at=timezone.now(),
-                        )
-                        saved_count += 1
-
-                return JsonResponse({
-                    'success': True,
-                    'message': f'Fetched {len(articles)} articles, {saved_count} new saved.',
-                    'total_fetched': len(articles),
-                    'saved_count': saved_count,
-                })
-
-            except Exception as e:
-                return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
-
-        return JsonResponse({'success': False, 'message': 'POST required'})
 
     # Group by category
     from django.db.models import Count
