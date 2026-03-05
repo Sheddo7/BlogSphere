@@ -6,21 +6,24 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    # Basic URLs
+    # ── Public URLs ──
     path('', views.home, name='home'),
     path('post/<slug:slug>/', views.post_detail, name='post_detail'),
     path('category/<slug:slug>/', views.category_posts, name='category_posts'),
     path('search/', views.search, name='search'),
-    path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
 
-    # Enhanced news dashboard URLs
+    # ── Admin-only dashboards ──
+    path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
     path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),
+
+    # ── Dashboard API endpoints ──
     path('api/fetch-news-now/', views.fetch_news_now, name='fetch_news_now'),
+    path('api/auto-fetch-news/', views.auto_fetch_news, name='auto_fetch_news'),
     path('api/generate-posts-now/', views.generate_posts_now, name='generate_posts_now'),
     path('api/dashboard-stats/', views.dashboard_stats, name='dashboard_stats'),
     path('api/convert-to-post/<int:article_id>/', views.convert_to_post, name='convert_to_post'),
 
-    # New API endpoints for enhanced dashboard
+    # ── Post/article management ──
     path('api/post-article/', views.post_article, name='post_article'),
     path('api/post-multiple-articles/', views.post_multiple_articles, name='post_multiple_articles'),
     path('api/get-post/<int:post_id>/', views.get_post, name='get_post'),
@@ -33,6 +36,3 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    # In production, these should be served by your web server
-    pass
