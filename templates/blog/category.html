@@ -1,79 +1,184 @@
-<!-- templates/blog/category.html -->
 {% extends 'base.html' %}
-
-{% block title %}{{ category.name }} - BlogSphere{% endblock %}
+{% load static %}
+{% block title %}{{ category.name }} — BlogSphere{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Category Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="mb-3">{{ category.name }}</h1>
-            <p class="text-muted">{{ page_obj.paginator.count }} posts in this category</p>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .stagger>*{animation:staggerIn .5s var(--ease) both;}
+  .stagger>*:nth-child(1){animation-delay:.04s}.stagger>*:nth-child(2){animation-delay:.09s}.stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.19s}.stagger>*:nth-child(5){animation-delay:.24s}.stagger>*:nth-child(6){animation-delay:.29s}.stagger>*:nth-child(7){animation-delay:.34s}.stagger>*:nth-child(8){animation-delay:.39s}
+  @keyframes staggerIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+  .skeleton{background:linear-gradient(90deg,#ede9e0 25%,#ddd9d0 50%,#ede9e0 75%);background-size:600px 100%;animation:shimmer 1.5s infinite;border-radius:3px;}
+
+  .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
+  .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
+  .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
+
+  /* Category hero banner */
+  .cat-banner {
+    border-bottom: 2.5px solid var(--ink);
+    padding-bottom: 1.2rem;
+    margin-bottom: 2rem;
+  }
+  .cat-banner-label {
+    font-size:.68rem; font-weight:700; text-transform:uppercase; letter-spacing:.12em;
+    color:var(--accent); margin-bottom:.4rem; display:block;
+    font-family:'Source Serif 4',serif;
+  }
+  .cat-banner-title {
+    font-family:'Playfair Display',Georgia,serif;
+    font-size:clamp(2rem,5vw,3rem); font-weight:900;
+    color:var(--ink); margin:0 0 .5rem; letter-spacing:-1px; line-height:1;
+  }
+  .cat-banner-count {
+    font-size:.82rem; color:var(--mid); font-family:'Source Serif 4',serif;
+  }
+  .cat-banner-count strong { color:var(--ink); }
+
+  /* News card */
+  .news-card{height:100%;border:none;border-radius:2px;background:#fff;overflow:hidden;transition:box-shadow .25s var(--ease),transform .25s var(--ease);}
+  .news-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10);transform:translateY(-3px);}
+  .nc-img{position:relative;overflow:hidden;height:192px;}
+  .nc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease);}
+  .news-card:hover .nc-img img{transform:scale(1.06);}
+  .nc-placeholder{height:192px;background:linear-gradient(135deg,#ede9e0,#d8d3c8);display:flex;align-items:center;justify-content:center;color:#bbb;font-size:2rem;}
+  .nc-body{padding:.9rem 1rem 1rem;border-top:1px solid var(--rule);}
+  .nc-cat{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.35rem;display:block;}
+  .nc-title{font-family:'Playfair Display',Georgia,serif;font-size:.95rem;font-weight:600;line-height:1.42;color:var(--ink);text-decoration:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;transition:color .18s;}
+  .nc-title:hover{color:var(--accent);}
+  .nc-meta{font-size:.7rem;color:var(--mid);margin-top:.55rem;font-family:'Source Serif 4',serif;}
+
+  /* Pagination */
+  .pager{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:2.5rem;}
+  .pager-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1.5px solid var(--rule);border-radius:2px;font-size:.82rem;font-weight:600;color:var(--ink);text-decoration:none;transition:all .18s;}
+  .pager-btn:hover{border-color:var(--ink);background:var(--ink);color:#fff;}
+  .pager-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .pager-btn.disabled{opacity:.35;pointer-events:none;}
+  .pager-arrow{font-size:.75rem;}
+
+  /* Other categories */
+  .other-cats{display:flex;flex-wrap:wrap;gap:.45rem;}
+  .other-cat-link{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.32rem .85rem;border:1.5px solid var(--rule);border-radius:2px;color:var(--mid);text-decoration:none;transition:all .18s;}
+  .other-cat-link:hover,.other-cat-link.active-cat{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .rule{border:none;border-top:1px solid var(--rule);margin:2rem 0;}
+
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .news-card{background:#1e1e1e;}.nc-body{border-top-color:#2a2a2a;}
+    .nc-placeholder{background:linear-gradient(135deg,#1e1e1e,#2a2a2a);}
+    .skeleton{background:linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%);}
+    .other-cat-link{color:#888;border-color:#333;}
+    .other-cat-link:hover,.other-cat-link.active-cat{background:#f0f0f0;color:#111;border-color:#f0f0f0;}
+  }
+</style>
+
+<div class="container page-body" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <!-- Category Banner -->
+  <div class="cat-banner">
+    <span class="cat-banner-label">Topic</span>
+    <h1 class="cat-banner-title">{{ category.name }}</h1>
+    <p class="cat-banner-count">
+      <strong>{{ page_obj.paginator.count }}</strong> stories in this topic
+      &ensp;·&ensp; Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+    </p>
+  </div>
+
+  <!-- Other categories quick nav -->
+  {% if categories %}
+  <div class="other-cats mb-4">
+    {% for cat in categories %}
+    <a href="{% url 'category_posts' cat.slug %}"
+       class="other-cat-link {% if cat.slug == category.slug %}active-cat{% endif %}">
+      {{ cat.name }}
+    </a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- Posts grid -->
+  <div class="row g-3 stagger">
+    {% for post in page_obj %}
+    <div class="col-lg-3 col-md-6">
+      <div class="news-card">
+        <div class="nc-img">
+          {% if post.featured_image %}
+            {% with img=post.featured_image.name %}
+              {% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="lazy">
+              {% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="lazy">{% endif %}
+            {% endwith %}
+          {% else %}
+            <div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>
+          {% endif %}
         </div>
+        <div class="nc-body">
+          <span class="nc-cat">{{ category.name }}</span>
+          <a href="{% url 'post_detail' post.slug %}" class="nc-title">{{ post.title|truncatechars:80 }}</a>
+          <div class="nc-meta">
+            {{ post.published_date|date:"M d, Y" }}
+            {% if user.is_staff %}&ensp;·&ensp;<i class="fas fa-eye"></i> {{ post.views }}{% endif %}
+          </div>
+        </div>
+      </div>
     </div>
-
-    <!-- Posts Grid -->
-    <div class="row">
-        {% for post in page_obj %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card post-card h-100">
-                {% if post.featured_image %}
-                <img src="{{ post.featured_image.url }}" class="card-img-top" alt="{{ post.title }}" style="height: 200px; object-fit: cover;">
-                {% endif %}
-                <div class="card-body">
-                    <span class="category-badge {{ category.name|lower }}">{{ category.name }}</span>
-                    <h5 class="card-title mt-2">
-                        <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none text-dark">{{ post.title }}</a>
-                    </h5>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
-                        {% if user.is_staff %}
-                        <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }} views</small>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-info">
-                No posts in this category yet.
-            </div>
-        </div>
-        {% endfor %}
+    {% empty %}
+    <div class="col-12">
+      <div style="text-align:center;padding:4rem 0;color:var(--mid);font-family:'Source Serif 4',serif;">
+        <i class="fas fa-newspaper" style="font-size:2.5rem;margin-bottom:1rem;display:block;opacity:.3;"></i>
+        No stories in this topic yet.
+      </div>
     </div>
+    {% endfor %}
+  </div>
 
-    <!-- Pagination -->
-    {% if page_obj.has_other_pages %}
-    <nav aria-label="Page navigation" class="mt-4">
-        <ul class="pagination justify-content-center">
-            {% if page_obj.has_previous %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
-                    <span aria-hidden="true">&laquo;</span>
-                </a>
-            </li>
-            {% endif %}
+  <!-- Pagination -->
+  {% if page_obj.has_other_pages %}
+  <nav class="pager" aria-label="Pagination">
+    <a href="?page={{ page_obj.previous_page_number }}" class="pager-btn pager-arrow {% if not page_obj.has_previous %}disabled{% endif %}">‹</a>
+    {% for num in page_obj.paginator.page_range %}
+      {% if page_obj.number == num %}
+        <span class="pager-btn active">{{ num }}</span>
+      {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+        <a href="?page={{ num }}" class="pager-btn">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    <a href="?page={{ page_obj.next_page_number }}" class="pager-btn pager-arrow {% if not page_obj.has_next %}disabled{% endif %}">›</a>
+  </nav>
+  {% endif %}
 
-            {% for num in page_obj.paginator.page_range %}
-                {% if page_obj.number == num %}
-                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
-                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                {% endif %}
-            {% endfor %}
-
-            {% if page_obj.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
-                    <span aria-hidden="true">&raquo;</span>
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
+      a.addEventListener('click', function(e) {
+        var url = this.href; e.preventDefault();
+        var pb = document.querySelector('.page-body');
+        pb.style.transition = 'opacity .24s ease, transform .24s ease';
+        pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function(entries) {
+      entries.forEach(function(e) {
+        if (e.isIntersecting) {
+          var img = e.target; img.style.opacity='0'; img.style.transition='opacity .4s ease';
+          img.addEventListener('load', function(){img.style.opacity='1';},{once:true});
+          if(img.complete) img.style.opacity='1'; io.unobserve(img);
+        }
+      });
+    },{rootMargin:'80px'});
+    document.querySelectorAll('img[loading="lazy"]').forEach(function(img){io.observe(img);});
+  }
+});
+</script>
 {% endblock %}

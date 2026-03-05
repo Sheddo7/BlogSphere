@@ -1,115 +1,265 @@
-<!-- templates/blog/news_dashboard.html -->
 {% extends 'base.html' %}
+{% load static %}
+{% block title %}News Dashboard — BlogSphere{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">📰 News Dashboard</h1>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .stagger>*{animation:staggerIn .45s var(--ease) both;}
+  .stagger>*:nth-child(1){animation-delay:.04s}.stagger>*:nth-child(2){animation-delay:.09s}.stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.19s}
+  @keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
-    <!-- Stats -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h5 class="card-title">Total Articles</h5>
-                    <h2>{{ total_articles }}</h2>
+  .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
+  .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.15rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
+  .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
+
+  /* Page header */
+  .dash-header{border-bottom:2.5px solid var(--ink);padding-bottom:1rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:.75rem;}
+  .dash-header-left span{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);display:block;margin-bottom:.3rem;font-family:'Source Serif 4',serif;}
+  .dash-header-left h1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:900;color:var(--ink);margin:0;letter-spacing:-1px;line-height:1;}
+  .dash-header-right a{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);text-decoration:none;border:1.5px solid var(--rule);border-radius:2px;padding:.35rem .8rem;transition:all .18s;}
+  .dash-header-right a:hover{border-color:var(--ink);color:var(--ink);}
+
+  /* Stat cards */
+  .stat-card{background:#fff;border:1.5px solid var(--rule);border-radius:2px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:box-shadow .22s,transform .22s;}
+  .stat-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px);}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);border-radius:0;}
+  .stat-card.green::after{background:#2a9d8f;}
+  .stat-card.blue::after{background:#457b9d;}
+  .stat-card.gold::after{background:#e9c46a;}
+  .stat-num{font-family:'Playfair Display',Georgia,serif;font-size:2.2rem;font-weight:700;color:var(--ink);line-height:1;}
+  .stat-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-top:.3rem;font-family:'Source Serif 4',serif;}
+
+  /* Action buttons */
+  .action-btn{display:inline-flex;align-items:center;gap:.45rem;font-family:'Playfair Display',Georgia,serif;font-size:.8rem;font-weight:700;letter-spacing:.02em;padding:.6rem 1.2rem;border-radius:2px;text-decoration:none;cursor:pointer;transition:all .18s;border:1.5px solid transparent;}
+  .action-btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .action-btn-primary:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .action-btn-outline{background:#fff;color:var(--ink);border-color:var(--rule);}
+  .action-btn-outline:hover{border-color:var(--ink);background:var(--ink);color:#fff;}
+
+  /* Table */
+  .dash-table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  .dash-table th{font-family:'Source Serif 4',serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);padding:.6rem .8rem;border-bottom:2px solid var(--ink);white-space:nowrap;background:var(--paper);}
+  .dash-table td{padding:.75rem .8rem;border-bottom:1px solid var(--rule);color:var(--ink);vertical-align:middle;}
+  .dash-table tr:last-child td{border-bottom:none;}
+  .dash-table tr:hover td{background:#f8f6f2;}
+  .dash-table td a{color:var(--accent);text-decoration:none;font-weight:600;}
+  .dash-table td a:hover{text-decoration:underline;}
+
+  /* Badges */
+  .tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.18rem .55rem;border-radius:2px;}
+  .tag-source{background:#f0ece4;color:var(--mid);}
+  .tag-cat{background:#fde8e9;color:var(--accent);}
+  .tag-ok{background:#d4f4f0;color:#2a9d8f;}
+  .tag-no{background:#fff3e0;color:#e07b00;}
+  .tag-pos{background:#d4f4f0;color:#2a9d8f;}
+  .tag-neg{background:#fde8e9;color:var(--accent);}
+  .tag-neu{background:#f0ece4;color:var(--mid);}
+
+  /* Sentiment icon */
+  .sentiment-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.3rem;}
+
+  /* Icon btn */
+  .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:2px;border:1.5px solid var(--rule);background:#fff;color:var(--mid);cursor:pointer;text-decoration:none;transition:all .18s;font-size:.7rem;}
+  .icon-btn:hover{border-color:var(--ink);color:var(--ink);}
+
+  /* Panel */
+  .panel{background:#fff;border:1.5px solid var(--rule);border-radius:2px;overflow:hidden;margin-bottom:1.5rem;}
+  .panel-head{padding:.85rem 1.1rem;border-bottom:1.5px solid var(--rule);background:var(--paper);display:flex;align-items:center;justify-content:space-between;}
+  .panel-head-title{font-family:'Playfair Display',Georgia,serif;font-size:.95rem;font-weight:700;color:var(--ink);margin:0;}
+  .panel-body{padding:1.1rem;}
+
+  /* Category stat mini cards */
+  .mini-stat{text-align:center;padding:.75rem;border:1.5px solid var(--rule);border-radius:2px;transition:border-color .18s;}
+  .mini-stat:hover{border-color:var(--accent);}
+  .mini-stat-num{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--ink);}
+  .mini-stat-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-top:.2rem;font-family:'Source Serif 4',serif;}
+
+  .rule{border:none;border-top:1px solid var(--rule);margin:1.5rem 0;}
+
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .stat-card,.panel,.icon-btn{background:#1e1e1e;}
+    .panel-head{background:#161616;}
+    .dash-table th{background:#161616;}
+    .dash-table tr:hover td{background:#1a1a1a;}
+    .action-btn-outline{background:#1e1e1e;color:#e0e0e0;}
+    .action-btn-outline:hover{background:#f0f0f0;color:#111;}
+    .mini-stat{background:#1e1e1e;}
+  }
+</style>
+
+<div class="container page-body" style="padding-top:1.8rem;padding-bottom:3rem;">
+
+  <!-- Header -->
+  <div class="dash-header">
+    <div class="dash-header-left">
+      <span>Admin</span>
+      <h1>News Dashboard</h1>
+    </div>
+    <div class="dash-header-right">
+      <a href="{% url 'admin:index' %}">← Admin panel</a>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 stagger mb-4">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-num">{{ total_articles }}</div>
+        <div class="stat-label">Total Articles</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card green">
+        <div class="stat-num">{{ today_articles|default:"0" }}</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card blue">
+        <div class="stat-num">{{ total_articles }}</div>
+        <div class="stat-label">AI Generated</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card gold">
+        <div class="stat-num">{{ total_articles|default:"0" }}</div>
+        <div class="stat-label">To Process</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick actions -->
+  <div class="panel mb-4">
+    <div class="panel-head">
+      <span class="panel-head-title">Quick Actions</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;">
+        <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="action-btn action-btn-primary">
+          <i class="fas fa-newspaper"></i> Manage Articles
+        </a>
+        <a href="{% url 'admin:blog_newsarticle_add' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-plus"></i> Add Manually
+        </a>
+        <button onclick="fetchNews()" class="action-btn action-btn-outline">
+          <i class="fas fa-sync-alt"></i> Fetch Latest News
+        </button>
+        <a href="{% url 'admin:blog_post_add' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-pen"></i> Create Post
+        </a>
+        <button onclick="generatePosts()" class="action-btn action-btn-outline">
+          <i class="fas fa-robot"></i> Generate Posts
+        </button>
+        {% if user.is_staff %}
+        <a href="{% url 'enhanced_news_dashboard' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-chart-line"></i> Enhanced Dashboard
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <!-- Recent articles table -->
+    <div class="col-lg-8">
+      <div class="section-head">
+        <h2>Recent Articles</h2>
+        <a href="{% url 'admin:blog_newsarticle_changelist' %}" style="font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);text-decoration:none;">View all →</a>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Source</th>
+              <th>Category</th>
+              <th>Published</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for article in recent_articles %}
+            <tr>
+              <td style="max-width:240px;">
+                <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:'Playfair Display',serif;font-weight:600;font-size:.88rem;">
+                  {{ article.title|truncatechars:60 }}
                 </div>
-            </div>
-        </div>
-        <div class="col-md-9">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Quick Actions</h5>
-                    <div class="btn-group" role="group">
-                        <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn btn-primary">
-                            📋 Manage Articles
-                        </a>
-                        <a href="{% url 'admin:blog_newsarticle_add' %}" class="btn btn-success">
-                            ➕ Add Manually
-                        </a>
-                        <button onclick="fetchNews()" class="btn btn-info">
-                            🔄 Fetch Latest News
-                        </button>
-                        <a href="{% url 'admin:blog_post_add' %}" class="btn btn-warning">
-                            ✏️ Create Post
-                        </a>
-                    </div>
+              </td>
+              <td><span class="tag tag-source">{{ article.source }}</span></td>
+              <td><span class="tag tag-cat">{{ article.category }}</span></td>
+              <td style="white-space:nowrap;color:var(--mid);font-family:'Source Serif 4',serif;font-size:.78rem;">{{ article.published_at|date:"M d, Y"|default:"—" }}</td>
+              <td>
+                <div style="display:flex;gap:.3rem;">
+                  <a href="{{ article.url }}" target="_blank" class="icon-btn" title="Open source"><i class="fas fa-external-link-alt"></i></a>
+                  <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="icon-btn" title="Edit"><i class="fas fa-edit"></i></a>
                 </div>
-            </div>
-        </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" style="text-align:center;padding:2.5rem;color:var(--mid);font-family:'Source Serif 4',serif;">
+                No articles yet — fetch some news!
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
 
-    <!-- Recent Articles -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Recent News Articles</h4>
+    <!-- Category breakdown -->
+    <div class="col-lg-4">
+      <div class="section-head"><h2>By Topic</h2></div>
+      <div class="row g-2">
+        {% for stat in category_stats %}
+        <div class="col-6">
+          <div class="mini-stat">
+            <div class="mini-stat-num">{{ stat.count }}</div>
+            <div class="mini-stat-label">{{ stat.category }}</div>
+          </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Source</th>
-                            <th>Category</th>
-                            <th>Published</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for article in recent_articles %}
-                        <tr>
-                            <td>{{ article.title|truncatechars:80 }}</td>
-                            <td><span class="badge bg-secondary">{{ article.source }}</span></td>
-                            <td><span class="badge bg-info">{{ article.category }}</span></td>
-                            <td>{{ article.published_at|date:"M d, Y"|default:"N/A" }}</td>
-                            <td>
-                                <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    🔗 Source
-                                </a>
-                                <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="btn btn-sm btn-outline-secondary">
-                                    ✏️ Edit
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center">No articles yet. Fetch some news!</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        {% empty %}
+        <div class="col-12" style="color:var(--mid);font-family:'Source Serif 4',serif;font-size:.85rem;">No data yet.</div>
+        {% endfor %}
+      </div>
     </div>
+  </div>
 
-    <!-- Category Stats -->
-    <div class="card">
-        <div class="card-header">
-            <h4>Articles by Category</h4>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                {% for stat in category_stats %}
-                <div class="col-md-2 mb-2">
-                    <div class="card">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{{ stat.category }}</h5>
-                            <p class="card-text display-6">{{ stat.count }}</p>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
 function fetchNews() {
-    if (confirm('Fetch latest news from Google News RSS? This might take a moment.')) {
-        // You can implement AJAX call here
-        window.location.href = "{% url 'admin:blog_newsarticle_changelist' %}?fetch_news=1";
-    }
+  if (confirm('Fetch latest news? This may take a moment.')) {
+    window.location.href = "{% url 'admin:blog_newsarticle_changelist' %}?fetch_news=1";
+  }
 }
+function generatePosts() {
+  fetch('{% url "generate_posts_now" %}', {
+    method:'POST',
+    headers:{'X-CSRFToken':'{{ csrf_token }}','Content-Type':'application/json'},
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){alert(d.message);if(d.success)location.reload();})
+  .catch(function(){alert('Error generating posts');});
+}
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
+      a.addEventListener('click', function(e) {
+        var url = this.href; e.preventDefault();
+        var pb = document.querySelector('.page-body');
+        pb.style.transition = 'opacity .24s ease, transform .24s ease';
+        pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+});
 </script>
 {% endblock %}

@@ -1,46 +1,222 @@
-<!-- templates/blog/search.html -->
 {% extends 'base.html' %}
-
-{% block title %}Search Results - BlogSphere{% endblock %}
+{% load static %}
+{% block title %}{% if query %}Search: {{ query }}{% else %}Search{% endif %} — BlogSphere{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Search Header -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="mb-3">Search Results</h1>
-            <p class="text-muted">Found {{ results.count }} results for "{{ query }}"</p>
-        </div>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .stagger>*{animation:staggerIn .5s var(--ease) both;}
+  .stagger>*:nth-child(1){animation-delay:.04s}.stagger>*:nth-child(2){animation-delay:.09s}.stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.19s}.stagger>*:nth-child(5){animation-delay:.24s}.stagger>*:nth-child(6){animation-delay:.29s}
+  @keyframes staggerIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
+  .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
+  .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
+
+  /* Search form */
+  .search-hero {
+    border-bottom: 2.5px solid var(--ink);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .search-hero-label {
+    font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--accent);margin-bottom:.5rem;display:block;font-family:'Source Serif 4',serif;
+  }
+  .search-hero h1 {
+    font-family:'Playfair Display',Georgia,serif;
+    font-size:clamp(1.8rem,4vw,2.8rem);font-weight:900;
+    color:var(--ink);margin:0 0 1.2rem;letter-spacing:-1px;line-height:1.1;
+  }
+  .search-hero h1 em {
+    color:var(--accent); font-style:normal;
+    border-bottom: 3px solid var(--accent);
+  }
+  .search-form-wrap {
+    display:flex; gap:.6rem; max-width:600px;
+  }
+  .search-input {
+    flex:1; font-family:'Source Serif 4',Georgia,serif;
+    font-size:1rem; padding:.75rem 1.1rem;
+    border:1.5px solid var(--rule); border-radius:2px;
+    color:var(--ink); background:#fff;
+    transition:border-color .18s;
+    outline:none;
+  }
+  .search-input:focus { border-color:var(--ink); }
+  .search-input::placeholder { color:#aaa; }
+  .search-submit {
+    font-family:'Playfair Display',Georgia,serif;
+    font-weight:700; font-size:.85rem;
+    background:var(--ink); color:#fff;
+    border:none; border-radius:2px;
+    padding:.75rem 1.5rem; cursor:pointer;
+    transition:background .18s; white-space:nowrap;
+    letter-spacing:.02em;
+  }
+  .search-submit:hover { background:var(--accent); }
+  .search-count {
+    font-size:.82rem;color:var(--mid);margin-top:.75rem;
+    font-family:'Source Serif 4',serif;
+  }
+  .search-count strong { color:var(--ink); }
+
+  /* Result row */
+  .result-row {
+    display:flex; gap:1.1rem; align-items:flex-start;
+    padding:1.1rem 0; border-bottom:1px solid var(--rule);
+    text-decoration:none; transition:background .18s;
+  }
+  .result-row:last-child { border-bottom:none; }
+  .result-row:hover { background:#f8f6f2; }
+  .result-thumb {
+    width:110px; height:78px; object-fit:cover;
+    border-radius:2px; flex-shrink:0;
+  }
+  .result-thumb-placeholder {
+    width:110px; height:78px; background:linear-gradient(135deg,#ede9e0,#d8d3c8);
+    border-radius:2px; flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;color:#bbb;font-size:1.3rem;
+  }
+  .result-body { flex:1; }
+  .result-cat {
+    font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+    color:var(--accent);margin-bottom:.3rem;display:block;
+  }
+  .result-title {
+    font-family:'Playfair Display',Georgia,serif;
+    font-size:1.05rem;font-weight:600;line-height:1.35;
+    color:var(--ink);margin-bottom:.3rem;
+    transition:color .18s;
+  }
+  .result-row:hover .result-title { color:var(--accent); }
+  .result-excerpt {
+    font-size:.85rem;color:var(--mid);line-height:1.5;
+    font-family:'Source Serif 4',serif;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .result-meta { font-size:.72rem;color:var(--mid);margin-top:.4rem;font-family:'Source Serif 4',serif; }
+
+  /* Empty state */
+  .empty-state {
+    text-align:center; padding:4rem 0;
+    font-family:'Source Serif 4',serif;
+  }
+  .empty-state i { font-size:2.5rem;color:#ccc;margin-bottom:1rem;display:block; }
+  .empty-state h3 { font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--ink);margin-bottom:.5rem; }
+  .empty-state p { color:var(--mid);font-size:.9rem; }
+
+  /* Cat pills */
+  .cat-pills{display:flex;flex-wrap:wrap;gap:.45rem;margin-top:.75rem;}
+  .cat-pill{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.32rem .85rem;border:1.5px solid var(--rule);border-radius:2px;color:var(--mid);text-decoration:none;transition:all .18s;}
+  .cat-pill:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+
+  .rule{border:none;border-top:1px solid var(--rule);margin:2rem 0;}
+
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .search-input{background:#1e1e1e;border-color:#333;color:#e0e0e0;}
+    .search-input::placeholder{color:#555;}
+    .result-row:hover{background:#1a1a1a;}
+    .result-thumb-placeholder{background:linear-gradient(135deg,#1e1e1e,#2a2a2a);}
+    .cat-pill{color:#888;border-color:#333;}
+    .cat-pill:hover{background:#f0f0f0;color:#111;border-color:#f0f0f0;}
+  }
+</style>
+
+<div class="container page-body" style="padding-top:2rem;padding-bottom:3rem;">
+
+  <!-- Search Hero -->
+  <div class="search-hero">
+    <span class="search-hero-label">Search</span>
+    {% if query %}
+    <h1>Results for <em>{{ query }}</em></h1>
+    {% else %}
+    <h1>Search Stories</h1>
+    {% endif %}
+
+    <form action="{% url 'search' %}" method="get" class="search-form-wrap">
+      <input type="search" name="q" value="{{ query }}" class="search-input" placeholder="Search articles, topics, keywords…" autofocus>
+      <button type="submit" class="search-submit">Search</button>
+    </form>
+
+    {% if query %}
+    <p class="search-count">
+      Found <strong>{{ results.count }}</strong> result{{ results.count|pluralize }} for "{{ query }}"
+    </p>
+    {% endif %}
+  </div>
+
+  <!-- Results -->
+  {% if query %}
+    {% if results %}
+    <div class="section-head">
+      <h2>Stories Found</h2>
+      <span style="font-size:.75rem;color:var(--mid);font-family:'Source Serif 4',serif;">{{ results.count }} result{{ results.count|pluralize }}</span>
     </div>
 
-    <!-- Search Results -->
-    <div class="row">
-        {% for post in results %}
-        <div class="col-12 mb-4">
-            <div class="card">
-                <div class="card-body">
-                    <span class="category-badge {{ post.category.name|lower }}">{{ post.category.name }}</span>
-                    <h4 class="card-title">
-                        <a href="{% url 'post_detail' post.slug %}" class="text-decoration-none">{{ post.title }}</a>
-                    </h4>
-
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">{{ post.published_date|date:"M d, Y" }}</small>
-                        {% if user.is_staff %}
-                        <small class="text-muted"><i class="fas fa-eye"></i> {{ post.views }} views</small>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
+    <div class="stagger">
+      {% for post in results %}
+      <a href="{% url 'post_detail' post.slug %}" class="result-row">
+        {% if post.featured_image %}
+          {% with img=post.featured_image.name %}
+            {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="result-thumb" alt="">
+            {% else %}<img src="{{ post.featured_image.url }}" class="result-thumb" alt="">{% endif %}
+          {% endwith %}
+        {% else %}
+          <div class="result-thumb-placeholder"><i class="fas fa-newspaper"></i></div>
+        {% endif %}
+        <div class="result-body">
+          <span class="result-cat">{{ post.category.name }}</span>
+          <div class="result-title">{{ post.title }}</div>
+          {% if post.excerpt %}<div class="result-excerpt">{{ post.excerpt }}</div>{% endif %}
+          <div class="result-meta">
+            <i class="fas fa-calendar me-1"></i>{{ post.published_date|date:"F d, Y" }}
+            {% if user.is_staff %}&ensp;·&ensp;<i class="fas fa-eye"></i> {{ post.views }} views{% endif %}
+          </div>
         </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="alert alert-warning">
-                <h4>No results found for "{{ query }}"</h4>
-                <p>Try different keywords or browse our categories.</p>
-            </div>
-        </div>
-        {% endfor %}
+      </a>
+      {% endfor %}
     </div>
+
+    {% else %}
+    <!-- No results -->
+    <div class="empty-state">
+      <i class="fas fa-search"></i>
+      <h3>No stories found for "{{ query }}"</h3>
+      <p>Try different keywords, check your spelling, or browse topics below.</p>
+    </div>
+    {% endif %}
+
+  {% else %}
+  <!-- No query yet — show topic browser -->
+  <div class="section-head"><h2>Browse Topics</h2></div>
+  <div class="cat-pills">
+    {% for category in categories %}
+    <a href="{% url 'category_posts' category.slug %}" class="cat-pill">{{ category.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
+      a.addEventListener('click', function(e) {
+        if (this.closest('form')) return;
+        var url = this.href; e.preventDefault();
+        var pb = document.querySelector('.page-body');
+        pb.style.transition = 'opacity .24s ease, transform .24s ease';
+        pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+});
+</script>
 {% endblock %}
