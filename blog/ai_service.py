@@ -640,3 +640,143 @@ class SimpleNewsFetcher:
         except Exception as e:
             print(f"❌ fetch_best_image error: {e}")
             return None
+
+
+    @staticmethod
+    def generate_roundup_post(category='news', news_type='nigeria', limit=8):
+        """
+        Fetch latest news for a category, scrape og:image from first story,
+        then create ONE well-formatted roundup post with clickable story links.
+        No AI labels. No link dumps. Just a clean news digest.
+        """
+        from django.utils.text import slugify
+        from django.contrib.auth.models import User
+        from django.utils import timezone
+        from blog.models import Category, Post
+
+        # ── Sources based on type ──
+        if news_type == 'nigeria':
+            sources = ['google_nigeria', 'punch', 'vanguard', 'channels',
+                       'premiumtimes', 'thecable', 'guardian_ng', 'thisday']
+            edition_label = 'Nigerian'
+        else:
+            sources = ['google', 'bbc']
+            edition_label = 'International'
+
+        # Fetch articles
+        articles = EnhancedNewsFetcher.fetch_multiple_sources(
+            categories=[category],
+            sources=sources,
+            limit_per_source=limit
+        )
+
+        if not articles:
+            return None, 'No articles found. Sources may be temporarily unavailable.'
+
+        # Deduplicate by title similarity
+        seen_titles = set()
+        unique = []
+        for a in articles:
+            t = a.get('title', '').lower()[:60]
+            if t and t not in seen_titles:
+                seen_titles.add(t)
+                unique.append(a)
+
+        articles = unique[:20]  # cap at 20 stories
+
+        # ── Auto-fetch cover image from first article ──
+        cover_image = ''
+        for a in articles[:5]:
+            if a.get('image_url'):
+                cover_image = a['image_url']
+                break
+        if not cover_image:
+            for a in articles[:5]:
+                if a.get('url'):
+                    scraped = EnhancedNewsFetcher.scrape_article(a['url'])
+                    if scraped.get('image_url'):
+                        cover_image = scraped['image_url']
+                        break
+
+        # ── Build post content ──
+        from datetime import datetime
+        today = datetime.now().strftime('%B %d, %Y')
+        cat_display = category.upper()
+
+        # Intro line
+        intro = (f"Here is a roundup of the latest {edition_label} {cat_display.title()} "
+                 f"stories for {today}. Click any headline to read the full story.")
+
+        # Story list
+        stories_html = ''
+        for i, a in enumerate(articles, 1):
+            title   = a.get('title', '').strip()
+            url     = a.get('url', '#')
+            source  = a.get('source', '')
+            desc    = a.get('description', '').strip()
+            # Strip HTML from description
+            try:
+                desc = BeautifulSoup(desc, 'html.parser').get_text(separator=' ').strip()
+            except Exception:
+                pass
+            # Skip if description looks like a link dump
+            if '<a href' in desc or desc.count('http') > 1:
+                desc = ''
+            desc_html = f'<p style="margin:.3rem 0 0;font-size:.88rem;color:#555;line-height:1.55;">{desc[:200]}</p>' if desc else ''
+
+            stories_html += f'''
+<div style="padding:1rem 0;border-bottom:1px solid #e0ddd6;">
+  <div style="display:flex;align-items:flex-start;gap:.5rem;">
+    <span style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#c0392b;flex-shrink:0;min-width:1.5rem;">{i}.</span>
+    <div>
+      <a href="{url}" target="_blank" rel="noopener noreferrer"
+         style="font-family:'Playfair Display',Georgia,serif;font-size:1rem;font-weight:700;
+                color:#111;text-decoration:none;line-height:1.35;display:block;">
+        {title}
+      </a>
+      {desc_html}
+      <span style="font-size:.72rem;color:#888;margin-top:.3rem;display:block;">
+        {source}
+      </span>
+    </div>
+  </div>
+</div>'''
+
+        content = f'''<div class="art-body">
+<p style="font-size:1rem;color:#444;border-left:3px solid #c0392b;padding-left:1rem;margin-bottom:1.5rem;">{intro}</p>
+{stories_html}
+</div>'''
+
+        # ── Create post ──
+        try:
+            author = User.objects.get(username='admin')
+        except User.DoesNotExist:
+            author = User.objects.first()
+
+        cat_map = {
+            'sport': 'SPORT', 'economy': 'ECONOMY', 'entertainment': 'ENTERTAINMENT',
+            'politics': 'POLITICS', 'technology': 'TECHNOLOGY', 'news': 'NEWS',
+        }
+        cat_name = cat_map.get(category.lower(), category.upper())
+        category_obj, _ = Category.objects.get_or_create(name=cat_name)
+
+        post_title = f"{edition_label} {cat_display.title()} Roundup — {today}"
+        base_slug  = slugify(post_title[:80])
+        slug = base_slug
+        ctr = 1
+        while Post.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-{ctr}"; ctr += 1
+
+        post = Post.objects.create(
+            title=post_title,
+            slug=slug,
+            content=content,
+            excerpt=intro,
+            author=author,
+            category=category_obj,
+            featured_image=cover_image,
+            published_date=timezone.now(),
+        )
+        post.tags.add(category.lower(), edition_label.lower(), 'roundup', 'latest')
+        print(f"✅ Roundup post created: {post.title} ({len(articles)} stories)")
+        return post, None

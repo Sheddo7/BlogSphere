@@ -607,3 +607,41 @@ def fetch_article_image(request):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'POST required'})
+
+
+@csrf_exempt
+@login_required(login_url='/admin/login/')
+@user_passes_test(is_staff, login_url='/admin/login/')
+def generate_roundup(request):
+    """
+    Generate a news roundup post for a given category and type (foreign/nigeria).
+    Called by the dashboard Generate buttons.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            news_type = data.get('type', 'nigeria')   # 'foreign' or 'nigeria'
+            category  = data.get('category', 'news')
+
+            from blog.ai_service import EnhancedNewsFetcher
+            post, error = EnhancedNewsFetcher.generate_roundup_post(
+                category=category,
+                news_type=news_type,
+                limit=8,
+            )
+
+            if post:
+                # Save articles to NewsArticle for record-keeping
+                return JsonResponse({
+                    'success': True,
+                    'post_title': post.title,
+                    'post_url': f'/post/{post.slug}/',
+                    'story_count': post.content.count('<div style="padding:1rem'),
+                })
+            return JsonResponse({'success': False, 'message': error or 'Failed to generate post'})
+
+        except Exception as e:
+            import traceback; traceback.print_exc()
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'POST required'})
