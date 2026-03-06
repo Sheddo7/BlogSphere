@@ -357,10 +357,12 @@
                            href="{% url 'home' %}">Home</a>
                     </li>
                     {% for cat in categories|slice:":6" %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if cat.slug in request.path %}active{% endif %}"
-                           href="{% url 'category_posts' cat.slug %}">{{ cat.name }}</a>
-                    </li>
+                        {% if cat.slug != "sport" %}
+                        <li class="nav-item">
+                            <a class="nav-link {% if cat.slug in request.path %}active{% endif %}"
+                               href="{% url 'category_posts' cat.slug %}">{{ cat.name }}</a>
+                        </li>
+                        {% endif %}
                     {% endfor %}
                     {% if user.is_authenticated and user.is_staff %}
                     <li class="nav-item">
@@ -414,7 +416,9 @@
                         <ul class="footer-links">
                             <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>Home</a></li>
                             {% for cat in categories|slice:":4" %}
-                            <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
+                                {% if cat.slug != "sport" %}
+                                <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
+                                {% endif %}
                             {% endfor %}
                             {% if user.is_authenticated and user.is_staff %}
                             <li><a href="{% url 'news_dashboard' %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
@@ -430,7 +434,9 @@
                             <li><a href="#"><i class="fas fa-envelope"></i>Newsletter</a></li>
                             <li><a href="#"><i class="fas fa-rss"></i>RSS Feed</a></li>
                             <li><a href="#"><i class="fas fa-comment"></i>Contact</a></li>
+                            {% if user.is_authenticated and user.is_staff %}
                             <li><a href="/admin/"><i class="fas fa-lock"></i>Admin</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                 </div>
@@ -455,7 +461,7 @@
 
         <div class="footer-bottom">
             <div class="container">
-                &copy; {% now "Y" %} BlogSphere. All rights reserved.
+                &copy; {% now "Y" %} BlogSphere. All rights reserved. &nbsp;·&nbsp;
             </div>
         </div>
     </footer>
@@ -466,10 +472,12 @@
             <i class="fas fa-home"></i><span>Home</span>
         </a>
         {% for cat in categories|slice:":3" %}
-        <a href="{% url 'category_posts' cat.slug %}"
-           class="{% if cat.slug in request.path %}active{% endif %}">
-            <i class="fas fa-tag"></i><span>{{ cat.name|truncatechars:7 }}</span>
-        </a>
+            {% if cat.slug != "sport" %}
+            <a href="{% url 'category_posts' cat.slug %}"
+               class="{% if cat.slug in request.path %}active{% endif %}">
+                <i class="fas fa-tag"></i><span>{{ cat.name|truncatechars:7 }}</span>
+            </a>
+            {% endif %}
         {% endfor %}
         <a href="{% url 'search' %}" class="{% if 'search' in request.path %}active{% endif %}">
             <i class="fas fa-search"></i><span>Search</span>
