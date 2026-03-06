@@ -169,20 +169,22 @@
         </div>
       </div>
 
-      <!-- Side stack -->
+      <!-- Side stack — always shows 4 items: featured first, topped up with latest -->
       <div class="col-lg-5">
         {% for post in featured_posts|slice:"1:5" %}
         <a href="{% url 'post_detail' post.slug %}" class="side-card">
           {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="side-img" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="side-img" alt="">{% endif %}{% endwith %}{% else %}<div class="side-placeholder"><i class="fas fa-image"></i></div>{% endif %}
           <div><span class="side-cat">{{ post.category.name }}</span><div class="side-title">{{ post.title }}</div><span class="side-date">{{ post.published_date|date:"M d, Y" }}</span></div>
         </a>
-        {% empty %}
-        {% for post in latest_posts|slice:"1:5" %}
-        <a href="{% url 'post_detail' post.slug %}" class="side-card">
-          {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="side-img" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="side-img" alt="">{% endif %}{% endwith %}{% else %}<div class="side-placeholder"><i class="fas fa-image"></i></div>{% endif %}
-          <div><span class="side-cat">{{ post.category.name }}</span><div class="side-title">{{ post.title }}</div><span class="side-date">{{ post.published_date|date:"M d, Y" }}</span></div>
-        </a>
         {% endfor %}
+        {# Fill remaining slots with latest posts not already shown in featured #}
+        {% for post in latest_posts|slice:"1:8" %}
+          {% if post not in featured_posts %}
+          <a href="{% url 'post_detail' post.slug %}" class="side-card">
+            {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="side-img" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="side-img" alt="">{% endif %}{% endwith %}{% else %}<div class="side-placeholder"><i class="fas fa-image"></i></div>{% endif %}
+            <div><span class="side-cat">{{ post.category.name }}</span><div class="side-title">{{ post.title }}</div><span class="side-date">{{ post.published_date|date:"M d, Y" }}</span></div>
+          </a>
+          {% endif %}
         {% endfor %}
       </div>
 

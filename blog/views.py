@@ -23,8 +23,13 @@ def is_staff(user):
 # ── Public views ────────────────────────────────────────────────
 
 def home(request):
-    featured_posts = Post.objects.filter(is_featured=True)[:3]
-    latest_posts = Post.objects.all()[:8]
+    featured_posts = list(Post.objects.filter(is_featured=True)[:6])
+    # If fewer than 2 featured posts, top up from latest
+    if len(featured_posts) < 2:
+        featured_ids = [p.id for p in featured_posts]
+        extras = Post.objects.exclude(id__in=featured_ids)[:6 - len(featured_posts)]
+        featured_posts = list(featured_posts) + list(extras)
+    latest_posts = Post.objects.all()[:12]
     categories = Category.objects.all()
     return render(request, 'blog/home.html', {
         'featured_posts': featured_posts,
