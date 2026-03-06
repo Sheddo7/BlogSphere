@@ -104,9 +104,19 @@
     .carousel-btn{background:rgba(0,0,0,.5);border-color:rgba(255,255,255,.2);}
   }
   @media(max-width:767px){
-    .carousel-slide img,.carousel-fallback{height:260px;}
-    .carousel-title{font-size:1.2rem;}.carousel-body{padding:1.2rem 1rem 2rem;}
-    .carousel-btn{width:34px;height:34px;font-size:.9rem;}
+    .carousel-slide img,.carousel-fallback{height:220px;}
+    .carousel-title{font-size:1rem;line-height:1.25;}
+    .carousel-body{padding:1rem .9rem 2rem;}
+    .carousel-btn{width:30px;height:30px;font-size:.8rem;}
+    .carousel-cat{font-size:.58rem;padding:.15rem .5rem;margin-bottom:.35rem;}
+    .carousel-meta{font-size:.67rem;}
+    .carousel-dots{bottom:.65rem;}
+    .carousel-dot{width:5px;height:5px;}.carousel-dot.active{width:14px;}
+  }
+  @media(max-width:480px){
+    .carousel-slide img,.carousel-fallback{height:180px;}
+    .carousel-title{font-size:.88rem;}
+    .carousel-btn{display:none;}
   }
 </style>
 

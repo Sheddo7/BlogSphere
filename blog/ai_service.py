@@ -479,3 +479,54 @@ class SimpleNewsFetcher:
     @staticmethod
     def extract_content_from_url(url):
         return EnhancedNewsFetcher.extract_content_from_url(url)
+
+
+    @staticmethod
+    def fetch_best_image(article_url):
+        """
+        Try to get the best image for an article URL.
+        Priority: og:image > twitter:image > first large <img> in article body.
+        Returns image URL string or None.
+        """
+        try:
+            resp = requests.get(article_url, headers=HEADERS, timeout=10)
+            if resp.status_code != 200:
+                return None
+
+            soup = BeautifulSoup(resp.content, 'html.parser')
+
+            # 1. og:image
+            og = soup.find('meta', property='og:image')
+            if og and og.get('content'):
+                return og['content'].strip()
+
+            # 2. twitter:image
+            tw = soup.find('meta', attrs={'name': 'twitter:image'})
+            if tw and tw.get('content'):
+                return tw['content'].strip()
+
+            # 3. First large img in article body
+            for tag in ['article', 'main', '.post-content', '.entry-content', '.article-body']:
+                section = soup.select_one(tag) if tag.startswith('.') else soup.find(tag)
+                if section:
+                    for img in section.find_all('img'):
+                        src = img.get('src', '')
+                        if src and src.startswith('http') and not any(x in src for x in ['logo', 'icon', 'avatar', 'ad']):
+                            return src
+
+            # 4. Any large img on page
+            for img in soup.find_all('img'):
+                src = img.get('src', '')
+                width = img.get('width', '0')
+                try:
+                    w = int(str(width).replace('px',''))
+                except Exception:
+                    w = 0
+                if src and src.startswith('http') and w >= 200:
+                    return src
+
+            return None
+
+        except Exception as e:
+            print(f"❌ fetch_best_image error: {e}")
+            return None

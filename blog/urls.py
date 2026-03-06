@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/remove-post-image/<int:post_id>/', views.remove_post_image, name='remove_post_image'),
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
+    path('api/fetch-article-image/', views.fetch_article_image, name='fetch_article_image'),
 ]
 
 if settings.DEBUG:

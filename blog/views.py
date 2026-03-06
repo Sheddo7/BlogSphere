@@ -577,3 +577,31 @@ def delete_post(request, post_id):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@csrf_exempt
+@login_required(login_url='/admin/login/')
+@user_passes_test(is_staff, login_url='/admin/login/')
+def fetch_article_image(request):
+    """
+    Given an article URL, scrape and return the best image (og:image first).
+    Called from dashboard JS to auto-fill images for articles that have none.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            url = data.get('url', '').strip()
+            if not url:
+                return JsonResponse({'success': False, 'message': 'No URL provided'})
+
+            from blog.ai_service import EnhancedNewsFetcher
+            image_url = EnhancedNewsFetcher.fetch_best_image(url)
+
+            if image_url:
+                return JsonResponse({'success': True, 'image_url': image_url})
+            return JsonResponse({'success': False, 'message': 'No image found'})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'POST required'})
