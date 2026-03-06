@@ -4,23 +4,24 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_latest_news_job():
-    """Runs every 2 hours — fetches latest news across all categories."""
+    """
+    Runs every 2 hours — fetches latest Nigerian news from all sources.
+    Priority order: Google News Nigeria → Nigerian RSS → BBC international.
+    """
     try:
         from blog.models import NewsArticle
         from blog.ai_service import EnhancedNewsFetcher
         from django.utils import timezone
 
-        fetcher = EnhancedNewsFetcher()
-        articles = fetcher.fetch_multiple_sources(
-            categories=['news', 'sport', 'entertainment', 'economy', 'politics', 'technology'],
-            sources=['google', 'google_nigeria', 'punch', 'vanguard', 'channels'],
-            limit_per_source=5
-        )
+        logger.info("⏰ Scheduled news fetch starting...")
+        articles = EnhancedNewsFetcher.fetch_latest_nigerian_news(limit_per_source=5)
 
         saved = 0
         for article in articles:
-            url = article.get('url', '')
-            if url and not NewsArticle.objects.filter(url=url).exists():
+            url = article.get('url', '').strip()
+            if not url or NewsArticle.objects.filter(url=url).exists():
+                continue
+            try:
                 NewsArticle.objects.create(
                     title=article.get('title', 'Untitled')[:499],
                     content=article.get('content', '')[:5000],
@@ -32,15 +33,16 @@ def fetch_latest_news_job():
                     published_at=timezone.now(),
                 )
                 saved += 1
+            except Exception as e:
+                logger.warning(f"Could not save article: {e}")
 
-        logger.info(f"✅ Scheduled fetch: {len(articles)} fetched, {saved} new saved.")
+        logger.info(f"✅ Done: {len(articles)} fetched, {saved} new saved.")
 
     except Exception as e:
-        logger.error(f"❌ Scheduled news fetch failed: {e}")
+        logger.error(f"❌ Scheduled fetch failed: {e}")
 
 
 def start():
-    """Start the APScheduler background scheduler."""
     try:
         from apscheduler.schedulers.background import BackgroundScheduler
         from apscheduler.triggers.interval import IntervalTrigger
@@ -50,13 +52,13 @@ def start():
             fetch_latest_news_job,
             trigger=IntervalTrigger(hours=2),
             id='fetch_latest_news',
-            name='Fetch latest news every 2 hours',
+            name='Fetch latest Nigerian news every 2 hours',
             replace_existing=True,
             max_instances=1,
             coalesce=True,
         )
         scheduler.start()
-        logger.info("🕐 News scheduler started — runs every 2 hours.")
+        logger.info("🕐 News scheduler started — every 2 hours.")
 
     except ImportError:
         logger.warning("⚠️ apscheduler not installed. Run: pip install apscheduler")
