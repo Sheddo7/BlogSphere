@@ -711,7 +711,9 @@
                             {% for cat in categories|slice:":3" %}
                             <li><a href="{% url 'category_posts' cat.slug %}">{{ cat.name }}</a></li>
                             {% endfor %}
+                            {% if user.is_authenticated and user.is_staff %}
                             <li><a href="{% url 'news_dashboard' %}">Dashboard</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                 </div>

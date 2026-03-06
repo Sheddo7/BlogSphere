@@ -7,27 +7,20 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
 
-  :root {
-    --ink:#111; --paper:#fafaf8; --rule:#e0ddd6;
-    --accent:#c0392b; --mid:#666;
-    --ease:cubic-bezier(0.4,0,0.2,1);
-  }
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
 
-  .page-body { animation: pageIn .35s var(--ease) both; }
-  @keyframes pageIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-  .stagger > * { animation: staggerIn .5s var(--ease) both; }
-  .stagger > *:nth-child(1){animation-delay:.04s}.stagger > *:nth-child(2){animation-delay:.09s}
-  .stagger > *:nth-child(3){animation-delay:.14s}.stagger > *:nth-child(4){animation-delay:.19s}
-  .stagger > *:nth-child(5){animation-delay:.24s}.stagger > *:nth-child(6){animation-delay:.29s}
-  .stagger > *:nth-child(7){animation-delay:.34s}.stagger > *:nth-child(8){animation-delay:.39s}
-  @keyframes staggerIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .stagger>*{animation:staggerIn .5s var(--ease) both;}
+  .stagger>*:nth-child(1){animation-delay:.04s}.stagger>*:nth-child(2){animation-delay:.09s}
+  .stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.19s}
+  .stagger>*:nth-child(5){animation-delay:.24s}.stagger>*:nth-child(6){animation-delay:.29s}
+  .stagger>*:nth-child(7){animation-delay:.34s}.stagger>*:nth-child(8){animation-delay:.39s}
+  @keyframes staggerIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
-  @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
-  .skeleton {
-    background:linear-gradient(90deg,#ede9e0 25%,#ddd9d0 50%,#ede9e0 75%);
-    background-size:600px 100%; animation:shimmer 1.5s infinite; border-radius:3px;
-  }
+  @keyframes shimmer{0%{background-position:-600px 0}100%{background-position:600px 0}}
+  .skeleton{background:linear-gradient(90deg,#ede9e0 25%,#ddd9d0 50%,#ede9e0 75%);background-size:600px 100%;animation:shimmer 1.5s infinite;border-radius:3px;}
 
   /* Ticker */
   .ticker-bar{background:var(--accent);color:#fff;font-family:'Source Serif 4',Georgia,serif;font-size:.78rem;padding:.4rem 0;overflow:hidden;}
@@ -42,19 +35,32 @@
   .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
   .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
   .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
-  .see-all{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);text-decoration:none;}
-  .see-all:hover{opacity:.65;}
 
-  /* Hero */
-  .hero-main{position:relative;overflow:hidden;border-radius:2px;display:block;text-decoration:none;}
-  .hero-main img{width:100%;height:460px;object-fit:cover;display:block;transition:transform .6s var(--ease);}
-  .hero-main:hover img{transform:scale(1.03);}
-  .hero-fallback{width:100%;height:460px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;border-radius:2px;}
-  .hero-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.18) 55%,transparent 100%);}
-  .hero-body{position:absolute;bottom:0;left:0;right:0;padding:2rem 1.6rem 1.6rem;color:#fff;}
-  .hero-cat{display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:var(--accent);color:#fff;padding:.2rem .65rem;border-radius:2px;margin-bottom:.65rem;}
-  .hero-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,3.2vw,2.1rem);font-weight:700;line-height:1.22;margin:0 0 .65rem;color:#fff;}
-  .hero-meta{font-size:.75rem;opacity:.8;font-family:'Source Serif 4',serif;}
+  /* ══ CAROUSEL ══ */
+  .carousel-wrap{position:relative;border-radius:2px;overflow:hidden;user-select:none;}
+  .carousel-track{display:flex;transition:transform .55s var(--ease);will-change:transform;}
+  .carousel-slide{min-width:100%;position:relative;display:block;text-decoration:none;flex-shrink:0;}
+  .carousel-slide img{width:100%;height:460px;object-fit:cover;display:block;pointer-events:none;}
+  .carousel-fallback{width:100%;height:460px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;}
+  .carousel-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.18) 55%,transparent 100%);pointer-events:none;}
+  .carousel-body{position:absolute;bottom:0;left:0;right:0;padding:2rem 1.8rem 2.4rem;color:#fff;}
+  .carousel-cat{display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:var(--accent);color:#fff;padding:.2rem .65rem;border-radius:2px;margin-bottom:.65rem;}
+  .carousel-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,3.2vw,2.1rem);font-weight:700;line-height:1.22;color:#fff;margin:0 0 .65rem;}
+  .carousel-meta{font-size:.75rem;opacity:.8;font-family:'Source Serif 4',serif;}
+
+  /* Arrows */
+  .carousel-btn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(255,255,255,.15);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1.5px solid rgba(255,255,255,.25);border-radius:2px;color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s;z-index:10;}
+  .carousel-btn:hover{background:rgba(255,255,255,.3);}
+  .carousel-btn.prev{left:.85rem;}
+  .carousel-btn.next{right:.85rem;}
+
+  /* Dots */
+  .carousel-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:.45rem;z-index:10;}
+  .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:all .22s;border:none;padding:0;}
+  .carousel-dot.active{background:#fff;width:20px;border-radius:3px;}
+
+  /* Progress bar */
+  .carousel-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);width:0%;z-index:10;}
 
   /* Side stack */
   .side-card{display:flex;gap:.85rem;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--rule);text-decoration:none;transition:background .18s;}
@@ -87,19 +93,20 @@
 
   .rule{border:none;border-top:1px solid var(--rule);margin:2.5rem 0;}
 
-  /* Dark mode */
-  @media (prefers-color-scheme:dark) {
+  @media(prefers-color-scheme:dark){
     :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
-    .news-card{background:#1e1e1e;} .nc-body{border-top-color:#2a2a2a;}
-    .side-card:hover{background:#1a1a1a;} .side-placeholder{background:#2a2a2a;}
+    .news-card{background:#1e1e1e;}.nc-body{border-top-color:#2a2a2a;}
+    .side-card:hover{background:#1a1a1a;}.side-placeholder{background:#2a2a2a;}
     .nc-placeholder{background:linear-gradient(135deg,#1e1e1e,#2a2a2a);}
-    .cat-pill{color:#d0d0d0;border-color:#333;} .cat-pill:hover{background:#f0f0f0;color:#111;border-color:#f0f0f0;}
+    .cat-pill{color:#d0d0d0;border-color:#333;}.cat-pill:hover{background:#f0f0f0;color:#111;border-color:#f0f0f0;}
     .skeleton{background:linear-gradient(90deg,#1e1e1e 25%,#2a2a2a 50%,#1e1e1e 75%);}
     .side-title{color:#e0e0e0;}
+    .carousel-btn{background:rgba(0,0,0,.5);border-color:rgba(255,255,255,.2);}
   }
-  @media (max-width:767px) {
-    .hero-main img,.hero-fallback{height:260px;}
-    .hero-title{font-size:1.2rem;} .hero-body{padding:1.2rem 1rem 1rem;}
+  @media(max-width:767px){
+    .carousel-slide img,.carousel-fallback{height:260px;}
+    .carousel-title{font-size:1.2rem;}.carousel-body{padding:1.2rem 1rem 2rem;}
+    .carousel-btn{width:34px;height:34px;font-size:.9rem;}
   }
 </style>
 
@@ -120,31 +127,49 @@
 
 <div class="container page-body" style="padding-top:2rem;padding-bottom:3rem;">
 
-  <!-- HERO -->
+  <!-- ══ CAROUSEL + SIDE STACK ══ -->
   {% if featured_posts or latest_posts %}
   <div style="margin-bottom:2.5rem;">
     <div class="row g-4">
+
+      <!-- Carousel -->
       <div class="col-lg-7">
-        {% with hero=featured_posts.0|default:latest_posts.0 %}{% if hero %}
-        <a href="{% url 'post_detail' hero.slug %}" class="hero-main">
-          {% if hero.featured_image %}
-            {% with img=hero.featured_image.name %}
-              {% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ hero.title }}" loading="eager">
-              {% else %}<img src="{{ hero.featured_image.url }}" alt="{{ hero.title }}" loading="eager">{% endif %}
-            {% endwith %}
-          {% else %}
-            <div class="hero-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>
-          {% endif %}
-          <div class="hero-gradient"></div>
-          <div class="hero-body">
-            <span class="hero-cat">{{ hero.category.name }}</span>
-            <div class="hero-title">{{ hero.title }}</div>
-            <div class="hero-meta"><i class="fas fa-user me-1"></i>{{ hero.author.username }}&ensp;·&ensp;<i class="fas fa-calendar me-1"></i>{{ hero.published_date|date:"F d, Y" }}</div>
+        <div class="carousel-wrap" id="heroCarousel">
+          <div class="carousel-track" id="carouselTrack">
+
+            {% for post in featured_posts %}
+            <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
+              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
+              <div class="carousel-gradient"></div>
+              <div class="carousel-body">
+                <span class="carousel-cat">{{ post.category.name }}</span>
+                <div class="carousel-title">{{ post.title }}</div>
+                <div class="carousel-meta"><i class="fas fa-user me-1"></i>{{ post.author.username }}&ensp;·&ensp;<i class="fas fa-calendar me-1"></i>{{ post.published_date|date:"F d, Y" }}</div>
+              </div>
+            </a>
+            {% empty %}
+            {% for post in latest_posts|slice:":5" %}
+            <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
+              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
+              <div class="carousel-gradient"></div>
+              <div class="carousel-body">
+                <span class="carousel-cat">{{ post.category.name }}</span>
+                <div class="carousel-title">{{ post.title }}</div>
+                <div class="carousel-meta"><i class="fas fa-user me-1"></i>{{ post.author.username }}&ensp;·&ensp;<i class="fas fa-calendar me-1"></i>{{ post.published_date|date:"F d, Y" }}</div>
+              </div>
+            </a>
+            {% endfor %}
+            {% endfor %}
+
           </div>
-        </a>
-        {% endif %}{% endwith %}
+          <button class="carousel-btn prev" id="carouselPrev" aria-label="Previous">&#8249;</button>
+          <button class="carousel-btn next" id="carouselNext" aria-label="Next">&#8250;</button>
+          <div class="carousel-dots" id="carouselDots"></div>
+          <div class="carousel-progress" id="carouselProgress"></div>
+        </div>
       </div>
 
+      <!-- Side stack -->
       <div class="col-lg-5">
         {% for post in featured_posts|slice:"1:5" %}
         <a href="{% url 'post_detail' post.slug %}" class="side-card">
@@ -160,19 +185,20 @@
         {% endfor %}
         {% endfor %}
       </div>
+
     </div>
   </div>
   {% endif %}
 
-  <!-- SKELETON (hidden by default, shown via JS if needed) -->
+  <!-- Skeleton -->
   <div id="skeletonGrid" style="display:none;" aria-hidden="true">
-    <div class="row g-3">{% for i in "12345678" %}<div class="col-lg-3 col-md-6"><div class="news-card"><div class="skeleton" style="height:168px;border-radius:2px 2px 0 0;"></div><div class="nc-body"><div class="skeleton" style="height:11px;width:38%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:70%;margin-bottom:8px;"></div><div class="skeleton" style="height:11px;width:42%;margin-top:4px;"></div></div></div></div>{% endfor %}</div>
+    <div class="row g-3">{% for i in "12345678" %}<div class="col-lg-3 col-md-6"><div class="news-card"><div class="skeleton" style="height:168px;border-radius:2px 2px 0 0;"></div><div class="nc-body"><div class="skeleton" style="height:11px;width:38%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:70%;"></div></div></div></div>{% endfor %}</div>
   </div>
 
-  <!-- LATEST NEWS -->
+  <!-- Latest News -->
   <section>
     <div class="section-head"><h2>Latest News</h2></div>
-    <div class="row g-3 stagger" id="latestGrid">
+    <div class="row g-3 stagger">
       {% for post in latest_posts %}
       <div class="col-lg-3 col-md-6">
         <div class="news-card">
@@ -194,7 +220,7 @@
 
   <hr class="rule">
 
-  <!-- CATEGORIES -->
+  <!-- Categories -->
   <section>
     <div class="section-head"><h2>Browse Topics</h2></div>
     <div class="cat-pills">
@@ -207,38 +233,110 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Page exit transition
+(function(){
+  // ── Carousel ──
+  var track    = document.getElementById('carouselTrack');
+  var dotsWrap = document.getElementById('carouselDots');
+  var progress = document.getElementById('carouselProgress');
+  var prevBtn  = document.getElementById('carouselPrev');
+  var nextBtn  = document.getElementById('carouselNext');
+  if (!track) return;
+
+  var slides = track.querySelectorAll('.carousel-slide');
+  var total  = slides.length;
+  var cur    = 0;
+  var DELAY  = 5000;
+  var timer;
+
+  if (total <= 1) {
+    if (prevBtn) prevBtn.style.display = 'none';
+    if (nextBtn) nextBtn.style.display = 'none';
+    if (dotsWrap) dotsWrap.style.display = 'none';
+    if (progress) progress.style.display = 'none';
+  }
+
+  // Build dots
+  for (var i = 0; i < total; i++) {
+    (function(idx){
+      var d = document.createElement('button');
+      d.className = 'carousel-dot' + (idx === 0 ? ' active' : '');
+      d.setAttribute('aria-label', 'Go to slide ' + (idx + 1));
+      d.addEventListener('click', function(){ goTo(idx); resetAuto(); });
+      dotsWrap.appendChild(d);
+    })(i);
+  }
+
+  function goTo(idx) {
+    cur = ((idx % total) + total) % total;
+    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
+    var dots = dotsWrap.querySelectorAll('.carousel-dot');
+    dots.forEach(function(d, i){ d.classList.toggle('active', i === cur); });
+  }
+
+  function startProgress() {
+    if (!progress) return;
+    progress.style.transition = 'none';
+    progress.style.width = '0%';
+    progress.offsetWidth; // reflow
+    progress.style.transition = 'width ' + DELAY + 'ms linear';
+    progress.style.width = '100%';
+  }
+
+  function resetAuto() {
+    clearInterval(timer);
+    startProgress();
+    timer = setInterval(function(){ goTo(cur + 1); startProgress(); }, DELAY);
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', function(){ goTo(cur - 1); resetAuto(); });
+  if (nextBtn) nextBtn.addEventListener('click', function(){ goTo(cur + 1); resetAuto(); });
+
+  // Touch swipe
+  var tx = 0;
+  track.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
+  track.addEventListener('touchend',   function(e){
+    var diff = tx - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) { diff > 0 ? goTo(cur+1) : goTo(cur-1); resetAuto(); }
+  }, {passive:true});
+
+  // Pause on hover
+  var wrap = document.getElementById('heroCarousel');
+  if (wrap) {
+    wrap.addEventListener('mouseenter', function(){ clearInterval(timer); if(progress){progress.style.transition='none';} });
+    wrap.addEventListener('mouseleave', resetAuto);
+  }
+
+  if (total > 1) resetAuto();
+
+  // ── Page transitions ──
   document.querySelectorAll('a[href]').forEach(function(a) {
     var href = a.getAttribute('href');
     if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
       a.addEventListener('click', function(e) {
-        var url = this.href;
-        e.preventDefault();
+        var url = this.href; e.preventDefault();
         var pb = document.querySelector('.page-body');
         pb.style.transition = 'opacity .24s ease, transform .24s ease';
         pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
-        setTimeout(function() { window.location.href = url; }, 230);
+        setTimeout(function(){ window.location.href = url; }, 230);
       });
     }
   });
 
-  // Lazy image fade-in
+  // ── Lazy image fade ──
   if ('IntersectionObserver' in window) {
-    var io = new IntersectionObserver(function(entries) {
-      entries.forEach(function(e) {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
         if (e.isIntersecting) {
           var img = e.target;
-          img.style.opacity = '0';
-          img.style.transition = 'opacity .4s ease';
-          img.addEventListener('load', function() { img.style.opacity='1'; }, {once:true});
-          if (img.complete) img.style.opacity = '1';
+          img.style.opacity='0'; img.style.transition='opacity .4s ease';
+          img.addEventListener('load', function(){ img.style.opacity='1'; },{once:true});
+          if (img.complete) img.style.opacity='1';
           io.unobserve(img);
         }
       });
-    }, {rootMargin:'80px'});
-    document.querySelectorAll('img[loading="lazy"]').forEach(function(img) { io.observe(img); });
+    },{rootMargin:'80px'});
+    document.querySelectorAll('img[loading="lazy"]').forEach(function(img){ io.observe(img); });
   }
-});
+})();
 </script>
 {% endblock %}
