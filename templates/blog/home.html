@@ -139,7 +139,7 @@
 
             {% for post in featured_posts %}
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
-              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:1.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
+              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
               <div class="carousel-gradient"></div>
               <div class="carousel-body">
                 <span class="carousel-cat">{{ post.category.name }}</span>
@@ -150,7 +150,7 @@
             {% empty %}
             {% for post in latest_posts|slice:":5" %}
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
-              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:1.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
+              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% else %}<img src="{{ post.featured_image.url }}" alt="{{ post.title }}" loading="{% if forloop.first %}eager{% else %}lazy{% endif %}">{% endif %}{% endwith %}{% else %}<div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>{% endif %}
               <div class="carousel-gradient"></div>
               <div class="carousel-body">
                 <span class="carousel-cat">{{ post.category.name }}</span>

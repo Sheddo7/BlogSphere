@@ -189,8 +189,8 @@ h6 { font-size: clamp(0.9rem, 2vw, 1rem); }
 
 /* Touch-friendly buttons */
 .btn, button, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 10px;
+    min-width: 10px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
