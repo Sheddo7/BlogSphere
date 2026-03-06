@@ -342,15 +342,102 @@ class EnhancedNewsFetcher:
     # ── Post generation ───────────────────────────────────────────────────────
 
     @staticmethod
+    def scrape_article(url):
+        """
+        Scrape a real article page and return:
+          { 'paragraphs': [...], 'image_url': '...', 'description': '...' }
+        Works for Punch, Vanguard, Channels, Guardian NG, Premium Times, etc.
+        Falls back gracefully if scraping fails.
+        """
+        result = {'paragraphs': [], 'image_url': '', 'description': ''}
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=12)
+            if resp.status_code != 200:
+                return result
+
+            soup = BeautifulSoup(resp.content, 'html.parser')
+
+            # ── 1. Best image: og:image first ──
+            og_img = soup.find('meta', property='og:image')
+            if og_img and og_img.get('content'):
+                result['image_url'] = og_img['content'].strip()
+
+            if not result['image_url']:
+                tw_img = soup.find('meta', attrs={'name': 'twitter:image'})
+                if tw_img and tw_img.get('content'):
+                    result['image_url'] = tw_img['content'].strip()
+
+            # ── 2. Description from og:description ──
+            og_desc = soup.find('meta', property='og:description')
+            if og_desc and og_desc.get('content'):
+                result['description'] = og_desc['content'].strip()
+
+            # ── 3. Article body — try common article containers ──
+            body_text = []
+            containers = [
+                soup.find('article'),
+                soup.find(class_=['article-body', 'entry-content', 'post-content',
+                                   'story-body', 'content-body', 'td-post-content',
+                                   'article-content', 'article__body', 'the-content']),
+                soup.find('div', attrs={'itemprop': 'articleBody'}),
+            ]
+            article_el = next((c for c in containers if c), None)
+
+            if article_el:
+                # Remove junk
+                for tag in article_el(['script', 'style', 'aside', 'figure', 'figcaption',
+                                        'nav', 'footer', '.related', '.adsbygoogle']):
+                    tag.decompose()
+                paras = article_el.find_all('p')
+                body_text = [p.get_text(separator=' ').strip() for p in paras
+                             if len(p.get_text().strip()) > 60]
+
+            # ── 4. Fallback: grab all <p> tags site-wide ──
+            if len(body_text) < 3:
+                for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+                    tag.decompose()
+                body_text = [p.get_text(separator=' ').strip()
+                             for p in soup.find_all('p')
+                             if len(p.get_text().strip()) > 80]
+
+            # Remove duplicates, keep order
+            seen = set()
+            for p in body_text:
+                if p not in seen:
+                    seen.add(p)
+                    result['paragraphs'].append(p)
+
+            # Fill description from first paragraph if still empty
+            if not result['description'] and result['paragraphs']:
+                result['description'] = result['paragraphs'][0][:300]
+
+            # If still no image, try first large <img> in article
+            if not result['image_url'] and article_el:
+                for img in article_el.find_all('img'):
+                    src = img.get('src', '') or img.get('data-src', '')
+                    if src and src.startswith('http') and not any(x in src for x in ['logo','icon','avatar','ad','blank']):
+                        result['image_url'] = src
+                        break
+
+        except Exception as e:
+            print(f"⚠️  scrape_article failed for {url}: {e}")
+
+        return result
+
+    @staticmethod
     def generate_blog_post_from_article(article):
-        """Convert a fetched news article into a blog Post."""
+        """
+        Convert a fetched news article into a blog Post.
+        Scrapes the real article content from the source URL so posts
+        contain actual paragraphs instead of Google News link lists.
+        """
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
 
         try:
+            # ── Category ──
             cat_name = article.get('category', 'NEWS').upper()
-            # Normalise category name
             cat_map = {
                 'SPORT': 'SPORT', 'SPORTS': 'SPORT',
                 'ECONOMY': 'ECONOMY', 'BUSINESS': 'ECONOMY',
@@ -362,17 +449,20 @@ class EnhancedNewsFetcher:
             cat_name = cat_map.get(cat_name, cat_name)
             category_obj, _ = Category.objects.get_or_create(name=cat_name)
 
+            # ── Author ──
             try:
                 author = User.objects.get(username='admin')
             except User.DoesNotExist:
                 author = User.objects.first()
             if not author:
-                print("❌ No user found to assign as author")
+                print("❌ No user found")
                 return None
 
-            title = article.get('title', 'Untitled').replace('[News] ', '').strip()
+            title    = article.get('title', 'Untitled').replace('[News] ', '').strip()
+            orig_url = article.get('url', '#')
+            source   = article.get('source', 'Unknown')
 
-            # Slug
+            # ── Slug ──
             base_slug = slugify(title[:80])
             slug = base_slug
             counter = 1
@@ -380,39 +470,62 @@ class EnhancedNewsFetcher:
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            desc    = article.get('description', '') or article.get('content', '')
-            content_body = article.get('content', '') or desc
-            source  = article.get('source', 'Unknown')
-            orig_url = article.get('url', '#')
+            # ── Scrape real article content from source URL ──
+            print(f"🔍 Scraping content from: {orig_url}")
+            scraped = EnhancedNewsFetcher.scrape_article(orig_url)
 
-            content = f"""
-<div class="article-body">
-  <p class="lead">{desc}</p>
+            paragraphs  = scraped['paragraphs']
+            scraped_img = scraped['image_url']
+            scraped_desc = scraped['description']
 
-  <div>{content_body[:3000]}</div>
+            # ── Description / excerpt ──
+            rss_desc = article.get('description', '') or article.get('content', '')
+            # Strip HTML from RSS description (Google News wraps links in <ol><li>)
+            try:
+                rss_desc_clean = BeautifulSoup(rss_desc, 'html.parser').get_text(separator=' ').strip()
+            except Exception:
+                rss_desc_clean = rss_desc
+            # Prefer scraped description over RSS junk
+            excerpt = scraped_desc or rss_desc_clean or title
+            # Remove Google News "Read more" link noise
+            if '<a href' in excerpt or 'Read more' in excerpt:
+                excerpt = title
 
-  <hr>
-  <div class="alert alert-light border-start border-danger border-3 mt-4" style="font-size:.85rem;">
-    <strong>Source:</strong> {source}&nbsp;&nbsp;
-    <a href="{orig_url}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-danger ms-2">
-      Read original article →
-    </a>
-  </div>
+            # ── Image ── scraped > RSS > nothing
+            image_url = article.get('image_url', '') or scraped_img
+
+            # ── Build article HTML ──
+            paras_html = ''
+            if paragraphs:
+                # Cap at 15 paragraphs to keep posts readable
+                for p in paragraphs[:15]:
+                    paras_html += f'<p>{p}</p>\n'
+            else:
+                # No content scraped — use RSS description as single paragraph
+                paras_html = f'<p>{excerpt}</p>'
+
+            content = f"""<div class="art-body">
+{paras_html}
+<div style="margin-top:2rem;padding:1rem 1.25rem;border-left:3px solid #c0392b;background:#faf8f5;font-size:.88rem;color:#555;">
+  <strong>Source:</strong> {source} &nbsp;·&nbsp;
+  <a href="{orig_url}" target="_blank" rel="noopener noreferrer" style="color:#c0392b;">
+    Read original article →
+  </a>
 </div>
-"""
+</div>"""
 
             post = Post.objects.create(
                 title=title[:499],
                 slug=slug,
                 content=content,
-                excerpt=(desc[:300] or title[:300]),
+                excerpt=excerpt[:499],
                 author=author,
                 category=category_obj,
-                featured_image=article.get('image_url', ''),
+                featured_image=image_url,
                 published_date=timezone.now(),
             )
             post.tags.add('news', source.lower().split()[0], cat_name.lower())
-            print(f"✅ Created post: {post.title[:60]}")
+            print(f"✅ Created post: {post.title[:60]} ({len(paragraphs)} paragraphs scraped)")
             return post
 
         except Exception as e:
@@ -422,13 +535,10 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def extract_content_from_url(url):
-        """Scrape full article text from a URL."""
+        """Scrape full article text from a URL (plain text, for legacy use)."""
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=10)
-            soup = BeautifulSoup(resp.content, 'html.parser')
-            for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
-                tag.decompose()
-            return ' '.join(soup.get_text(separator=' ').split())[:5000]
+            result = EnhancedNewsFetcher.scrape_article(url)
+            return ' '.join(result['paragraphs'])[:5000] if result['paragraphs'] else None
         except Exception as e:
             print(f"❌ Content extract error: {e}")
             return None

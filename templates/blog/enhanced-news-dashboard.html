@@ -7,117 +7,118 @@
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
-  :root{--ink:#0f0f0f;--paper:#f7f5f0;--accent:#c0392b;--gold:#f4a261;--muted:#6b6b6b;--border:#e0ddd6;--card-bg:#ffffff;--success:#2a9d8f;--info:#457b9d;}
 
-  .dash-wrap{font-family:'DM Sans',sans-serif;background:var(--paper);min-height:100vh;padding:2rem 0 4rem;}
-  .dash-header{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2.5rem;border-bottom:2px solid var(--ink);padding-bottom:1rem;}
-  .dash-title{font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;letter-spacing:-1px;color:var(--ink);margin:0;line-height:1;}
-  .dash-title span{color:var(--accent);}
-  .dash-subtitle{font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.3rem;}
+  :root {
+    --ink: #0f0f0f;
+    --paper: #f7f5f0;
+    --accent: #e63946;
+    --gold: #f4a261;
+    --muted: #6b6b6b;
+    --border: #e0ddd6;
+    --card-bg: #ffffff;
+    --success: #2a9d8f;
+    --info: #457b9d;
+  }
 
-  .stat-card{background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;padding:1.4rem 1.6rem;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;}
-  .stat-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.08);}
-  .stat-card::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--accent);}
-  .stat-card.green::before{background:var(--success);}
-  .stat-card.blue::before{background:var(--info);}
-  .stat-card.gold::before{background:var(--gold);}
-  .stat-num{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;color:var(--ink);line-height:1;}
-  .stat-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.3rem;}
+  .dash-wrap { font-family: 'DM Sans', sans-serif; background: var(--paper); min-height: 100vh; padding: 2rem 0 4rem; }
 
-  .panel{background:var(--card-bg);border:1.5px solid var(--border);border-radius:12px;margin-bottom:1.5rem;overflow:hidden;}
-  .panel-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.4rem;border-bottom:1.5px solid var(--border);background:var(--paper);}
-  .panel-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;letter-spacing:-.3px;color:var(--ink);margin:0;}
-  .panel-body{padding:1.4rem;}
+  /* Header */
+  .dash-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.5rem; border-bottom: 2px solid var(--ink); padding-bottom: 1rem; }
+  .dash-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem; letter-spacing: -1px; color: var(--ink); margin: 0; line-height: 1; }
+  .dash-title span { color: var(--accent); }
+  .dash-subtitle { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
 
-  /* Source chips */
-  .sources-grid{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem;}
-  .source-chip{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .85rem;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;background:white;color:var(--ink);user-select:none;}
-  .source-chip input{display:none;}
-  .source-chip.checked,.source-chip:has(input:checked){border-color:var(--ink);background:var(--ink);color:white;}
-  .source-chip.ng-source.checked,.source-chip.ng-source:has(input:checked){border-color:#008751;background:#008751;color:white;}
-  .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.65;}
-  .ng-flag{font-size:.85rem;}
+  /* Stat Cards */
+  .stat-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 1.4rem 1.6rem; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
+  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
+  .stat-card.green::before { background: var(--success); }
+  .stat-card.blue::before { background: var(--info); }
+  .stat-card.gold::before { background: var(--gold); }
+  .stat-num { font-family: 'Syne', sans-serif; font-size: 2.4rem; font-weight: 800; color: var(--ink); line-height: 1; }
+  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 0.3rem; }
 
-  .quick-btns{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;}
-  .quick-btn{font-size:.75rem;font-weight:700;padding:.3rem .85rem;border-radius:20px;border:1.5px solid var(--border);background:white;cursor:pointer;transition:all .15s;text-transform:uppercase;letter-spacing:.05em;}
-  .quick-btn:hover{background:var(--ink);color:white;border-color:var(--ink);}
-  .quick-btn.ng{border-color:#008751;color:#008751;}
-  .quick-btn.ng:hover{background:#008751;color:white;}
+  /* Panels */
+  .panel { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem; overflow: hidden; }
+  .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.4rem; border-bottom: 1.5px solid var(--border); background: var(--paper); }
+  .panel-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: -0.3px; color: var(--ink); margin: 0; }
+  .panel-body { padding: 1.4rem; }
 
-  .cat-pill{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .75rem;border:1.5px solid var(--border);border-radius:20px;cursor:pointer;font-size:.78rem;font-weight:600;transition:all .15s;background:white;color:var(--ink);margin:.2rem;}
-  .cat-pill input{display:none;}
-  .cat-pill.checked,.cat-pill:has(input:checked){border-color:var(--accent);background:var(--accent);color:white;}
+  /* Fetch Form */
+  .source-chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 0.82rem; font-weight: 500; transition: all 0.15s; background: white; color: var(--ink); }
+  .source-chip input { display: none; }
+  .source-chip:has(input:checked), .source-chip.active { border-color: var(--ink); background: var(--ink); color: white; }
+  .source-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.6; }
 
-  .fetch-btn{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;letter-spacing:.02em;background:var(--ink);color:white;border:none;border-radius:8px;padding:.85rem 2rem;cursor:pointer;transition:all .2s;width:100%;}
-  .fetch-btn:hover{background:var(--accent);transform:translateY(-1px);}
-  .fetch-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-  .fetch-btn.ng-btn{background:#008751;}
-  .fetch-btn.ng-btn:hover{background:#006b40;}
+  .cat-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 0.78rem; font-weight: 500; transition: all 0.15s; background: white; color: var(--ink); margin: 0.2rem; }
+  .cat-pill input { display: none; }
+  .cat-pill:has(input:checked) { border-color: var(--accent); background: var(--accent); color: white; }
 
-  /* Article rows */
-  .article-row{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.2rem;border-bottom:1px solid var(--border);transition:background .15s;}
-  .article-row:last-child{border-bottom:none;}
-  .article-row:hover{background:#fafaf8;}
-  .article-thumb{width:72px;height:52px;object-fit:cover;border-radius:6px;flex-shrink:0;}
-  .article-thumb-placeholder{width:72px;height:52px;background:var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1rem;position:relative;}
-  .auto-img-btn{position:absolute;bottom:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:white;border:none;cursor:pointer;font-size:.55rem;display:flex;align-items:center;justify-content:center;transition:transform .15s;}
-  .auto-img-btn:hover{transform:scale(1.2);}
-  .article-info{flex:1;min-width:0;}
-  .article-title{font-weight:600;font-size:.88rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.3rem;}
-  .article-meta{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center;}
-  .tag{font-size:.68rem;padding:.15rem .5rem;border-radius:4px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
-  .tag-source{background:#f0ece4;color:var(--muted);}
-  .tag-cat{background:#fde8e9;color:var(--accent);}
-  .tag-ng{background:#d4edda;color:#155724;}
-  .article-actions{display:flex;gap:.35rem;flex-shrink:0;}
+  .fetch-btn { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.02em; background: var(--ink); color: white; border: none; border-radius: 8px; padding: 0.85rem 2rem; cursor: pointer; transition: all 0.2s; width: 100%; }
+  .fetch-btn:hover { background: var(--accent); transform: translateY(-1px); }
+  .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-  .data-table{width:100%;border-collapse:collapse;font-size:.875rem;}
-  .data-table th{font-family:'Syne',sans-serif;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:.6rem .8rem;border-bottom:1.5px solid var(--border);white-space:nowrap;}
-  .data-table td{padding:.75rem .8rem;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--ink);}
-  .data-table tr:last-child td{border-bottom:none;}
-  .data-table tr:hover td{background:#fafaf8;}
+  /* Articles List */
+  .article-row { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
+  .article-row:last-child { border-bottom: none; }
+  .article-row:hover { background: #fafaf8; }
+  .article-thumb { width: 72px; height: 52px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+  .article-thumb-placeholder { width: 72px; height: 52px; background: var(--border); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
+  .article-info { flex: 1; min-width: 0; }
+  .article-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3rem; }
+  .article-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+  .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .tag-source { background: #f0ece4; color: var(--muted); }
+  .tag-cat { background: #fde8e9; color: var(--accent); }
+  .article-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
 
-  .btn-icon{width:30px;height:30px;border-radius:6px;border:1.5px solid var(--border);background:white;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;transition:all .15s;text-decoration:none;}
-  .btn-icon:hover{border-color:var(--ink);color:var(--ink);background:var(--paper);}
-  .btn-icon.danger:hover{border-color:var(--accent);color:var(--accent);}
-  .btn-icon.success:hover{border-color:var(--success);color:var(--success);}
+  /* Table */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+  .data-table th { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0.6rem 0.8rem; border-bottom: 1.5px solid var(--border); white-space: nowrap; }
+  .data-table td { padding: 0.75rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: #fafaf8; }
 
-  .post-thumb{width:56px;height:40px;object-fit:cover;border-radius:5px;}
-  .post-thumb-empty{width:56px;height:40px;background:var(--border);border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.9rem;}
+  /* Buttons */
+  .btn-icon { width: 30px; height: 30px; border-radius: 6px; border: 1.5px solid var(--border); background: white; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s; }
+  .btn-icon:hover { border-color: var(--ink); color: var(--ink); background: var(--paper); }
+  .btn-icon.danger:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-icon.success:hover { border-color: var(--success); color: var(--success); }
 
-  .status{font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;}
-  .status-yes{background:#d4f4f0;color:var(--success);}
-  .status-no{background:#fff3e0;color:#e07b00;}
-  .status-cat{background:#e8f0f7;color:var(--info);}
+  /* Post thumbnail */
+  .post-thumb { width: 56px; height: 40px; object-fit: cover; border-radius: 5px; }
+  .post-thumb-empty { width: 56px; height: 40px; background: var(--border); border-radius: 5px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; }
 
-  .toast-stack{position:fixed;bottom:1.5rem;right:1.5rem;z-index:9999;display:flex;flex-direction:column;gap:.5rem;}
-  .toast-item{font-family:'DM Sans',sans-serif;font-size:.875rem;font-weight:500;padding:.75rem 1.2rem;border-radius:8px;color:white;animation:slideIn .25s ease;box-shadow:0 4px 16px rgba(0,0,0,.15);}
-  .toast-success{background:var(--success);}
-  .toast-danger{background:var(--accent);}
-  .toast-info{background:var(--info);}
-  .toast-warning{background:var(--gold);color:var(--ink);}
-  @keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+  /* Status badges */
+  .status { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .status-yes { background: #d4f4f0; color: var(--success); }
+  .status-no { background: #fff3e0; color: #e07b00; }
+  .status-cat { background: #e8f0f7; color: var(--info); }
 
-  .modal-content{border-radius:14px;border:none;box-shadow:0 20px 60px rgba(0,0,0,.15);}
-  .modal-header{border-bottom:1.5px solid var(--border);padding:1.2rem 1.5rem;}
-  .modal-title{font-family:'Syne',sans-serif;font-weight:700;}
-  .form-control,.form-select{border:1.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;}
-  .form-control:focus,.form-select:focus{border-color:var(--ink);box-shadow:none;}
-  .form-label{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:.35rem;}
+  /* Toast */
+  .toast-stack { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
+  .toast-item { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; padding: 0.75rem 1.2rem; border-radius: 8px; color: white; animation: slideIn 0.25s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+  .toast-success { background: var(--success); }
+  .toast-danger { background: var(--accent); }
+  .toast-info { background: var(--info); }
+  .toast-warning { background: var(--gold); color: var(--ink); }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-  .results-badge{font-family:'Syne',sans-serif;font-size:.75rem;font-weight:700;background:var(--accent);color:white;padding:.2rem .6rem;border-radius:20px;}
-  #articlesContainer{max-height:560px;overflow-y:auto;}
-  #articlesContainer::-webkit-scrollbar{width:4px;}
-  #articlesContainer::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+  /* Modal tweaks */
+  .modal-content { border-radius: 14px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+  .modal-header { border-bottom: 1.5px solid var(--border); padding: 1.2rem 1.5rem; font-family: 'Syne', sans-serif; }
+  .modal-title { font-family: 'Syne', sans-serif; font-weight: 700; }
+  .form-control, .form-select { border: 1.5px solid var(--border); border-radius: 7px; font-family: 'DM Sans', sans-serif; }
+  .form-control:focus, .form-select:focus { border-color: var(--ink); box-shadow: none; }
+  .form-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.35rem; }
 
-  /* Image preview in editor */
-  .img-preview-wrap{position:relative;width:100%;height:160px;border-radius:8px;overflow:hidden;background:#f0ece4;margin-bottom:.75rem;}
-  .img-preview-wrap img{width:100%;height:100%;object-fit:cover;}
-  .img-preview-wrap .overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;gap:.5rem;opacity:0;transition:opacity .2s;}
-  .img-preview-wrap:hover .overlay{opacity:1;}
-  .img-auto-fetch{background:var(--accent);color:white;border:none;border-radius:6px;padding:.4rem .8rem;font-size:.75rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:.35rem;}
-  .img-auto-fetch:hover{background:#a93226;}
-  .img-spinner{display:none;}
+  /* Results count */
+  .results-badge { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; background: var(--accent); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; }
+
+  /* Scrollable articles */
+  #articlesContainer { max-height: 520px; overflow-y: auto; }
+  #articlesContainer::-webkit-scrollbar { width: 4px; }
+  #articlesContainer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 </style>
 
 <div class="dash-wrap">
@@ -129,22 +130,43 @@
       <div class="dash-subtitle">Admin Panel</div>
       <h1 class="dash-title">News <span>Dashboard</span></h1>
     </div>
-    <a href="{% url 'admin:index' %}" class="btn-icon" style="width:auto;padding:0 1rem;font-size:.8rem;font-weight:700;text-decoration:none;">← Admin</a>
+    <a href="{% url 'admin:index' %}" class="btn-icon" style="width:auto; padding: 0 1rem; font-size:0.8rem; font-weight:600; text-decoration:none;">
+      ← Admin
+    </a>
   </div>
 
   <!-- Stats -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3"><div class="stat-card"><div class="stat-num">{{ stats.total_articles }}</div><div class="stat-label">Total Articles</div></div></div>
-    <div class="col-6 col-md-3"><div class="stat-card green"><div class="stat-num">{{ stats.today_articles }}</div><div class="stat-label">Today</div></div></div>
-    <div class="col-6 col-md-3"><div class="stat-card blue"><div class="stat-num">{{ stats.auto_posts }}</div><div class="stat-label">Auto Posts</div></div></div>
-    <div class="col-6 col-md-3"><div class="stat-card gold"><div class="stat-num">{{ stats.to_process }}</div><div class="stat-label">To Process</div></div></div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-num">{{ stats.total_articles }}</div>
+        <div class="stat-label">Total Articles</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card green">
+        <div class="stat-num">{{ stats.today_articles }}</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card blue">
+        <div class="stat-num">{{ stats.auto_posts }}</div>
+        <div class="stat-label">Auto Posts</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card gold">
+        <div class="stat-num">{{ stats.to_process }}</div>
+        <div class="stat-label">To Process</div>
+      </div>
+    </div>
   </div>
 
-  <!-- Fetch Panel -->
+  <!-- Fetch Form -->
   <div class="panel mb-4">
     <div class="panel-header">
       <span class="panel-title">Fetch News</span>
-      <span style="font-size:.75rem;color:var(--muted);">Images auto-fetched when available</span>
     </div>
     <div class="panel-body">
       <form id="fetchForm" action="{% url 'fetch_news_now' %}">
@@ -152,103 +174,73 @@
         <div class="row g-3">
 
           <!-- Sources -->
-          <div class="col-lg-5">
+          <div class="col-md-4">
             <div class="form-label">Sources</div>
-
-            <!-- Quick select buttons -->
-            <div class="quick-btns">
-              <button type="button" class="quick-btn ng" onclick="selectAllNigerian()">🇳🇬 All Nigerian</button>
-              <button type="button" class="quick-btn" onclick="selectAll()">All Sources</button>
-              <button type="button" class="quick-btn" onclick="clearAll()">Clear</button>
-            </div>
-
-            <!-- International -->
-            <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.4rem;">International</div>
-            <div class="sources-grid mb-3">
-              <label class="source-chip" id="chip-google">
+            <div class="d-flex flex-wrap gap-2">
+              <label class="source-chip">
                 <input type="checkbox" name="sources" value="google" checked>
-                <span class="dot"></span> Google News
+                <span class="dot"></span> Google
               </label>
-              <label class="source-chip" id="chip-bbc">
-                <input type="checkbox" name="sources" value="bbc">
-                <span class="dot"></span> BBC
-              </label>
-            </div>
-
-            <!-- Nigerian -->
-            <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#008751;margin-bottom:.4rem;">🇳🇬 Nigerian Sources</div>
-            <div class="sources-grid">
-              <label class="source-chip ng-source" id="chip-google_nigeria">
+              <label class="source-chip">
                 <input type="checkbox" name="sources" value="google_nigeria" checked>
-                <span class="ng-flag">🇳🇬</span> Google NG
+                <span class="dot" style="background:#008751"></span> 🇳🇬 Nigeria
               </label>
-              <label class="source-chip ng-source" id="chip-punch">
+              <label class="source-chip">
                 <input type="checkbox" name="sources" value="punch">
                 <span class="dot"></span> Punch
               </label>
-              <label class="source-chip ng-source" id="chip-vanguard">
+              <label class="source-chip">
                 <input type="checkbox" name="sources" value="vanguard">
                 <span class="dot"></span> Vanguard
               </label>
-              <label class="source-chip ng-source" id="chip-channels">
+              <label class="source-chip">
                 <input type="checkbox" name="sources" value="channels">
-                <span class="dot"></span> Channels TV
+                <span class="dot"></span> Channels
               </label>
-              <label class="source-chip ng-source" id="chip-thisday">
-                <input type="checkbox" name="sources" value="thisday">
-                <span class="dot"></span> ThisDay
+              <label class="source-chip">
+                <input type="checkbox" name="sources" value="bbc">
+                <span class="dot"></span> BBC
               </label>
-              <label class="source-chip ng-source" id="chip-guardian_ng">
-                <input type="checkbox" name="sources" value="guardian_ng">
-                <span class="dot"></span> Guardian NG
+              <label class="source-chip">
+                <input type="checkbox" name="sources" value="reddit">
+                <span class="dot"></span> Reddit
               </label>
-              <label class="source-chip ng-source" id="chip-premiumtimes">
-                <input type="checkbox" name="sources" value="premiumtimes">
-                <span class="dot"></span> Premium Times
-              </label>
-              <label class="source-chip ng-source" id="chip-thecable">
-                <input type="checkbox" name="sources" value="thecable">
-                <span class="dot"></span> The Cable
+              <label class="source-chip">
+                <input type="checkbox" name="sources" value="newsapi">
+                <span class="dot"></span> NewsAPI
               </label>
             </div>
           </div>
 
           <!-- Categories -->
-          <div class="col-lg-4">
+          <div class="col-md-5">
             <div class="form-label">Categories</div>
             <div>
               <label class="cat-pill"><input type="checkbox" name="categories" value="news" checked> News</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="politics" checked> Politics</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="economy" checked> Economy</label>
+              <label class="cat-pill"><input type="checkbox" name="categories" value="sport" checked> Sport</label>
               <label class="cat-pill"><input type="checkbox" name="categories" value="entertainment" checked> Entertainment</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="sport"> Sport</label>
+              <label class="cat-pill"><input type="checkbox" name="categories" value="economy"> Economy</label>
+              <label class="cat-pill"><input type="checkbox" name="categories" value="politics"> Politics</label>
               <label class="cat-pill"><input type="checkbox" name="categories" value="technology"> Technology</label>
             </div>
-            <div class="mt-3 d-flex align-items-center gap-3 flex-wrap">
+            <div class="mt-2 d-flex align-items-center gap-3">
               <div>
                 <label class="form-label mb-1">Articles per source</label>
-                <input type="number" class="form-control form-control-sm" name="limit_per_source" value="5" min="1" max="15" style="width:75px;">
+                <input type="number" class="form-control form-control-sm" name="limit_per_source" value="5" min="1" max="20" style="width:80px;">
               </div>
               <div class="mt-3">
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="auto_save" id="autoSave">
-                  <label class="form-check-label" for="autoSave" style="font-size:.85rem;">Auto-save to DB</label>
-                </div>
-                <div class="form-check mt-1">
-                  <input class="form-check-input" type="checkbox" id="autoFetchImages" checked>
-                  <label class="form-check-label" for="autoFetchImages" style="font-size:.85rem;">Auto-fetch images</label>
+                  <label class="form-check-label" for="autoSave" style="font-size:0.85rem;">Auto-save to database</label>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Buttons -->
-          <div class="col-lg-3 d-flex flex-column justify-content-end gap-2">
+          <!-- Button -->
+          <div class="col-md-3 d-flex align-items-end">
             <button type="submit" class="fetch-btn" id="fetchBtn">
               <i class="fas fa-satellite-dish me-2"></i> Fetch News
-            </button>
-            <button type="button" class="fetch-btn ng-btn" id="fetchNgBtn" onclick="fetchAllNigerian()">
-              <span class="ng-flag me-1">🇳🇬</span> Fetch All Nigerian
             </button>
           </div>
         </div>
@@ -262,19 +254,15 @@
       <div class="d-flex align-items-center gap-2">
         <span class="panel-title">Fetched Articles</span>
         <span class="results-badge" id="resultsCount">0</span>
-        <span style="font-size:.72rem;color:var(--muted);" id="imgFetchStatus"></span>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
-        <button class="btn-icon success" style="width:auto;padding:0 .8rem;font-size:.78rem;font-weight:700;" onclick="postAllArticles()">
-          <i class="fas fa-paper-plane me-1"></i> Post Selected
+      <div class="d-flex gap-2">
+        <button class="btn-icon success" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;" onclick="postAllArticles()">
+          <i class="fas fa-paper-plane me-1"></i> Post All
         </button>
-        <button class="btn-icon" style="width:auto;padding:0 .8rem;font-size:.78rem;font-weight:700;" onclick="autoFetchAllImages()" title="Auto-fetch images for all articles without one">
-          <i class="fas fa-images me-1"></i> Fetch Images
-        </button>
-        <button class="btn-icon danger" style="width:auto;padding:0 .8rem;font-size:.78rem;font-weight:700;" onclick="deleteSelectedArticles()">
+        <button class="btn-icon danger" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;" onclick="deleteSelectedArticles()">
           <i class="fas fa-trash me-1"></i> Delete Selected
         </button>
-        <button class="btn-icon" style="width:auto;padding:0 .8rem;" onclick="clearResults()">
+        <button class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;" onclick="clearResults()">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -286,22 +274,44 @@
   <div class="panel mb-4">
     <div class="panel-header">
       <span class="panel-title">Recent Blog Posts</span>
-      <a href="{% url 'admin:blog_post_changelist' %}" class="btn-icon" style="width:auto;padding:0 .8rem;font-size:.78rem;font-weight:700;text-decoration:none;">View All →</a>
+      <a href="{% url 'admin:blog_post_changelist' %}" class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;text-decoration:none;">
+        View All →
+      </a>
     </div>
     <div style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Image</th><th>Title</th><th>Category</th><th>Date</th><th>Views</th><th>Actions</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Image</th>
+            <th>Title</th>
+            <th>Category</th>
+            <th>Date</th>
+            <th>Views</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
         <tbody>
           {% for post in recent_posts|slice:":10" %}
           <tr id="post-row-{{ post.id }}">
             <td>
-              {% if post.featured_image %}{% with img=post.featured_image.name %}{% if img|slice:":4" == "http" %}<img src="{{ img }}" class="post-thumb" alt="">{% else %}<img src="{{ post.featured_image.url }}" class="post-thumb" alt="">{% endif %}{% endwith %}
-              {% else %}<div class="post-thumb-empty"><i class="fas fa-image"></i></div>{% endif %}
+              {% if post.featured_image %}
+                {% with img=post.featured_image.name %}
+                  {% if img|slice:":4" == "http" %}
+                    <img src="{{ img }}" class="post-thumb" alt="">
+                  {% else %}
+                    <img src="{{ post.featured_image.url }}" class="post-thumb" alt="">
+                  {% endif %}
+                {% endwith %}
+              {% else %}
+                <div class="post-thumb-empty"><i class="fas fa-image"></i></div>
+              {% endif %}
             </td>
-            <td style="max-width:260px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">{{ post.title|truncatechars:55 }}</div></td>
+            <td style="max-width:260px;">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">{{ post.title|truncatechars:55 }}</div>
+            </td>
             <td><span class="status status-cat">{{ post.category.name }}</span></td>
-            <td style="color:var(--muted);font-size:.8rem;white-space:nowrap;">{{ post.published_date|date:"M d, Y" }}</td>
-            <td style="font-size:.8rem;color:var(--muted);">{{ post.views }}</td>
+            <td style="color:var(--muted);font-size:0.8rem;white-space:nowrap;">{{ post.published_date|date:"M d, Y" }}</td>
+            <td style="font-size:0.8rem;color:var(--muted);">{{ post.views }}</td>
             <td>
               <div class="d-flex gap-1">
                 <a href="{% url 'post_detail' post.slug %}" target="_blank" class="btn-icon" title="View"><i class="fas fa-eye"></i></a>
@@ -319,23 +329,42 @@
     </div>
   </div>
 
-  <!-- Saved Articles -->
+  <!-- News Articles -->
   <div class="panel">
     <div class="panel-header">
       <span class="panel-title">Saved News Articles</span>
-      <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn-icon" style="width:auto;padding:0 .8rem;font-size:.78rem;font-weight:700;text-decoration:none;">View All →</a>
+      <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;text-decoration:none;">
+        View All →
+      </a>
     </div>
     <div style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Title</th><th>Source</th><th>Category</th><th>Published</th><th>Converted</th><th>Actions</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Source</th>
+            <th>Category</th>
+            <th>Published</th>
+            <th>Converted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
         <tbody>
           {% for article in recent_articles %}
           <tr id="article-row-{{ article.id }}">
-            <td style="max-width:280px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ article.title|truncatechars:65 }}</div></td>
+            <td style="max-width:280px;">
+              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ article.title|truncatechars:65 }}</div>
+            </td>
             <td><span class="tag tag-source">{{ article.source }}</span></td>
             <td><span class="tag tag-cat">{{ article.category }}</span></td>
-            <td style="font-size:.8rem;color:var(--muted);white-space:nowrap;">{{ article.published_at|date:"M d, Y"|default:"—" }}</td>
-            <td>{% if article.created_as_post %}<span class="status status-yes">Yes</span>{% else %}<span class="status status-no">No</span>{% endif %}</td>
+            <td style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">{{ article.published_at|date:"M d, Y"|default:"—" }}</td>
+            <td>
+              {% if article.created_as_post %}
+                <span class="status status-yes">Yes</span>
+              {% else %}
+                <span class="status status-no">No</span>
+              {% endif %}
+            </td>
             <td>
               <div class="d-flex gap-1">
                 <a href="{{ article.url }}" target="_blank" class="btn-icon" title="Open"><i class="fas fa-external-link-alt"></i></a>
@@ -353,7 +382,8 @@
     </div>
   </div>
 
-</div></div>
+</div><!-- /container -->
+</div><!-- /dash-wrap -->
 
 <!-- Toast Stack -->
 <div class="toast-stack" id="toastStack"></div>
@@ -367,52 +397,64 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <div class="row g-3">
-          <div class="col-md-8">
-            <div class="mb-3"><label class="form-label">Title</label><input type="text" class="form-control" id="editTitle"></div>
-            <div class="mb-3"><label class="form-label">Content / Summary</label><textarea class="form-control" id="editContent" rows="7"></textarea></div>
-            <div class="mb-3"><label class="form-label">Tags (comma separated)</label><input type="text" class="form-control" id="editTags" value="news"></div>
-          </div>
-          <div class="col-md-4">
-            <!-- Image section -->
-            <div class="mb-3">
-              <label class="form-label">Article Image</label>
-              <div class="img-preview-wrap" id="imgPreviewWrap">
-                <img id="articleImagePreview" src="" alt="" style="display:none;">
-                <div id="imgPlaceholder" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.5rem;color:var(--muted);">
-                  <i class="fas fa-image" style="font-size:2rem;"></i>
-                  <span style="font-size:.75rem;">No image</span>
-                </div>
-                <div class="overlay">
-                  <button type="button" class="img-auto-fetch" id="autoFetchImgBtn" onclick="autoFetchImageForEdit()">
-                    <i class="fas fa-magic"></i> Auto-fetch
-                  </button>
-                </div>
+        <form id="articleEditorForm">
+          <input type="hidden" id="editArticleIndex">
+          <div class="row g-3">
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control" id="editTitle">
               </div>
-
-              <!-- Manual image options -->
-              <div style="font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.4rem;">Upload manually</div>
-              <input type="file" class="form-control form-control-sm mb-2" id="imageUpload" accept="image/*">
-              <input type="text" class="form-control form-control-sm" id="imageUrl" placeholder="Or paste image URL">
-              <button type="button" class="btn btn-outline-secondary btn-sm mt-2 w-100" id="fetchImgFromUrlBtn" onclick="autoFetchImageForEdit()">
-                <i class="fas fa-magic me-1"></i> Auto-fetch from article URL
-              </button>
+              <div class="mb-3">
+                <label class="form-label">Content</label>
+                <textarea class="form-control" id="editContent" rows="8"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" id="editDescription" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Tags (comma separated)</label>
+                <input type="text" class="form-control" id="editTags" value="news">
+              </div>
             </div>
-            <div class="mb-3"><label class="form-label">Source</label><input type="text" class="form-control" id="editSource"></div>
-            <div class="mb-3">
-              <label class="form-label">Category</label>
-              <select class="form-select" id="editCategory">
-                <option value="NEWS">NEWS</option><option value="SPORT">SPORT</option>
-                <option value="ENTERTAINMENT">ENTERTAINMENT</option><option value="ECONOMY">ECONOMY</option>
-                <option value="POLITICS">POLITICS</option><option value="TECHNOLOGY">TECHNOLOGY</option>
-              </select>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Image</label>
+                <img id="articleImagePreview" src="" class="img-fluid rounded mb-2 w-100" style="height:160px;object-fit:cover;background:#f0ece4;" alt="">
+                <input type="file" class="form-control form-control-sm mb-2" id="imageUpload" accept="image/*">
+                <input type="text" class="form-control form-control-sm" id="imageUrl" placeholder="Or paste image URL">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Source</label>
+                <input type="text" class="form-control" id="editSource">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="editCategory">
+                  <option value="NEWS">NEWS</option>
+                  <option value="SPORT">SPORT</option>
+                  <option value="ENTERTAINMENT">ENTERTAINMENT</option>
+                  <option value="ECONOMY">ECONOMY</option>
+                  <option value="POLITICS">POLITICS</option>
+                  <option value="TECHNOLOGY">TECHNOLOGY</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Original URL</label>
+                <input type="url" class="form-control" id="editUrl">
+              </div>
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="makeFeatured">
+                <label class="form-check-label" for="makeFeatured">Make featured post</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="saveArticle" checked>
+                <label class="form-check-label" for="saveArticle">Save as NewsArticle</label>
+              </div>
             </div>
-            <div class="mb-3"><label class="form-label">Original URL</label><input type="url" class="form-control" id="editUrl"></div>
-            <div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="makeFeatured"><label class="form-check-label" for="makeFeatured">Make featured post</label></div>
-            <div class="form-check"><input class="form-check-input" type="checkbox" id="saveArticle" checked><label class="form-check-label" for="saveArticle">Save as NewsArticle</label></div>
           </div>
-        </div>
-        <input type="hidden" id="editArticleIndex">
+        </form>
       </div>
       <div class="modal-footer">
         <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
@@ -433,8 +475,8 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <p class="fw-bold mb-1" id="postTitle" style="font-size:.9rem;"></p>
-        <p class="text-muted mb-3" id="postCategory" style="font-size:.8rem;"></p>
+        <p class="fw-bold mb-1" id="postTitle" style="font-size:0.9rem;"></p>
+        <p class="text-muted mb-3" id="postCategory" style="font-size:0.8rem;"></p>
         <input type="hidden" id="editPostId">
         <div class="mb-3">
           <label class="form-label">Current Image</label>
@@ -444,14 +486,16 @@
         <div class="mb-3">
           <label class="form-label">Upload New Image</label>
           <input type="file" class="form-control form-control-sm mb-2" id="postImageUpload" accept="image/*">
-          <input type="text" class="form-control form-control-sm mb-2" id="postImageUrl" placeholder="Or paste image URL">
-          <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="postAutoFetchBtn">
-            <i class="fas fa-magic me-1"></i> Auto-fetch from article URL
-          </button>
+          <input type="text" class="form-control form-control-sm" id="postImageUrl" placeholder="Or paste image URL">
         </div>
         <div class="d-flex gap-2">
-          <div class="form-check"><input class="form-check-input" type="checkbox" id="useDefaultImage"><label class="form-check-label" for="useDefaultImage" style="font-size:.85rem;">Use default image</label></div>
-          <button onclick="removePostImage()" class="btn btn-outline-danger btn-sm ms-auto"><i class="fas fa-times me-1"></i>Remove</button>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="useDefaultImage">
+            <label class="form-check-label" for="useDefaultImage" style="font-size:0.85rem;">Use default image</label>
+          </div>
+          <button onclick="removePostImage()" class="btn btn-outline-danger btn-sm ms-auto">
+            <i class="fas fa-times me-1"></i>Remove Image
+          </button>
         </div>
       </div>
       <div class="modal-footer">
@@ -463,75 +507,23 @@
 </div>
 
 <script>
-const CSRF = '{{ csrf_token }}';
 let fetchedArticles = [];
 let currentEditIndex = -1;
-
-// ── Source chip toggle styling ──────────────────────────
-document.querySelectorAll('.source-chip input').forEach(function(inp) {
-    function sync() {
-        inp.closest('.source-chip').classList.toggle('checked', inp.checked);
-    }
-    sync();
-    inp.addEventListener('change', sync);
-});
-document.querySelectorAll('.cat-pill input').forEach(function(inp) {
-    function sync() { inp.closest('.cat-pill').classList.toggle('checked', inp.checked); }
-    sync();
-    inp.addEventListener('change', sync);
-});
-
-// ── Quick-select helpers ────────────────────────────────
-const NG_SOURCES = ['google_nigeria','punch','vanguard','channels','thisday','guardian_ng','premiumtimes','thecable'];
-
-function selectAllNigerian() {
-    document.querySelectorAll('input[name="sources"]').forEach(function(inp) {
-        inp.checked = NG_SOURCES.includes(inp.value);
-        inp.closest('.source-chip').classList.toggle('checked', inp.checked);
-    });
-}
-function selectAll() {
-    document.querySelectorAll('input[name="sources"]').forEach(function(inp) {
-        inp.checked = true;
-        inp.closest('.source-chip').classList.add('checked');
-    });
-}
-function clearAll() {
-    document.querySelectorAll('input[name="sources"]').forEach(function(inp) {
-        inp.checked = false;
-        inp.closest('.source-chip').classList.remove('checked');
-    });
-}
-
-// ── Fetch All Nigerian shortcut ─────────────────────────
-function fetchAllNigerian() {
-    selectAllNigerian();
-    // also select all categories
-    document.querySelectorAll('input[name="categories"]').forEach(function(inp) {
-        inp.checked = true;
-        inp.closest('.cat-pill').classList.add('checked');
-    });
-    document.getElementById('fetchForm').dispatchEvent(new Event('submit'));
-}
 
 // ── Fetch Form ──────────────────────────────────────────
 document.getElementById('fetchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const btn = document.getElementById('fetchBtn');
-    const ngBtn = document.getElementById('fetchNgBtn');
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Fetching...';
-    btn.disabled = true; ngBtn.disabled = true;
+    btn.disabled = true;
 
     const sources = [...this.querySelectorAll('input[name="sources"]:checked')].map(c => c.value);
     const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
     const limit = this.querySelector('input[name="limit_per_source"]').value;
     const autoSave = this.querySelector('#autoSave').checked;
-    const autoImgs = document.getElementById('autoFetchImages').checked;
-
-    if (!sources.length) { showToast('Select at least one source', 'warning'); btn.innerHTML = '<i class="fas fa-satellite-dish me-2"></i>Fetch News'; btn.disabled = false; ngBtn.disabled = false; return; }
 
     const fd = new FormData();
-    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
     sources.forEach(s => fd.append('sources', s));
     categories.forEach(c => fd.append('categories', c));
     fd.append('limit_per_source', limit);
@@ -539,166 +531,74 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
 
     fetch(this.action, { method: 'POST', body: fd })
     .then(r => r.json())
-    .then(function(data) {
-        if (data.success && data.articles && data.articles.length) {
+    .then(data => {
+        if (data.success && data.articles?.length) {
             fetchedArticles = data.articles;
             displayFetchedArticles();
             document.getElementById('resultsSection').style.display = 'block';
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            showToast('Fetched ' + data.articles.length + ' articles', 'success');
-            if (autoImgs) {
-                setTimeout(autoFetchAllImages, 500);
-            }
+            showToast(`Fetched ${data.articles.length} articles`, 'success');
         } else {
             showToast(data.message || 'No articles found', 'warning');
         }
     })
-    .catch(function() { showToast('Network error fetching news', 'danger'); })
-    .finally(function() {
+    .catch(() => showToast('Error fetching news', 'danger'))
+    .finally(() => {
         btn.innerHTML = '<i class="fas fa-satellite-dish me-2"></i>Fetch News';
-        btn.disabled = false; ngBtn.disabled = false;
+        btn.disabled = false;
     });
 });
 
-// ── Display Articles ────────────────────────────────────
+// ── Display Articles ───────────────────────────────────
 function displayFetchedArticles() {
     const c = document.getElementById('articlesContainer');
     c.innerHTML = '';
-    fetchedArticles.forEach(function(a, i) {
-        const isNG = ['Punch Nigeria','Vanguard Nigeria','Channels TV','ThisDay Live',
-                      'Guardian Nigeria','Premium Times','The Cable','Google News Nigeria'].includes(a.source);
-        const ngBadge = isNG ? '<span class="tag tag-ng">🇳🇬 NG</span>' : '';
-
-        let thumbHtml;
-        if (a.image_url) {
-            thumbHtml = `<img src="${a.image_url}" class="article-thumb" onerror="this.parentNode.innerHTML='<div class=\\'article-thumb-placeholder\\'><i class=\\'fas fa-newspaper\\'></i></div>'">`;
-        } else {
-            thumbHtml = `<div class="article-thumb-placeholder" id="thumb-${i}">
-                <i class="fas fa-newspaper"></i>
-                <button class="auto-img-btn" onclick="autoFetchImageByIndex(${i})" title="Auto-fetch image">
-                    <i class="fas fa-magic"></i>
-                </button>
-            </div>`;
-        }
-
+    fetchedArticles.forEach((a, i) => {
+        const img = a.image_url
+            ? `<img src="${a.image_url}" class="article-thumb" onerror="this.style.display='none'">`
+            : `<div class="article-thumb-placeholder"><i class="fas fa-newspaper"></i></div>`;
         const row = document.createElement('div');
         row.className = 'article-row';
-        row.id = 'article-item-' + i;
         row.innerHTML = `
             <div class="form-check" style="flex-shrink:0;">
                 <input class="form-check-input article-checkbox" type="checkbox" value="${i}" checked>
             </div>
-            ${thumbHtml}
+            ${img}
             <div class="article-info">
                 <div class="article-title">${a.title}</div>
                 <div class="article-meta">
                     <span class="tag tag-source">${a.source}</span>
                     <span class="tag tag-cat">${a.category}</span>
-                    ${ngBadge}
-                    <span style="font-size:.7rem;color:var(--muted);">${(a.description||'').substring(0,90)}${a.description && a.description.length > 90 ? '...' : ''}</span>
+                    <span style="font-size:0.72rem;color:var(--muted);">${(a.description||a.content||'').substring(0,100)}...</span>
                 </div>
             </div>
             <div class="article-actions">
                 <button class="btn-icon" onclick="openArticleEditor(${i})" title="Edit"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon success" onclick="postOneArticle(${i})" title="Post"><i class="fas fa-paper-plane"></i></button>
-                <button class="btn-icon danger" onclick="removeArticle(${i})" title="Delete"><i class="fas fa-trash"></i></button>
+                <button class="btn-icon success" onclick="postSingleArticle(${i})" title="Post"><i class="fas fa-paper-plane"></i></button>
+                <button class="btn-icon danger" onclick="deleteFetchedArticleByIndex(${i})" title="Delete"><i class="fas fa-trash"></i></button>
                 <a href="${a.url}" target="_blank" class="btn-icon" title="Open"><i class="fas fa-external-link-alt"></i></a>
             </div>`;
         c.appendChild(row);
     });
 }
 
-// ── Auto-fetch images ───────────────────────────────────
-async function fetchImageForUrl(articleUrl) {
-    try {
-        const resp = await fetch('/api/fetch-article-image/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-            body: JSON.stringify({ url: articleUrl })
-        });
-        const data = await resp.json();
-        return data.success ? data.image_url : null;
-    } catch(e) { return null; }
-}
-
-async function autoFetchAllImages() {
-    const noImg = fetchedArticles.filter(function(a, i) { return !a.image_url; });
-    if (!noImg.length) { showToast('All articles already have images', 'info'); return; }
-
-    document.getElementById('imgFetchStatus').textContent = `Fetching images for ${noImg.length} articles...`;
-    let fetched = 0;
-
-    for (let i = 0; i < fetchedArticles.length; i++) {
-        if (!fetchedArticles[i].image_url && fetchedArticles[i].url) {
-            const imgUrl = await fetchImageForUrl(fetchedArticles[i].url);
-            if (imgUrl) {
-                fetchedArticles[i].image_url = imgUrl;
-                fetched++;
-                // Update the thumbnail in the DOM
-                const thumb = document.getElementById('thumb-' + i);
-                if (thumb) {
-                    thumb.outerHTML = `<img src="${imgUrl}" class="article-thumb" onerror="this.style.display='none'">`;
-                }
-            }
-        }
+function deleteFetchedArticleByIndex(i) {
+    if (confirm('Delete this article?')) {
+        fetchedArticles.splice(i, 1);
+        displayFetchedArticles();
+        document.getElementById('resultsCount').textContent = fetchedArticles.length;
+        showToast('Article deleted', 'info');
     }
-    document.getElementById('imgFetchStatus').textContent = `✅ ${fetched} images fetched`;
-    showToast(`Fetched ${fetched} images`, 'success');
-}
-
-async function autoFetchImageByIndex(i) {
-    const a = fetchedArticles[i];
-    if (!a || !a.url) return;
-    showToast('Fetching image...', 'info');
-    const imgUrl = await fetchImageForUrl(a.url);
-    if (imgUrl) {
-        fetchedArticles[i].image_url = imgUrl;
-        const thumb = document.getElementById('thumb-' + i);
-        if (thumb) thumb.outerHTML = `<img src="${imgUrl}" class="article-thumb">`;
-        showToast('Image fetched!', 'success');
-    } else {
-        showToast('No image found for this article', 'warning');
-    }
-}
-
-async function autoFetchImageForEdit() {
-    const url = document.getElementById('editUrl').value;
-    if (!url) { showToast('No URL set for this article', 'warning'); return; }
-    const btn = document.getElementById('fetchImgFromUrlBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Fetching...';
-    btn.disabled = true;
-    const imgUrl = await fetchImageForUrl(url);
-    btn.innerHTML = '<i class="fas fa-magic me-1"></i> Auto-fetch from article URL';
-    btn.disabled = false;
-    if (imgUrl) {
-        document.getElementById('imageUrl').value = imgUrl;
-        const preview = document.getElementById('articleImagePreview');
-        preview.src = imgUrl;
-        preview.style.display = 'block';
-        document.getElementById('imgPlaceholder').style.display = 'none';
-        // update fetchedArticles
-        if (currentEditIndex >= 0) fetchedArticles[currentEditIndex].image_url = imgUrl;
-        showToast('Image fetched!', 'success');
-    } else {
-        showToast('No image found for this URL', 'warning');
-    }
-}
-
-// ── Article CRUD ────────────────────────────────────────
-function removeArticle(i) {
-    fetchedArticles.splice(i, 1);
-    displayFetchedArticles();
-    document.getElementById('resultsCount').textContent = fetchedArticles.length;
 }
 
 function deleteSelectedArticles() {
     const sel = [...document.querySelectorAll('.article-checkbox:checked')].map(c => parseInt(c.value));
-    if (!sel.length) { showToast('None selected', 'warning'); return; }
-    if (!confirm('Delete ' + sel.length + ' articles?')) return;
-    sel.sort(function(a,b){ return b-a; }).forEach(function(i){ fetchedArticles.splice(i,1); });
+    if (!sel.length) return showToast('None selected', 'warning');
+    if (!confirm(`Delete ${sel.length} articles?`)) return;
+    sel.sort((a,b) => b-a).forEach(i => fetchedArticles.splice(i, 1));
     displayFetchedArticles();
     document.getElementById('resultsCount').textContent = fetchedArticles.length;
-    showToast('Deleted ' + sel.length + ' articles', 'info');
+    showToast(`Deleted ${sel.length} articles`, 'info');
 }
 
 function clearResults() {
@@ -709,42 +609,24 @@ function clearResults() {
     document.getElementById('resultsSection').style.display = 'none';
 }
 
-// ── Article Editor ──────────────────────────────────────
+// ── Article Editor ─────────────────────────────────────
 function openArticleEditor(i) {
     currentEditIndex = i;
     const a = fetchedArticles[i];
     document.getElementById('editArticleIndex').value = i;
     document.getElementById('editTitle').value = a.title || '';
-    document.getElementById('editContent').value = a.content || a.description || '';
-    document.getElementById('editTags').value = Array.isArray(a.tags) ? a.tags.join(', ') : (a.tags || 'news');
+    document.getElementById('editContent').value = a.content || '';
+    document.getElementById('editDescription').value = a.description || '';
+    document.getElementById('editTags').value = a.tags || 'news';
     document.getElementById('editSource').value = a.source || '';
     document.getElementById('editCategory').value = a.category || 'NEWS';
     document.getElementById('editUrl').value = a.url || '';
-    document.getElementById('makeFeatured').checked = a.is_featured || false;
-    document.getElementById('saveArticle').checked = a.save_article !== false;
-
-    // Image preview
-    const preview = document.getElementById('articleImagePreview');
-    const placeholder = document.getElementById('imgPlaceholder');
-    if (a.image_url) {
-        preview.src = a.image_url;
-        preview.style.display = 'block';
-        placeholder.style.display = 'none';
-    } else {
-        preview.src = '';
-        preview.style.display = 'none';
-        placeholder.style.display = 'flex';
-    }
+    document.getElementById('articleImagePreview').src = a.image_url || '';
     document.getElementById('imageUrl').value = a.image_url || '';
-
     document.getElementById('imageUpload').onchange = function(e) {
         if (e.target.files[0]) {
             const r = new FileReader();
-            r.onload = function(e2) {
-                preview.src = e2.target.result;
-                preview.style.display = 'block';
-                placeholder.style.display = 'none';
-            };
+            r.onload = e2 => document.getElementById('articleImagePreview').src = e2.target.result;
             r.readAsDataURL(e.target.files[0]);
         }
     };
@@ -756,14 +638,15 @@ function saveArticleEdits() {
     const a = fetchedArticles[currentEditIndex];
     a.title = document.getElementById('editTitle').value;
     a.content = document.getElementById('editContent').value;
+    a.description = document.getElementById('editDescription').value;
     a.source = document.getElementById('editSource').value;
     a.category = document.getElementById('editCategory').value;
     a.url = document.getElementById('editUrl').value;
-    a.tags = document.getElementById('editTags').value.split(',').map(function(t){ return t.trim(); });
-    a.is_featured = document.getElementById('makeFeatured').checked;
-    a.save_article = document.getElementById('saveArticle').checked;
+    a.tags = document.getElementById('editTags').value.split(',').map(t => t.trim());
     const imgUrl = document.getElementById('imageUrl').value;
     if (imgUrl) a.image_url = imgUrl;
+    a.is_featured = document.getElementById('makeFeatured').checked;
+    a.save_article = document.getElementById('saveArticle').checked;
     showToast('Article updated', 'success');
     displayFetchedArticles();
     bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
@@ -771,69 +654,62 @@ function saveArticleEdits() {
 
 function deleteFetchedArticle() {
     if (currentEditIndex === -1) return;
-    removeArticle(currentEditIndex);
+    deleteFetchedArticleByIndex(currentEditIndex);
     bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
     currentEditIndex = -1;
 }
 
-// ── Post Articles ───────────────────────────────────────
-function postOneArticle(i) {
+// ── Post Article ───────────────────────────────────────
+function postSingleArticle(index = null) {
+    const i = index !== null ? index : currentEditIndex;
+    if (i === -1 || !fetchedArticles[i]) return;
     const a = fetchedArticles[i];
     fetch('/api/post-article/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
         body: JSON.stringify({ article: a, is_featured: a.is_featured||false, save_article: a.save_article!==false, tags: a.tags||['news'] })
     })
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
+    .then(r => r.json())
+    .then(data => {
         if (data.success) {
-            showToast('Posted: ' + data.post_title, 'success');
+            showToast(`Posted: ${data.post_title}`, 'success');
             fetchedArticles.splice(i, 1);
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            setTimeout(function(){ location.reload(); }, 1500);
+            setTimeout(() => location.reload(), 1200);
         } else showToast('Error: ' + data.message, 'danger');
     })
-    .catch(function(){ showToast('Error posting', 'danger'); });
-}
-
-function postSingleArticle(index) {
-    const i = (index !== undefined) ? index : currentEditIndex;
-    if (i === -1 || !fetchedArticles[i]) return;
-    postOneArticle(i);
-    if (bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'))) {
-        bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
-    }
+    .catch(() => showToast('Error posting', 'danger'));
 }
 
 function postAllArticles() {
-    const sel = [...document.querySelectorAll('.article-checkbox:checked')].map(function(c){ return parseInt(c.value); });
-    if (!sel.length) { showToast('None selected', 'warning'); return; }
-    const articles = sel.map(function(i){ return fetchedArticles[i]; });
+    const sel = [...document.querySelectorAll('.article-checkbox:checked')].map(c => parseInt(c.value));
+    if (!sel.length) return showToast('None selected', 'warning');
+    const articles = sel.map(i => fetchedArticles[i]);
     fetch('/api/post-multiple-articles/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-        body: JSON.stringify({ articles: articles, tags: ['news'] })
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+        body: JSON.stringify({ articles, tags: ['news'] })
     })
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
+    .then(r => r.json())
+    .then(data => {
         if (data.success) {
-            showToast('Posted ' + data.posted_count + ' articles!', 'success');
-            fetchedArticles = fetchedArticles.filter(function(_,i){ return !sel.includes(i); });
+            showToast(`Posted ${data.posted_count} articles`, 'success');
+            fetchedArticles = fetchedArticles.filter((_,i) => !sel.includes(i));
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            setTimeout(function(){ location.reload(); }, 1500);
+            setTimeout(() => location.reload(), 1200);
         } else showToast('Error: ' + data.message, 'danger');
     })
-    .catch(function(){ showToast('Error posting', 'danger'); });
+    .catch(() => showToast('Error posting', 'danger'));
 }
 
-// ── Post actions ────────────────────────────────────────
+// ── Post Actions ───────────────────────────────────────
 function deletePost(id) {
-    if (!confirm('Delete this post permanently?')) return;
-    fetch('/api/delete-post/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': CSRF } })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
+    if (!confirm('Delete this post?')) return;
+    fetch('/api/delete-post/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+    .then(r => r.json())
+    .then(d => {
         if (d.success) { showToast('Post deleted', 'success'); document.getElementById('post-row-'+id).remove(); }
         else showToast('Error: ' + d.message, 'danger');
     });
@@ -841,9 +717,9 @@ function deletePost(id) {
 
 function deleteNewsArticle(id) {
     if (!confirm('Delete this article?')) return;
-    fetch('/api/delete-news-article/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': CSRF } })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
+    fetch('/api/delete-news-article/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+    .then(r => r.json())
+    .then(d => {
         if (d.success) { showToast('Article deleted', 'success'); document.getElementById('article-row-'+id).remove(); }
         else showToast('Error: ' + d.message, 'danger');
     });
@@ -852,28 +728,29 @@ function deleteNewsArticle(id) {
 function convertToPost(id) {
     fetch('/api/convert-to-post/' + id + '/', {
         method: 'POST',
-        headers: { 'X-CSRFToken': CSRF, 'Content-Type': 'application/json' },
+        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
         body: JSON.stringify({ tags: ['news'] })
     })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-        if (d.success) { showToast(d.message, 'success'); setTimeout(function(){ location.reload(); }, 1200); }
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) { showToast(d.message, 'success'); setTimeout(() => location.reload(), 1200); }
         else showToast('Error: ' + d.message, 'danger');
     });
 }
 
-// ── Post Image Editor ───────────────────────────────────
+// ── Post Image Editor ──────────────────────────────────
 function editPostImage(id) {
     fetch('/api/get-post/' + id + '/')
-    .then(function(r){ return r.json(); })
-    .then(function(data) {
-        if (!data.success) { showToast(data.message, 'danger'); return; }
+    .then(r => r.json())
+    .then(data => {
+        if (!data.success) return showToast(data.message, 'danger');
         document.getElementById('editPostId').value = id;
         document.getElementById('postTitle').textContent = data.post.title;
         document.getElementById('postCategory').textContent = 'Category: ' + data.post.category;
         const img = document.getElementById('currentPostImage');
         if (data.post.featured_image) {
-            img.src = data.post.featured_image; img.style.display = 'block';
+            img.src = data.post.featured_image;
+            img.style.display = 'block';
             document.getElementById('noImageText').style.display = 'none';
         } else {
             img.style.display = 'none';
@@ -882,7 +759,7 @@ function editPostImage(id) {
         document.getElementById('postImageUpload').onchange = function(e) {
             if (e.target.files[0]) {
                 const r = new FileReader();
-                r.onload = function(e2){ img.src = e2.target.result; img.style.display = 'block'; };
+                r.onload = e2 => img.src = e2.target.result;
                 r.readAsDataURL(e.target.files[0]);
             }
         };
@@ -894,7 +771,7 @@ function updatePostImage() {
     const id = document.getElementById('editPostId').value;
     const fd = new FormData();
     fd.append('post_id', id);
-    fd.append('csrfmiddlewaretoken', CSRF);
+    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
     if (document.getElementById('useDefaultImage').checked) {
         fd.append('use_default', 'true');
     } else {
@@ -904,19 +781,22 @@ function updatePostImage() {
         if (url) fd.append('image_url', url);
     }
     fetch('/api/update-post-image/', { method: 'POST', body: fd })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
-        if (d.success) { showToast('Image updated!', 'success'); bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal')).hide(); setTimeout(function(){ location.reload(); }, 1000); }
-        else showToast('Error: ' + d.message, 'danger');
+    .then(r => r.json())
+    .then(d => {
+        if (d.success) {
+            showToast('Image updated!', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal')).hide();
+            setTimeout(() => location.reload(), 1000);
+        } else showToast('Error: ' + d.message, 'danger');
     });
 }
 
 function removePostImage() {
     const id = document.getElementById('editPostId').value;
     if (!confirm('Remove image?')) return;
-    fetch('/api/remove-post-image/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': CSRF } })
-    .then(function(r){ return r.json(); })
-    .then(function(d) {
+    fetch('/api/remove-post-image/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
+    .then(r => r.json())
+    .then(d => {
         if (d.success) {
             showToast('Image removed', 'info');
             document.getElementById('currentPostImage').style.display = 'none';
@@ -925,14 +805,14 @@ function removePostImage() {
     });
 }
 
-// ── Toast ───────────────────────────────────────────────
+// ── Toast ──────────────────────────────────────────────
 function showToast(msg, type) {
     const stack = document.getElementById('toastStack');
     const t = document.createElement('div');
-    t.className = 'toast-item toast-' + type;
+    t.className = `toast-item toast-${type}`;
     t.textContent = msg;
     stack.appendChild(t);
-    setTimeout(function(){ t.remove(); }, 3500);
+    setTimeout(() => t.remove(), 3000);
 }
 </script>
 {% endblock %}

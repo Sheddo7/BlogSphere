@@ -595,7 +595,9 @@ def fetch_article_image(request):
                 return JsonResponse({'success': False, 'message': 'No URL provided'})
 
             from blog.ai_service import EnhancedNewsFetcher
-            image_url = EnhancedNewsFetcher.fetch_best_image(url)
+            # Use scrape_article which gets og:image reliably
+            scraped = EnhancedNewsFetcher.scrape_article(url)
+            image_url = scraped.get('image_url', '')
 
             if image_url:
                 return JsonResponse({'success': True, 'image_url': image_url})
