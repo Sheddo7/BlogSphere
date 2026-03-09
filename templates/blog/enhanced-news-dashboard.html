@@ -170,10 +170,8 @@
   .article-row { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
   .article-row:last-child { border-bottom: none; }
   .article-row:hover { background: #fafaf8; }
-  .article-thumb { width: 72px; height: 52px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-  .article-thumb-placeholder { width: 72px; height: 52px; background: var(--border); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
   .article-info { flex: 1; min-width: 0; }
-  .article-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3rem; }
+  .article-title { font-weight: 500; font-size: 0.9rem; margin-bottom: 0.3rem; }
   .article-title a { color: var(--ink); text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .article-title a:hover { text-decoration: underline; }
   .article-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
@@ -271,7 +269,7 @@
     </div>
   </div>
 
-  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – with updated sources === -->
+  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – with updated sources and display === -->
   <div class="admin-section">
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
@@ -301,7 +299,7 @@
       </div>
     </div>
 
-    <!-- Fetch Form – updated sources default -->
+    <!-- Fetch Form – now uses publications (via Google News) -->
     <div class="panel mb-4">
       <div class="panel-header">
         <span class="panel-title">Fetch News</span>
@@ -310,37 +308,28 @@
         <form id="fetchForm" action="{% url 'fetch_news_now' %}">
           {% csrf_token %}
           <div class="row g-3">
-            <!-- Sources – now defaulting to google_nigeria, punch, vanguard, channels, thisday -->
+            <!-- Publications (via Google News) -->
             <div class="col-md-4">
-              <div class="form-label">Sources</div>
+              <div class="form-label">Publications</div>
               <div class="d-flex flex-wrap gap-2">
                 <label class="source-chip">
-                  <input type="checkbox" name="sources" value="google_nigeria" checked>
-                  <span class="dot" style="background:#008751"></span> 🇳🇬 Google News Nigeria
-                </label>
-                <label class="source-chip">
-                  <input type="checkbox" name="sources" value="punch" checked>
+                  <input type="checkbox" name="publications" value="punch" checked>
                   <span class="dot"></span> Punch
                 </label>
                 <label class="source-chip">
-                  <input type="checkbox" name="sources" value="vanguard" checked>
+                  <input type="checkbox" name="publications" value="vanguard" checked>
                   <span class="dot"></span> Vanguard
                 </label>
                 <label class="source-chip">
-                  <input type="checkbox" name="sources" value="channels" checked>
+                  <input type="checkbox" name="publications" value="channels" checked>
                   <span class="dot"></span> Channels
                 </label>
                 <label class="source-chip">
-                  <input type="checkbox" name="sources" value="thisday" checked>
+                  <input type="checkbox" name="publications" value="thisday" checked>
                   <span class="dot"></span> This Day
                 </label>
-                <!-- Optional additional sources (unchecked by default) -->
-                <!--
-                <label class="source-chip"><input type="checkbox" name="sources" value="bbc"> BBC</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="reddit"> Reddit</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="newsapi"> NewsAPI</label>
-                -->
               </div>
+              <small class="text-muted d-block mt-2">All fetched via Google News</small>
             </div>
             <!-- Categories (unchanged) -->
             <div class="col-md-5">
@@ -377,7 +366,7 @@
       </div>
     </div>
 
-    <!-- Results Panel (unchanged) -->
+    <!-- Results Panel – simplified display -->
     <div class="panel mb-4" id="resultsSection" style="display:none;">
       <div class="panel-header">
         <div class="d-flex align-items-center gap-2">
@@ -564,7 +553,7 @@
 </div>
 
 <script>
-// === ALL YOUR EXISTING JAVASCRIPT (with one change: article titles are now clickable) ===
+// === UPDATED JAVASCRIPT – now uses publications, simplified display ===
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -574,14 +563,15 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Fetching...';
     btn.disabled = true;
 
-    const sources = [...this.querySelectorAll('input[name="sources"]:checked')].map(c => c.value);
+    // Get selected publications (instead of sources)
+    const publications = [...this.querySelectorAll('input[name="publications"]:checked')].map(c => c.value);
     const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
     const limit = this.querySelector('input[name="limit_per_source"]').value;
     const autoSave = this.querySelector('#autoSave').checked;
 
     const fd = new FormData();
     fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    sources.forEach(s => fd.append('sources', s));
+    publications.forEach(p => fd.append('publications', p));
     categories.forEach(c => fd.append('categories', c));
     fd.append('limit_per_source', limit);
     fd.append('auto_save', autoSave);
@@ -610,22 +600,21 @@ function displayFetchedArticles() {
     const c = document.getElementById('articlesContainer');
     c.innerHTML = '';
     fetchedArticles.forEach((a, i) => {
-        const img = a.image_url
-            ? `<img src="${a.image_url}" class="article-thumb" onerror="this.style.display='none'">`
-            : `<div class="article-thumb-placeholder"><i class="fas fa-newspaper"></i></div>`;
         const row = document.createElement('div');
         row.className = 'article-row';
         row.innerHTML = `
             <div class="form-check" style="flex-shrink:0;">
                 <input class="form-check-input article-checkbox" type="checkbox" value="${i}" checked>
             </div>
-            ${img}
             <div class="article-info">
-                <div class="article-title"><a href="${a.url}" target="_blank" style="color:var(--ink); text-decoration:none;">${a.title}</a></div>
+                <div class="article-title">
+                    <a href="${a.url}" target="_blank" style="color:var(--ink); text-decoration:none; font-weight:500;">
+                        ${a.title}
+                    </a>
+                </div>
                 <div class="article-meta">
                     <span class="tag tag-source">${a.source}</span>
                     <span class="tag tag-cat">${a.category}</span>
-                    <span style="font-size:0.72rem;color:var(--muted);">${(a.description||a.content||'').substring(0,100)}...</span>
                 </div>
             </div>
             <div class="article-actions">

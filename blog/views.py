@@ -234,21 +234,48 @@ def auto_fetch_news(request):
 @login_required(login_url='/admin/login/')
 @user_passes_test(is_staff, login_url='/admin/login/')
 def fetch_news_now(request):
-    """Used by the enhanced dashboard fetch form."""
+    """
+    Fetch news from Nigerian publications via Google News.
+    Used by the enhanced dashboard fetch form.
+    """
     if request.method == 'POST':
         try:
+            # Publication name to domain mapping
+            PUB_DOMAINS = {
+                'punch': 'punchng.com',
+                'vanguard': 'vanguardngr.com',
+                'channels': 'channelstv.com',
+                'thisday': 'thisdaylive.com',
+            }
+            publications = request.POST.getlist('publications') or ['punch', 'vanguard', 'channels', 'thisday']
             categories = request.POST.getlist('categories') or ['news', 'sport', 'entertainment']
-            sources = request.POST.getlist('sources') or ['google', 'google_nigeria']
-            limit = int(request.POST.get('limit_per_source', 3))
+            limit = int(request.POST.get('limit_per_source', 5))
             auto_save = request.POST.get('auto_save') == 'true'
 
             from blog.ai_service import EnhancedNewsFetcher
             fetcher = EnhancedNewsFetcher()
-            articles = fetcher.fetch_multiple_sources(
-                categories=categories,
-                sources=sources,
-                limit_per_source=limit
-            )
+            all_articles = []
+
+            for pub in publications:
+                domain = PUB_DOMAINS.get(pub)
+                if not domain:
+                    continue
+                for cat in categories:
+                    query = f"site:{domain} {cat}"
+                    try:
+                        articles = fetcher.fetch_google_news(query, limit=limit)
+                        for art in articles:
+                            art['source'] = pub.title()  # Capitalize e.g., 'Punch'
+                        all_articles.extend(articles)
+                    except Exception as e:
+                        print(f"Error fetching {pub} {cat}: {e}")
+
+            # Deduplicate by URL
+            unique = {}
+            for art in all_articles:
+                if art.get('url') and art['url'] not in unique:
+                    unique[art['url']] = art
+            articles = list(unique.values())
 
             saved_count = 0
             if auto_save:
