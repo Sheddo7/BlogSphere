@@ -2,817 +2,476 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}News Dashboard — BlogSphere{% endblock %}
+{% block title %}BlogSphere — Latest News{% endblock %}
 
 {% block content %}
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
   :root {
-    --ink: #0f0f0f;
-    --paper: #f7f5f0;
-    --accent: #e63946;
-    --gold: #f4a261;
-    --muted: #6b6b6b;
-    --border: #e0ddd6;
-    --card-bg: #ffffff;
-    --success: #2a9d8f;
-    --info: #457b9d;
+    --primary-text: #1a1a1a;
+    --secondary-text: #666666;
+    --accent-red: #d32f2f;
+    --border-color: #e0e0e0;
+    --bg-white: #ffffff;
+    --bg-gray: #f8f9fa;
   }
 
-  .dash-wrap { font-family: 'DM Sans', sans-serif; background: var(--paper); min-height: 100vh; padding: 2rem 0 4rem; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
-  /* Header */
-  .dash-header { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 2.5rem; border-bottom: 2px solid var(--ink); padding-bottom: 1rem; }
-  .dash-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem; letter-spacing: -1px; color: var(--ink); margin: 0; line-height: 1; }
-  .dash-title span { color: var(--accent); }
-  .dash-subtitle { font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.3rem; }
+  body { background: var(--bg-white); font-family: 'Inter', sans-serif; color: var(--primary-text); line-height: 1.6; }
 
-  /* Stat Cards */
-  .stat-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 1.4rem 1.6rem; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
-  .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
-  .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
-  .stat-card.green::before { background: var(--success); }
-  .stat-card.blue::before { background: var(--info); }
-  .stat-card.gold::before { background: var(--gold); }
-  .stat-num { font-family: 'Syne', sans-serif; font-size: 2.4rem; font-weight: 800; color: var(--ink); line-height: 1; }
-  .stat-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-top: 0.3rem; }
+  /* Navigation */
+  .main-nav { background: var(--bg-white); border-bottom: 1px solid var(--border-color); padding: 1.2rem 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .nav-wrapper { display: flex; align-items: center; justify-content: space-between; max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 800; color: var(--primary-text); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 32px; height: 32px; background: var(--accent-red); border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; }
 
-  /* Panels */
-  .panel { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 1.5rem; overflow: hidden; }
-  .panel-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.4rem; border-bottom: 1.5px solid var(--border); background: var(--paper); }
-  .panel-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: -0.3px; color: var(--ink); margin: 0; }
-  .panel-body { padding: 1.4rem; }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; margin: 0; }
+  .nav-links a { text-decoration: none; color: var(--primary-text); font-size: 0.9rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--accent-red); }
+  .nav-links a.active { color: var(--accent-red); font-weight: 600; }
 
-  /* Fetch Form */
-  .source-chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.9rem; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 0.82rem; font-weight: 500; transition: all 0.15s; background: white; color: var(--ink); }
-  .source-chip input { display: none; }
-  .source-chip:has(input:checked), .source-chip.active { border-color: var(--ink); background: var(--ink); color: white; }
-  .source-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+  .nav-actions { display: flex; align-items: center; gap: 1.2rem; }
+  .search-box { position: relative; }
+  .search-box input { border: 1px solid var(--border-color); border-radius: 20px; padding: 0.5rem 2.5rem 0.5rem 1rem; font-size: 0.85rem; width: 280px; outline: none; }
+  .search-box input:focus { border-color: var(--primary-text); }
+  .search-box button { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--secondary-text); cursor: pointer; font-size: 1rem; }
 
-  .cat-pill { display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.3rem 0.75rem; border: 1.5px solid var(--border); border-radius: 20px; cursor: pointer; font-size: 0.78rem; font-weight: 500; transition: all 0.15s; background: white; color: var(--ink); margin: 0.2rem; }
-  .cat-pill input { display: none; }
-  .cat-pill:has(input:checked) { border-color: var(--accent); background: var(--accent); color: white; }
+  .dashboard-btn { background: var(--accent-red); color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 20px; font-size: 0.85rem; font-weight: 500; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+  .dashboard-btn:hover { background: #b71c1c; color: white; }
 
-  .fetch-btn { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem; letter-spacing: 0.02em; background: var(--ink); color: white; border: none; border-radius: 8px; padding: 0.85rem 2rem; cursor: pointer; transition: all 0.2s; width: 100%; }
-  .fetch-btn:hover { background: var(--accent); transform: translateY(-1px); }
-  .fetch-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  /* Main Container */
+  .blog-container { max-width: 1400px; margin: 0 auto; padding: 2rem 20px; }
+  .content-grid { display: grid; grid-template-columns: 1fr 320px; gap: 3rem; }
 
-  /* Articles List */
-  .article-row { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border); transition: background 0.15s; }
-  .article-row:last-child { border-bottom: none; }
-  .article-row:hover { background: #fafaf8; }
-  .article-thumb { width: 72px; height: 52px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
-  .article-thumb-placeholder { width: 72px; height: 52px; background: var(--border); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
-  .article-info { flex: 1; min-width: 0; }
-  .article-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3rem; }
-  .article-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
-  .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-  .tag-source { background: #f0ece4; color: var(--muted); }
-  .tag-cat { background: #fde8e9; color: var(--accent); }
-  .article-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+  /* Hero Image */
+  .hero-section { margin-bottom: 2rem; position: relative; }
+  .hero-image { width: 100%; height: 500px; object-fit: cover; border-radius: 0; }
+  .hero-placeholder { width: 100%; height: 500px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-family: 'Playfair Display', serif; }
 
-  /* Table */
-  .data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  .data-table th { font-family: 'Syne', sans-serif; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0.6rem 0.8rem; border-bottom: 1.5px solid var(--border); white-space: nowrap; }
-  .data-table td { padding: 0.75rem 0.8rem; border-bottom: 1px solid var(--border); vertical-align: middle; color: var(--ink); }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover td { background: #fafaf8; }
+  /* News Articles List */
+  .articles-list { background: var(--bg-white); }
+  .article-item { padding: 1.5rem 0; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem; }
+  .article-item:first-child { padding-top: 0; }
+  .article-item:last-child { border-bottom: none; }
 
-  /* Buttons */
-  .btn-icon { width: 30px; height: 30px; border-radius: 6px; border: 1.5px solid var(--border); background: white; color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all 0.15s; }
-  .btn-icon:hover { border-color: var(--ink); color: var(--ink); background: var(--paper); }
-  .btn-icon.danger:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-icon.success:hover { border-color: var(--success); color: var(--success); }
+  .article-number { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--secondary-text); min-width: 30px; }
 
-  /* Post thumbnail */
-  .post-thumb { width: 56px; height: 40px; object-fit: cover; border-radius: 5px; }
-  .post-thumb-empty { width: 56px; height: 40px; background: var(--border); border-radius: 5px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.9rem; }
+  .article-content { flex: 1; }
+  .article-title { font-size: 1.1rem; line-height: 1.4; margin-bottom: 0.3rem; }
+  .article-title a { color: var(--accent-red); text-decoration: none; font-weight: 500; }
+  .article-title a:hover { text-decoration: underline; }
 
-  /* Status badges */
-  .status { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
-  .status-yes { background: #d4f4f0; color: var(--success); }
-  .status-no { background: #fff3e0; color: #e07b00; }
-  .status-cat { background: #e8f0f7; color: var(--info); }
+  .article-source { font-size: 0.85rem; color: var(--secondary-text); }
 
-  /* Toast */
-  .toast-stack { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999; display: flex; flex-direction: column; gap: 0.5rem; }
-  .toast-item { font-family: 'DM Sans', sans-serif; font-size: 0.875rem; font-weight: 500; padding: 0.75rem 1.2rem; border-radius: 8px; color: white; animation: slideIn 0.25s ease; box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
-  .toast-success { background: var(--success); }
-  .toast-danger { background: var(--accent); }
-  .toast-info { background: var(--info); }
-  .toast-warning { background: var(--gold); color: var(--ink); }
-  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  /* Sidebar */
+  .sidebar { }
 
-  /* Modal tweaks */
-  .modal-content { border-radius: 14px; border: none; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
-  .modal-header { border-bottom: 1.5px solid var(--border); padding: 1.2rem 1.5rem; font-family: 'Syne', sans-serif; }
-  .modal-title { font-family: 'Syne', sans-serif; font-weight: 700; }
-  .form-control, .form-select { border: 1.5px solid var(--border); border-radius: 7px; font-family: 'DM Sans', sans-serif; }
-  .form-control:focus, .form-select:focus { border-color: var(--ink); box-shadow: none; }
-  .form-label { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 0.35rem; }
+  .sidebar-section { background: var(--bg-gray); padding: 1.5rem; border-radius: 0; margin-bottom: 2rem; }
+  .sidebar-section h3 { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; margin-bottom: 1.2rem; color: var(--primary-text); border-bottom: 2px solid var(--primary-text); padding-bottom: 0.5rem; }
 
-  /* Results count */
-  .results-badge { font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; background: var(--accent); color: white; padding: 0.2rem 0.6rem; border-radius: 20px; }
+  .topics-list { list-style: none; }
+  .topics-list li { padding: 0.7rem 0; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+  .topics-list li:last-child { border-bottom: none; }
+  .topics-list a { text-decoration: none; color: var(--primary-text); font-weight: 500; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.5px; }
+  .topics-list a:hover { color: var(--accent-red); }
+  .post-count { color: var(--secondary-text); font-size: 0.85rem; }
 
-  /* Scrollable articles */
-  #articlesContainer { max-height: 520px; overflow-y: auto; }
-  #articlesContainer::-webkit-scrollbar { width: 4px; }
-  #articlesContainer::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .latest-stories { list-style: none; }
+  .latest-stories li { padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); }
+  .latest-stories li:last-child { border-bottom: none; }
+  .latest-story-title { font-weight: 600; font-size: 0.9rem; color: var(--primary-text); text-decoration: none; display: block; margin-bottom: 0.3rem; }
+  .latest-story-title:hover { color: var(--accent-red); }
+  .latest-story-date { font-size: 0.8rem; color: var(--secondary-text); }
+
+  /* Admin Controls (Collapsible) */
+  .admin-controls { background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+  .admin-controls-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; margin-bottom: 1rem; }
+  .admin-controls-header h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin: 0; color: #e65100; }
+  .toggle-icon { font-size: 1.2rem; color: #e65100; }
+
+  .admin-controls-content { display: none; }
+  .admin-controls-content.active { display: block; }
+
+  .fetch-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem; }
+  .form-group label { display: block; font-weight: 600; margin-bottom: 0.5rem; font-size: 0.85rem; text-transform: uppercase; color: var(--secondary-text); }
+
+  .source-chips, .category-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .chip { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.8rem; border: 1.5px solid var(--border-color); border-radius: 20px; cursor: pointer; font-size: 0.8rem; background: white; transition: all 0.2s; }
+  .chip input { display: none; }
+  .chip:has(input:checked) { border-color: var(--accent-red); background: var(--accent-red); color: white; }
+
+  .fetch-button { background: var(--primary-text); color: white; border: none; padding: 0.8rem 2rem; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; width: 100%; margin-top: 1rem; }
+  .fetch-button:hover { background: var(--accent-red); }
+  .fetch-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Loading State */
+  .loading-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 9999; }
+  .loading-overlay.active { display: flex; }
+  .spinner { width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Toast Notifications */
+  .toast-container { position: fixed; bottom: 2rem; right: 2rem; z-index: 10000; }
+  .toast { background: var(--primary-text); color: white; padding: 1rem 1.5rem; border-radius: 6px; margin-top: 0.5rem; animation: slideIn 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+  .toast.success { background: #4caf50; }
+  .toast.error { background: #f44336; }
+  @keyframes slideIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+  /* Empty State */
+  .empty-state { text-align: center; padding: 4rem 2rem; color: var(--secondary-text); }
+  .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+  .empty-state-text { font-size: 1.2rem; font-weight: 500; }
+  .empty-state-subtext { font-size: 0.9rem; margin-top: 0.5rem; }
+
+  /* Responsive */
+  @media (max-width: 968px) {
+    .content-grid { grid-template-columns: 1fr; }
+    .nav-links { gap: 1.5rem; }
+    .search-box input { width: 200px; }
+    .fetch-form { grid-template-columns: 1fr; }
+  }
 </style>
 
-<div class="dash-wrap">
-<div class="container">
-
-  <!-- Header -->
-  <div class="dash-header">
-    <div>
-      <div class="dash-subtitle">Admin Panel</div>
-      <h1 class="dash-title">News <span>Dashboard</span></h1>
-    </div>
-    <a href="{% url 'admin:index' %}" class="btn-icon" style="width:auto; padding: 0 1rem; font-size:0.8rem; font-weight:600; text-decoration:none;">
-      ← Admin
+<!-- Navigation -->
+<nav class="main-nav">
+  <div class="nav-wrapper">
+    <a href="{% url 'home' %}" class="logo">
+      <div class="logo-icon">📰</div>
+      BlogSphere
     </a>
-  </div>
 
-  <!-- Stats -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="stat-card">
-        <div class="stat-num">{{ stats.total_articles }}</div>
-        <div class="stat-label">Total Articles</div>
+    <ul class="nav-links">
+      <li><a href="{% url 'home' %}">HOME</a></li>
+      <li><a href="{% url 'category' 'entertainment' %}">ENTERTAINMENT</a></li>
+      <li><a href="{% url 'category' 'news' %}" class="active">NEWS</a></li>
+      <li><a href="{% url 'category' 'economy' %}">ECONOMY</a></li>
+      <li><a href="{% url 'category' 'politics' %}">POLITICS</a></li>
+      <li><a href="{% url 'category' 'technology' %}">TECHNOLOGY</a></li>
+      <li><a href="{% url 'category' 'general' %}">GENERAL</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <div class="search-box">
+        <input type="text" placeholder="Search articles...">
+        <button><i class="fas fa-search"></i></button>
       </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="stat-card green">
-        <div class="stat-num">{{ stats.today_articles }}</div>
-        <div class="stat-label">Today</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="stat-card blue">
-        <div class="stat-num">{{ stats.auto_posts }}</div>
-        <div class="stat-label">Auto Posts</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="stat-card gold">
-        <div class="stat-num">{{ stats.to_process }}</div>
-        <div class="stat-label">To Process</div>
-      </div>
+      <a href="{% url 'admin:index' %}" class="dashboard-btn">
+        <i class="fas fa-cog"></i> DASHBOARD
+      </a>
     </div>
   </div>
+</nav>
 
-  <!-- Fetch Form -->
-  <div class="panel mb-4">
-    <div class="panel-header">
-      <span class="panel-title">Fetch News</span>
+<!-- Main Content -->
+<div class="blog-container">
+
+  <!-- Admin Controls (Collapsible) -->
+  <div class="admin-controls">
+    <div class="admin-controls-header" onclick="toggleAdminControls()">
+      <h3><i class="fas fa-tools"></i> Fetch Latest News</h3>
+      <span class="toggle-icon" id="toggleIcon">▼</span>
     </div>
-    <div class="panel-body">
-      <form id="fetchForm" action="{% url 'fetch_news_now' %}">
+
+    <div class="admin-controls-content" id="adminControlsContent">
+      <form id="fetchForm">
         {% csrf_token %}
-        <div class="row g-3">
-
-          <!-- Sources -->
-          <div class="col-md-4">
-            <div class="form-label">Sources</div>
-            <div class="d-flex flex-wrap gap-2">
-              <label class="source-chip">
+        <div class="fetch-form">
+          <div class="form-group">
+            <label>News Sources</label>
+            <div class="source-chips">
+              <label class="chip">
                 <input type="checkbox" name="sources" value="google" checked>
-                <span class="dot"></span> Google
+                <span>Google News</span>
               </label>
-              <label class="source-chip">
+              <label class="chip">
                 <input type="checkbox" name="sources" value="google_nigeria" checked>
-                <span class="dot" style="background:#008751"></span> 🇳🇬 Nigeria
+                <span>🇳🇬 Nigeria News</span>
               </label>
-              <label class="source-chip">
-                <input type="checkbox" name="sources" value="punch">
-                <span class="dot"></span> Punch
-              </label>
-              <label class="source-chip">
-                <input type="checkbox" name="sources" value="vanguard">
-                <span class="dot"></span> Vanguard
-              </label>
-              <label class="source-chip">
-                <input type="checkbox" name="sources" value="channels">
-                <span class="dot"></span> Channels
-              </label>
-              <label class="source-chip">
+              <label class="chip">
                 <input type="checkbox" name="sources" value="bbc">
-                <span class="dot"></span> BBC
+                <span>BBC</span>
               </label>
-              <label class="source-chip">
-                <input type="checkbox" name="sources" value="reddit">
-                <span class="dot"></span> Reddit
+              <label class="chip">
+                <input type="checkbox" name="sources" value="punch">
+                <span>Punch</span>
               </label>
-              <label class="source-chip">
+              <label class="chip">
+                <input type="checkbox" name="sources" value="vanguard">
+                <span>Vanguard</span>
+              </label>
+              <label class="chip">
                 <input type="checkbox" name="sources" value="newsapi">
-                <span class="dot"></span> NewsAPI
+                <span>NewsAPI</span>
               </label>
             </div>
           </div>
 
-          <!-- Categories -->
-          <div class="col-md-5">
-            <div class="form-label">Categories</div>
-            <div>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="news" checked> News</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="sport" checked> Sport</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="entertainment" checked> Entertainment</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="economy"> Economy</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="politics"> Politics</label>
-              <label class="cat-pill"><input type="checkbox" name="categories" value="technology"> Technology</label>
+          <div class="form-group">
+            <label>Categories</label>
+            <div class="category-chips">
+              <label class="chip">
+                <input type="checkbox" name="categories" value="news" checked>
+                <span>News</span>
+              </label>
+              <label class="chip">
+                <input type="checkbox" name="categories" value="sport" checked>
+                <span>Sport</span>
+              </label>
+              <label class="chip">
+                <input type="checkbox" name="categories" value="entertainment" checked>
+                <span>Entertainment</span>
+              </label>
+              <label class="chip">
+                <input type="checkbox" name="categories" value="economy">
+                <span>Economy</span>
+              </label>
+              <label class="chip">
+                <input type="checkbox" name="categories" value="politics">
+                <span>Politics</span>
+              </label>
+              <label class="chip">
+                <input type="checkbox" name="categories" value="technology">
+                <span>Technology</span>
+              </label>
             </div>
-            <div class="mt-2 d-flex align-items-center gap-3">
-              <div>
-                <label class="form-label mb-1">Articles per source</label>
-                <input type="number" class="form-control form-control-sm" name="limit_per_source" value="5" min="1" max="20" style="width:80px;">
-              </div>
-              <div class="mt-3">
-                <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="auto_save" id="autoSave">
-                  <label class="form-check-label" for="autoSave" style="font-size:0.85rem;">Auto-save to database</label>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Button -->
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="fetch-btn" id="fetchBtn">
-              <i class="fas fa-satellite-dish me-2"></i> Fetch News
-            </button>
           </div>
         </div>
+
+        <button type="submit" class="fetch-button" id="fetchBtn">
+          <i class="fas fa-sync-alt"></i> Fetch Latest News
+        </button>
       </form>
     </div>
   </div>
 
-  <!-- Results -->
-  <div class="panel mb-4" id="resultsSection" style="display:none;">
-    <div class="panel-header">
-      <div class="d-flex align-items-center gap-2">
-        <span class="panel-title">Fetched Articles</span>
-        <span class="results-badge" id="resultsCount">0</span>
-      </div>
-      <div class="d-flex gap-2">
-        <button class="btn-icon success" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;" onclick="postAllArticles()">
-          <i class="fas fa-paper-plane me-1"></i> Post All
-        </button>
-        <button class="btn-icon danger" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;" onclick="deleteSelectedArticles()">
-          <i class="fas fa-trash me-1"></i> Delete Selected
-        </button>
-        <button class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;" onclick="clearResults()">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
-    <div id="articlesContainer"></div>
-  </div>
+  <!-- Content Grid -->
+  <div class="content-grid">
 
-  <!-- Recent Posts -->
-  <div class="panel mb-4">
-    <div class="panel-header">
-      <span class="panel-title">Recent Blog Posts</span>
-      <a href="{% url 'admin:blog_post_changelist' %}" class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;text-decoration:none;">
-        View All →
-      </a>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Image</th>
-            <th>Title</th>
-            <th>Category</th>
-            <th>Date</th>
-            <th>Views</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for post in recent_posts|slice:":10" %}
-          <tr id="post-row-{{ post.id }}">
-            <td>
-              {% if post.featured_image %}
-                {% with img=post.featured_image.name %}
-                  {% if img|slice:":4" == "http" %}
-                    <img src="{{ img }}" class="post-thumb" alt="">
-                  {% else %}
-                    <img src="{{ post.featured_image.url }}" class="post-thumb" alt="">
-                  {% endif %}
-                {% endwith %}
-              {% else %}
-                <div class="post-thumb-empty"><i class="fas fa-image"></i></div>
-              {% endif %}
-            </td>
-            <td style="max-width:260px;">
-              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;">{{ post.title|truncatechars:55 }}</div>
-            </td>
-            <td><span class="status status-cat">{{ post.category.name }}</span></td>
-            <td style="color:var(--muted);font-size:0.8rem;white-space:nowrap;">{{ post.published_date|date:"M d, Y" }}</td>
-            <td style="font-size:0.8rem;color:var(--muted);">{{ post.views }}</td>
-            <td>
-              <div class="d-flex gap-1">
-                <a href="{% url 'post_detail' post.slug %}" target="_blank" class="btn-icon" title="View"><i class="fas fa-eye"></i></a>
-                <a href="{% url 'admin:blog_post_change' post.id %}" class="btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
-                <button onclick="editPostImage({{ post.id }})" class="btn-icon" title="Edit Image"><i class="fas fa-image"></i></button>
-                <button onclick="deletePost({{ post.id }})" class="btn-icon danger" title="Delete"><i class="fas fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
+    <!-- Main Content -->
+    <main>
+      <!-- Hero Image -->
+      <div class="hero-section" id="heroSection">
+        <div class="hero-placeholder">
+          <span>Latest Breaking News</span>
+        </div>
+      </div>
+
+      <!-- Articles List -->
+      <div class="articles-list" id="articlesList">
+        <!-- Empty State (shown when no articles) -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-state-icon">📰</div>
+          <div class="empty-state-text">No articles fetched yet</div>
+          <div class="empty-state-subtext">Click "Fetch Latest News" above to load recent articles</div>
+        </div>
+
+        <!-- Articles will be populated here -->
+      </div>
+    </main>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <!-- Topics -->
+      <div class="sidebar-section">
+        <h3>Topics</h3>
+        <ul class="topics-list">
+          <li>
+            <a href="{% url 'category' 'entertainment' %}">ENTERTAINMENT</a>
+            <span class="post-count">5 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'news' %}">NEWS</a>
+            <span class="post-count">11 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'economy' %}">ECONOMY</a>
+            <span class="post-count">4 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'politics' %}">POLITICS</a>
+            <span class="post-count">0 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'technology' %}">TECHNOLOGY</a>
+            <span class="post-count">2 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'general' %}">GENERAL</a>
+            <span class="post-count">0 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'sports' %}">SPORTS</a>
+            <span class="post-count">0 posts</span>
+          </li>
+          <li>
+            <a href="{% url 'category' 'sport' %}">SPORT</a>
+            <span class="post-count">1 posts</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Latest Stories -->
+      <div class="sidebar-section">
+        <h3>Latest Stories</h3>
+        <ul class="latest-stories">
+          {% for post in recent_posts|slice:":5" %}
+          <li>
+            <a href="{% url 'post_detail' post.slug %}" class="latest-story-title">
+              {{ post.title|truncatechars:60 }}
+            </a>
+            <div class="latest-story-date">{{ post.published_date|date:"M d, Y" }}</div>
+          </li>
           {% empty %}
-          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No posts yet.</td></tr>
+          <li>
+            <a href="#" class="latest-story-title">IWD: No country has achieved full gender equality, say...</a>
+            <div class="latest-story-date">Mar 08, 2026</div>
+          </li>
+          <li>
+            <a href="#" class="latest-story-title">International News Roundup — March 08, 2026</a>
+            <div class="latest-story-date">Mar 08, 2026</div>
+          </li>
+          <li>
+            <a href="#" class="latest-story-title">Nigerian News Roundup — March 08, 2026</a>
+            <div class="latest-story-date">Mar 08, 2026</div>
+          </li>
           {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- News Articles -->
-  <div class="panel">
-    <div class="panel-header">
-      <span class="panel-title">Saved News Articles</span>
-      <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn-icon" style="width:auto;padding:0 0.8rem;font-size:0.78rem;font-weight:600;text-decoration:none;">
-        View All →
-      </a>
-    </div>
-    <div style="overflow-x:auto;">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Source</th>
-            <th>Category</th>
-            <th>Published</th>
-            <th>Converted</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for article in recent_articles %}
-          <tr id="article-row-{{ article.id }}">
-            <td style="max-width:280px;">
-              <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ article.title|truncatechars:65 }}</div>
-            </td>
-            <td><span class="tag tag-source">{{ article.source }}</span></td>
-            <td><span class="tag tag-cat">{{ article.category }}</span></td>
-            <td style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">{{ article.published_at|date:"M d, Y"|default:"—" }}</td>
-            <td>
-              {% if article.created_as_post %}
-                <span class="status status-yes">Yes</span>
-              {% else %}
-                <span class="status status-no">No</span>
-              {% endif %}
-            </td>
-            <td>
-              <div class="d-flex gap-1">
-                <a href="{{ article.url }}" target="_blank" class="btn-icon" title="Open"><i class="fas fa-external-link-alt"></i></a>
-                <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="btn-icon" title="Edit"><i class="fas fa-edit"></i></a>
-                <button onclick="convertToPost({{ article.id }})" class="btn-icon success" title="Convert to Post"><i class="fas fa-file-alt"></i></button>
-                <button onclick="deleteNewsArticle({{ article.id }})" class="btn-icon danger" title="Delete"><i class="fas fa-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-          {% empty %}
-          <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No articles yet. Fetch some news!</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-</div><!-- /container -->
-</div><!-- /dash-wrap -->
-
-<!-- Toast Stack -->
-<div class="toast-stack" id="toastStack"></div>
-
-<!-- Article Editor Modal -->
-<div class="modal fade" id="articleEditorModal" tabindex="-1">
-  <div class="modal-dialog modal-xl">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Article</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </ul>
       </div>
-      <div class="modal-body">
-        <form id="articleEditorForm">
-          <input type="hidden" id="editArticleIndex">
-          <div class="row g-3">
-            <div class="col-md-8">
-              <div class="mb-3">
-                <label class="form-label">Title</label>
-                <input type="text" class="form-control" id="editTitle">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Content</label>
-                <textarea class="form-control" id="editContent" rows="8"></textarea>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Description</label>
-                <textarea class="form-control" id="editDescription" rows="3"></textarea>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Tags (comma separated)</label>
-                <input type="text" class="form-control" id="editTags" value="news">
-              </div>
-            </div>
-            <div class="col-md-4">
-              <div class="mb-3">
-                <label class="form-label">Image</label>
-                <img id="articleImagePreview" src="" class="img-fluid rounded mb-2 w-100" style="height:160px;object-fit:cover;background:#f0ece4;" alt="">
-                <input type="file" class="form-control form-control-sm mb-2" id="imageUpload" accept="image/*">
-                <input type="text" class="form-control form-control-sm" id="imageUrl" placeholder="Or paste image URL">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Source</label>
-                <input type="text" class="form-control" id="editSource">
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Category</label>
-                <select class="form-select" id="editCategory">
-                  <option value="NEWS">NEWS</option>
-                  <option value="SPORT">SPORT</option>
-                  <option value="ENTERTAINMENT">ENTERTAINMENT</option>
-                  <option value="ECONOMY">ECONOMY</option>
-                  <option value="POLITICS">POLITICS</option>
-                  <option value="TECHNOLOGY">TECHNOLOGY</option>
-                </select>
-              </div>
-              <div class="mb-3">
-                <label class="form-label">Original URL</label>
-                <input type="url" class="form-control" id="editUrl">
-              </div>
-              <div class="form-check mb-2">
-                <input class="form-check-input" type="checkbox" id="makeFeatured">
-                <label class="form-check-label" for="makeFeatured">Make featured post</label>
-              </div>
-              <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="saveArticle" checked>
-                <label class="form-check-label" for="saveArticle">Save as NewsArticle</label>
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-outline-danger btn-sm" onclick="deleteFetchedArticle()"><i class="fas fa-trash me-1"></i>Delete</button>
-        <button class="btn btn-outline-primary btn-sm" onclick="saveArticleEdits()">Save Changes</button>
-        <button class="btn btn-success btn-sm" onclick="postSingleArticle()"><i class="fas fa-paper-plane me-1"></i>Post to Blog</button>
-      </div>
-    </div>
+    </aside>
+
   </div>
 </div>
 
-<!-- Post Image Editor Modal -->
-<div class="modal fade" id="postImageEditorModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Edit Post Image</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <p class="fw-bold mb-1" id="postTitle" style="font-size:0.9rem;"></p>
-        <p class="text-muted mb-3" id="postCategory" style="font-size:0.8rem;"></p>
-        <input type="hidden" id="editPostId">
-        <div class="mb-3">
-          <label class="form-label">Current Image</label>
-          <img id="currentPostImage" src="" class="img-fluid rounded w-100" style="height:180px;object-fit:cover;background:#f0ece4;" alt="">
-          <p id="noImageText" class="text-muted text-center py-3" style="display:none;">No image set</p>
-        </div>
-        <div class="mb-3">
-          <label class="form-label">Upload New Image</label>
-          <input type="file" class="form-control form-control-sm mb-2" id="postImageUpload" accept="image/*">
-          <input type="text" class="form-control form-control-sm" id="postImageUrl" placeholder="Or paste image URL">
-        </div>
-        <div class="d-flex gap-2">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" id="useDefaultImage">
-            <label class="form-check-label" for="useDefaultImage" style="font-size:0.85rem;">Use default image</label>
-          </div>
-          <button onclick="removePostImage()" class="btn btn-outline-danger btn-sm ms-auto">
-            <i class="fas fa-times me-1"></i>Remove Image
-          </button>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="updatePostImage()"><i class="fas fa-save me-1"></i>Update Image</button>
-      </div>
-    </div>
-  </div>
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
 
 <script>
 let fetchedArticles = [];
-let currentEditIndex = -1;
 
-// ── Fetch Form ──────────────────────────────────────────
-document.getElementById('fetchForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('fetchBtn');
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Fetching...';
-    btn.disabled = true;
+// Toggle Admin Controls
+function toggleAdminControls() {
+  const content = document.getElementById('adminControlsContent');
+  const icon = document.getElementById('toggleIcon');
+  content.classList.toggle('active');
+  icon.textContent = content.classList.contains('active') ? '▲' : '▼';
+}
 
-    const sources = [...this.querySelectorAll('input[name="sources"]:checked')].map(c => c.value);
-    const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
-    const limit = this.querySelector('input[name="limit_per_source"]').value;
-    const autoSave = this.querySelector('#autoSave').checked;
+// Fetch News Form
+document.getElementById('fetchForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
 
-    const fd = new FormData();
-    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    sources.forEach(s => fd.append('sources', s));
-    categories.forEach(c => fd.append('categories', c));
-    fd.append('limit_per_source', limit);
-    fd.append('auto_save', autoSave);
+  const sources = [...this.querySelectorAll('input[name="sources"]:checked')].map(c => c.value);
+  const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
 
-    fetch(this.action, { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && data.articles?.length) {
-            fetchedArticles = data.articles;
-            displayFetchedArticles();
-            document.getElementById('resultsSection').style.display = 'block';
-            document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            showToast(`Fetched ${data.articles.length} articles`, 'success');
-        } else {
-            showToast(data.message || 'No articles found', 'warning');
-        }
-    })
-    .catch(() => showToast('Error fetching news', 'danger'))
-    .finally(() => {
-        btn.innerHTML = '<i class="fas fa-satellite-dish me-2"></i>Fetch News';
-        btn.disabled = false;
+  if (!sources.length || !categories.length) {
+    showToast('Please select at least one source and category', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  sources.forEach(s => formData.append('sources', s));
+  categories.forEach(c => formData.append('categories', c));
+  formData.append('limit_per_source', '10');
+  formData.append('auto_save', 'false');
+
+  showLoading(true);
+
+  try {
+    const response = await fetch('{% url "fetch_news_now" %}', {
+      method: 'POST',
+      body: formData
     });
+
+    const data = await response.json();
+
+    if (data.success && data.articles && data.articles.length > 0) {
+      fetchedArticles = data.articles;
+      displayArticles();
+      showToast(`Fetched ${data.articles.length} articles successfully!`, 'success');
+
+      // Close admin controls after successful fetch
+      document.getElementById('adminControlsContent').classList.remove('active');
+      document.getElementById('toggleIcon').textContent = '▼';
+    } else {
+      showToast(data.message || 'No articles found', 'error');
+    }
+  } catch (error) {
+    console.error('Fetch error:', error);
+    showToast('Error fetching news. Please try again.', 'error');
+  } finally {
+    showLoading(false);
+  }
 });
 
-// ── Display Articles ───────────────────────────────────
-function displayFetchedArticles() {
-    const c = document.getElementById('articlesContainer');
-    c.innerHTML = '';
-    fetchedArticles.forEach((a, i) => {
-        const img = a.image_url
-            ? `<img src="${a.image_url}" class="article-thumb" onerror="this.style.display='none'">`
-            : `<div class="article-thumb-placeholder"><i class="fas fa-newspaper"></i></div>`;
-        const row = document.createElement('div');
-        row.className = 'article-row';
-        row.innerHTML = `
-            <div class="form-check" style="flex-shrink:0;">
-                <input class="form-check-input article-checkbox" type="checkbox" value="${i}" checked>
-            </div>
-            ${img}
-            <div class="article-info">
-                <div class="article-title">${a.title}</div>
-                <div class="article-meta">
-                    <span class="tag tag-source">${a.source}</span>
-                    <span class="tag tag-cat">${a.category}</span>
-                    <span style="font-size:0.72rem;color:var(--muted);">${(a.description||a.content||'').substring(0,100)}...</span>
-                </div>
-            </div>
-            <div class="article-actions">
-                <button class="btn-icon" onclick="openArticleEditor(${i})" title="Edit"><i class="fas fa-edit"></i></button>
-                <button class="btn-icon success" onclick="postSingleArticle(${i})" title="Post"><i class="fas fa-paper-plane"></i></button>
-                <button class="btn-icon danger" onclick="deleteFetchedArticleByIndex(${i})" title="Delete"><i class="fas fa-trash"></i></button>
-                <a href="${a.url}" target="_blank" class="btn-icon" title="Open"><i class="fas fa-external-link-alt"></i></a>
-            </div>`;
-        c.appendChild(row);
-    });
+// Display Articles
+function displayArticles() {
+  const articlesList = document.getElementById('articlesList');
+  const heroSection = document.getElementById('heroSection');
+  const emptyState = document.getElementById('emptyState');
+
+  if (!fetchedArticles || fetchedArticles.length === 0) {
+    emptyState.style.display = 'block';
+    return;
+  }
+
+  emptyState.style.display = 'none';
+
+  // Update hero image with first article's image
+  const firstArticle = fetchedArticles[0];
+  if (firstArticle.image_url) {
+    heroSection.innerHTML = `<img src="${firstArticle.image_url}" alt="${firstArticle.title}" class="hero-image" onerror="this.src='https://via.placeholder.com/1200x500/667eea/ffffff?text=BlogSphere+News'">`;
+  }
+
+  // Clear and populate articles list
+  articlesList.innerHTML = '';
+
+  fetchedArticles.forEach((article, index) => {
+    const articleItem = document.createElement('div');
+    articleItem.className = 'article-item';
+    articleItem.innerHTML = `
+      <div class="article-number">${index + 1}.</div>
+      <div class="article-content">
+        <div class="article-title">
+          <a href="${article.url}" target="_blank">${article.title}</a>
+        </div>
+        <div class="article-source">${article.source || 'Unknown Source'}</div>
+      </div>
+    `;
+    articlesList.appendChild(articleItem);
+  });
 }
 
-function deleteFetchedArticleByIndex(i) {
-    if (confirm('Delete this article?')) {
-        fetchedArticles.splice(i, 1);
-        displayFetchedArticles();
-        document.getElementById('resultsCount').textContent = fetchedArticles.length;
-        showToast('Article deleted', 'info');
-    }
+// Show/Hide Loading
+function showLoading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('active', show);
 }
 
-function deleteSelectedArticles() {
-    const sel = [...document.querySelectorAll('.article-checkbox:checked')].map(c => parseInt(c.value));
-    if (!sel.length) return showToast('None selected', 'warning');
-    if (!confirm(`Delete ${sel.length} articles?`)) return;
-    sel.sort((a,b) => b-a).forEach(i => fetchedArticles.splice(i, 1));
-    displayFetchedArticles();
-    document.getElementById('resultsCount').textContent = fetchedArticles.length;
-    showToast(`Deleted ${sel.length} articles`, 'info');
+// Show Toast Notification
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = message;
+  container.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
 }
 
-function clearResults() {
-    if (!fetchedArticles.length) return;
-    if (!confirm('Clear all results?')) return;
-    fetchedArticles = [];
-    document.getElementById('articlesContainer').innerHTML = '';
-    document.getElementById('resultsSection').style.display = 'none';
-}
-
-// ── Article Editor ─────────────────────────────────────
-function openArticleEditor(i) {
-    currentEditIndex = i;
-    const a = fetchedArticles[i];
-    document.getElementById('editArticleIndex').value = i;
-    document.getElementById('editTitle').value = a.title || '';
-    document.getElementById('editContent').value = a.content || '';
-    document.getElementById('editDescription').value = a.description || '';
-    document.getElementById('editTags').value = a.tags || 'news';
-    document.getElementById('editSource').value = a.source || '';
-    document.getElementById('editCategory').value = a.category || 'NEWS';
-    document.getElementById('editUrl').value = a.url || '';
-    document.getElementById('articleImagePreview').src = a.image_url || '';
-    document.getElementById('imageUrl').value = a.image_url || '';
-    document.getElementById('imageUpload').onchange = function(e) {
-        if (e.target.files[0]) {
-            const r = new FileReader();
-            r.onload = e2 => document.getElementById('articleImagePreview').src = e2.target.result;
-            r.readAsDataURL(e.target.files[0]);
-        }
-    };
-    new bootstrap.Modal(document.getElementById('articleEditorModal')).show();
-}
-
-function saveArticleEdits() {
-    if (currentEditIndex === -1) return;
-    const a = fetchedArticles[currentEditIndex];
-    a.title = document.getElementById('editTitle').value;
-    a.content = document.getElementById('editContent').value;
-    a.description = document.getElementById('editDescription').value;
-    a.source = document.getElementById('editSource').value;
-    a.category = document.getElementById('editCategory').value;
-    a.url = document.getElementById('editUrl').value;
-    a.tags = document.getElementById('editTags').value.split(',').map(t => t.trim());
-    const imgUrl = document.getElementById('imageUrl').value;
-    if (imgUrl) a.image_url = imgUrl;
-    a.is_featured = document.getElementById('makeFeatured').checked;
-    a.save_article = document.getElementById('saveArticle').checked;
-    showToast('Article updated', 'success');
-    displayFetchedArticles();
-    bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
-}
-
-function deleteFetchedArticle() {
-    if (currentEditIndex === -1) return;
-    deleteFetchedArticleByIndex(currentEditIndex);
-    bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
-    currentEditIndex = -1;
-}
-
-// ── Post Article ───────────────────────────────────────
-function postSingleArticle(index = null) {
-    const i = index !== null ? index : currentEditIndex;
-    if (i === -1 || !fetchedArticles[i]) return;
-    const a = fetchedArticles[i];
-    fetch('/api/post-article/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ article: a, is_featured: a.is_featured||false, save_article: a.save_article!==false, tags: a.tags||['news'] })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`Posted: ${data.post_title}`, 'success');
-            fetchedArticles.splice(i, 1);
-            displayFetchedArticles();
-            document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            setTimeout(() => location.reload(), 1200);
-        } else showToast('Error: ' + data.message, 'danger');
-    })
-    .catch(() => showToast('Error posting', 'danger'));
-}
-
-function postAllArticles() {
-    const sel = [...document.querySelectorAll('.article-checkbox:checked')].map(c => parseInt(c.value));
-    if (!sel.length) return showToast('None selected', 'warning');
-    const articles = sel.map(i => fetchedArticles[i]);
-    fetch('/api/post-multiple-articles/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-        body: JSON.stringify({ articles, tags: ['news'] })
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`Posted ${data.posted_count} articles`, 'success');
-            fetchedArticles = fetchedArticles.filter((_,i) => !sel.includes(i));
-            displayFetchedArticles();
-            document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            setTimeout(() => location.reload(), 1200);
-        } else showToast('Error: ' + data.message, 'danger');
-    })
-    .catch(() => showToast('Error posting', 'danger'));
-}
-
-// ── Post Actions ───────────────────────────────────────
-function deletePost(id) {
-    if (!confirm('Delete this post?')) return;
-    fetch('/api/delete-post/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) { showToast('Post deleted', 'success'); document.getElementById('post-row-'+id).remove(); }
-        else showToast('Error: ' + d.message, 'danger');
-    });
-}
-
-function deleteNewsArticle(id) {
-    if (!confirm('Delete this article?')) return;
-    fetch('/api/delete-news-article/' + id + '/', { method: 'DELETE', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) { showToast('Article deleted', 'success'); document.getElementById('article-row-'+id).remove(); }
-        else showToast('Error: ' + d.message, 'danger');
-    });
-}
-
-function convertToPost(id) {
-    fetch('/api/convert-to-post/' + id + '/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tags: ['news'] })
-    })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) { showToast(d.message, 'success'); setTimeout(() => location.reload(), 1200); }
-        else showToast('Error: ' + d.message, 'danger');
-    });
-}
-
-// ── Post Image Editor ──────────────────────────────────
-function editPostImage(id) {
-    fetch('/api/get-post/' + id + '/')
-    .then(r => r.json())
-    .then(data => {
-        if (!data.success) return showToast(data.message, 'danger');
-        document.getElementById('editPostId').value = id;
-        document.getElementById('postTitle').textContent = data.post.title;
-        document.getElementById('postCategory').textContent = 'Category: ' + data.post.category;
-        const img = document.getElementById('currentPostImage');
-        if (data.post.featured_image) {
-            img.src = data.post.featured_image;
-            img.style.display = 'block';
-            document.getElementById('noImageText').style.display = 'none';
-        } else {
-            img.style.display = 'none';
-            document.getElementById('noImageText').style.display = 'block';
-        }
-        document.getElementById('postImageUpload').onchange = function(e) {
-            if (e.target.files[0]) {
-                const r = new FileReader();
-                r.onload = e2 => img.src = e2.target.result;
-                r.readAsDataURL(e.target.files[0]);
-            }
-        };
-        new bootstrap.Modal(document.getElementById('postImageEditorModal')).show();
-    });
-}
-
-function updatePostImage() {
-    const id = document.getElementById('editPostId').value;
-    const fd = new FormData();
-    fd.append('post_id', id);
-    fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    if (document.getElementById('useDefaultImage').checked) {
-        fd.append('use_default', 'true');
-    } else {
-        const f = document.getElementById('postImageUpload');
-        if (f.files[0]) fd.append('image', f.files[0]);
-        const url = document.getElementById('postImageUrl').value;
-        if (url) fd.append('image_url', url);
-    }
-    fetch('/api/update-post-image/', { method: 'POST', body: fd })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) {
-            showToast('Image updated!', 'success');
-            bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal')).hide();
-            setTimeout(() => location.reload(), 1000);
-        } else showToast('Error: ' + d.message, 'danger');
-    });
-}
-
-function removePostImage() {
-    const id = document.getElementById('editPostId').value;
-    if (!confirm('Remove image?')) return;
-    fetch('/api/remove-post-image/' + id + '/', { method: 'POST', headers: { 'X-CSRFToken': '{{ csrf_token }}' } })
-    .then(r => r.json())
-    .then(d => {
-        if (d.success) {
-            showToast('Image removed', 'info');
-            document.getElementById('currentPostImage').style.display = 'none';
-            document.getElementById('noImageText').style.display = 'block';
-        } else showToast('Error: ' + d.message, 'danger');
-    });
-}
-
-// ── Toast ──────────────────────────────────────────────
-function showToast(msg, type) {
-    const stack = document.getElementById('toastStack');
-    const t = document.createElement('div');
-    t.className = `toast-item toast-${type}`;
-    t.textContent = msg;
-    stack.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-}
+// Initialize - open admin controls by default
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('adminControlsContent').classList.add('active');
+  document.getElementById('toggleIcon').textContent = '▲';
+});
 </script>
+
 {% endblock %}
