@@ -140,7 +140,6 @@
   }
 
   /* ----- ALL YOUR EXISTING STYLES BELOW (stat-card, panel, etc.) ----- */
-  /* (copy them from your current file – I'll include them in the final template) */
   .stat-card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; padding: 1.4rem 1.6rem; position: relative; overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; }
   .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
   .stat-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); }
@@ -175,6 +174,8 @@
   .article-thumb-placeholder { width: 72px; height: 52px; background: var(--border); border-radius: 6px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 1.1rem; }
   .article-info { flex: 1; min-width: 0; }
   .article-title { font-weight: 500; font-size: 0.9rem; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.3rem; }
+  .article-title a { color: var(--ink); text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .article-title a:hover { text-decoration: underline; }
   .article-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
   .tag { font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
   .tag-source { background: #f0ece4; color: var(--muted); }
@@ -270,7 +271,7 @@
     </div>
   </div>
 
-  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – exactly as before === -->
+  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – with updated sources === -->
   <div class="admin-section">
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
@@ -300,7 +301,7 @@
       </div>
     </div>
 
-    <!-- Fetch Form -->
+    <!-- Fetch Form – updated sources default -->
     <div class="panel mb-4">
       <div class="panel-header">
         <span class="panel-title">Fetch News</span>
@@ -309,21 +310,39 @@
         <form id="fetchForm" action="{% url 'fetch_news_now' %}">
           {% csrf_token %}
           <div class="row g-3">
-            <!-- Sources -->
+            <!-- Sources – now defaulting to google_nigeria, punch, vanguard, channels, thisday -->
             <div class="col-md-4">
               <div class="form-label">Sources</div>
               <div class="d-flex flex-wrap gap-2">
-                <label class="source-chip"><input type="checkbox" name="sources" value="google" checked><span class="dot"></span> Google</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="google_nigeria" checked><span class="dot" style="background:#008751"></span> 🇳🇬 Nigeria</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="punch"><span class="dot"></span> Punch</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="vanguard"><span class="dot"></span> Vanguard</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="channels"><span class="dot"></span> Channels</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="bbc"><span class="dot"></span> BBC</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="reddit"><span class="dot"></span> Reddit</label>
-                <label class="source-chip"><input type="checkbox" name="sources" value="newsapi"><span class="dot"></span> NewsAPI</label>
+                <label class="source-chip">
+                  <input type="checkbox" name="sources" value="google_nigeria" checked>
+                  <span class="dot" style="background:#008751"></span> 🇳🇬 Google News Nigeria
+                </label>
+                <label class="source-chip">
+                  <input type="checkbox" name="sources" value="punch" checked>
+                  <span class="dot"></span> Punch
+                </label>
+                <label class="source-chip">
+                  <input type="checkbox" name="sources" value="vanguard" checked>
+                  <span class="dot"></span> Vanguard
+                </label>
+                <label class="source-chip">
+                  <input type="checkbox" name="sources" value="channels" checked>
+                  <span class="dot"></span> Channels
+                </label>
+                <label class="source-chip">
+                  <input type="checkbox" name="sources" value="thisday" checked>
+                  <span class="dot"></span> This Day
+                </label>
+                <!-- Optional additional sources (unchecked by default) -->
+                <!--
+                <label class="source-chip"><input type="checkbox" name="sources" value="bbc"> BBC</label>
+                <label class="source-chip"><input type="checkbox" name="sources" value="reddit"> Reddit</label>
+                <label class="source-chip"><input type="checkbox" name="sources" value="newsapi"> NewsAPI</label>
+                -->
               </div>
             </div>
-            <!-- Categories -->
+            <!-- Categories (unchanged) -->
             <div class="col-md-5">
               <div class="form-label">Categories</div>
               <div>
@@ -358,7 +377,7 @@
       </div>
     </div>
 
-    <!-- Results Panel -->
+    <!-- Results Panel (unchanged) -->
     <div class="panel mb-4" id="resultsSection" style="display:none;">
       <div class="panel-header">
         <div class="d-flex align-items-center gap-2">
@@ -380,7 +399,7 @@
       <div id="articlesContainer"></div>
     </div>
 
-    <!-- Recent Posts -->
+    <!-- Recent Posts (unchanged) -->
     <div class="panel mb-4">
       <div class="panel-header">
         <span class="panel-title">Recent Blog Posts</span>
@@ -425,7 +444,7 @@
       </div>
     </div>
 
-    <!-- News Articles -->
+    <!-- News Articles (unchanged) -->
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">Saved News Articles</span>
@@ -545,7 +564,7 @@
 </div>
 
 <script>
-// === ALL YOUR EXISTING JAVASCRIPT (exactly as in your current file) ===
+// === ALL YOUR EXISTING JAVASCRIPT (with one change: article titles are now clickable) ===
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -602,7 +621,7 @@ function displayFetchedArticles() {
             </div>
             ${img}
             <div class="article-info">
-                <div class="article-title">${a.title}</div>
+                <div class="article-title"><a href="${a.url}" target="_blank" style="color:var(--ink); text-decoration:none;">${a.title}</a></div>
                 <div class="article-meta">
                     <span class="tag tag-source">${a.source}</span>
                     <span class="tag tag-cat">${a.category}</span>
