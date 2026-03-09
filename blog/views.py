@@ -130,6 +130,18 @@ def enhanced_news_dashboard(request):
             'is_active': True,
         },
     ]
+
+    # ---- NEW: Category counts (including zero) ----
+    all_categories = Category.objects.all()
+    category_counts = []
+    for cat in all_categories:
+        # Count posts in this category - adjust filter if you have a status field
+        count = Post.objects.filter(category=cat).count()
+        category_counts.append({'name': cat.name, 'count': count})
+
+    # ---- NEW: Three most recent posts for "Latest Stories" ----
+    latest_stories = Post.objects.order_by('-published_date')[:3]
+
     return render(request, 'blog/enhanced-news-dashboard.html', {
         'stats': {
             'total_articles': total_articles,
@@ -141,6 +153,8 @@ def enhanced_news_dashboard(request):
         'recent_posts': recent_posts,
         'categories': categories,
         'scheduled_jobs': scheduled_jobs,
+        'category_counts': category_counts,
+        'latest_stories': latest_stories,
     })
 
 
