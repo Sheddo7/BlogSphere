@@ -29,7 +29,6 @@ urlpatterns = [
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
     path('api/fetch-article-image/', views.fetch_article_image, name='fetch_article_image'),
-    path('api/generate-roundup/', views.generate_roundup, name='generate_roundup'),
 ]
 
 if settings.DEBUG:
