@@ -235,45 +235,48 @@ def auto_fetch_news(request):
 @user_passes_test(is_staff, login_url='/admin/login/')
 def fetch_news_now(request):
     """
-    Fetch news from Nigerian publications via Google News.
-    Used by the enhanced dashboard fetch form.
+    Fetch news from Nigerian publications via Google News using gnews library.
     """
     if request.method == 'POST':
         try:
-            # Publication name to domain mapping
-            PUB_DOMAINS = {
-                'punch': 'punchng.com',
-                'vanguard': 'vanguardngr.com',
-                'channels': 'channelstv.com',
-                'thisday': 'thisdaylive.com',
-            }
-            publications = request.POST.getlist('publications') or ['punch', 'vanguard', 'channels', 'thisday']
+            # Fixed publications – you can change or extend this list
+            PUBLICATIONS = [
+                {'name': 'Punch', 'domain': 'punchng.com'},
+                {'name': 'Vanguard', 'domain': 'vanguardngr.com'},
+                {'name': 'Channels', 'domain': 'channelstv.com'},
+                {'name': 'This Day', 'domain': 'thisdaylive.com'},
+            ]
             categories = request.POST.getlist('categories') or ['news', 'sport', 'entertainment']
             limit = int(request.POST.get('limit_per_source', 5))
             auto_save = request.POST.get('auto_save') == 'true'
 
-            from blog.ai_service import EnhancedNewsFetcher
-            fetcher = EnhancedNewsFetcher()
+            from gnews import GNews
+            google_news = GNews(language='en', country='NG', max_results=limit)
             all_articles = []
 
-            for pub in publications:
-                domain = PUB_DOMAINS.get(pub)
-                if not domain:
-                    continue
+            for pub in PUBLICATIONS:
                 for cat in categories:
-                    query = f"site:{domain} {cat}"
+                    query = f"site:{pub['domain']} {cat}"
                     try:
-                        articles = fetcher.fetch_google_news(query, limit=limit)
+                        articles = google_news.get_news(query)
                         for art in articles:
-                            art['source'] = pub.title()  # Capitalize e.g., 'Punch'
-                        all_articles.extend(articles)
+                            # GNews returns: title, url, publisher, published date, description
+                            all_articles.append({
+                                'title': art['title'],
+                                'url': art['url'],
+                                'description': art.get('description', ''),
+                                'source': pub['name'],  # e.g., 'Punch'
+                                'category': cat.upper(),  # e.g., 'NEWS'
+                                'image_url': art.get('image', ''),
+                                'published': art.get('published date', ''),
+                            })
                     except Exception as e:
-                        print(f"Error fetching {pub} {cat}: {e}")
+                        print(f"Error fetching {pub['name']} {cat}: {e}")
 
             # Deduplicate by URL
             unique = {}
             for art in all_articles:
-                if art.get('url') and art['url'] not in unique:
+                if art['url'] not in unique:
                     unique[art['url']] = art
             articles = list(unique.values())
 
@@ -284,11 +287,11 @@ def fetch_news_now(request):
                     if url and not NewsArticle.objects.filter(url=url).exists():
                         NewsArticle.objects.create(
                             title=article['title'][:499],
-                            content=article.get('content', '')[:5000],
+                            content='',  # gnews doesn't provide full content
                             summary=article.get('description', '')[:500],
                             url=url,
-                            source=article.get('source', 'Unknown'),
-                            category=article.get('category', 'NEWS'),
+                            source=article['source'],
+                            category=article['category'],
                             image_url=article.get('image_url', ''),
                             published_at=timezone.now(),
                         )
@@ -549,13 +552,15 @@ def update_post_image(request):
             if request.POST.get('use_default') == 'true':
                 post.featured_image = 'blog_images/default.jpg'
                 post.save()
-                return JsonResponse({'success': True, 'message': 'Default image set', 'image_url': '/media/blog_images/default.jpg'})
+                return JsonResponse(
+                    {'success': True, 'message': 'Default image set', 'image_url': '/media/blog_images/default.jpg'})
 
             if 'image' in request.FILES:
                 image_file = request.FILES['image']
                 if image_file.size > 5 * 1024 * 1024:
                     return JsonResponse({'success': False, 'message': 'File too large (max 5MB)'})
-                file_name = default_storage.save(f'blog_images/{post.slug}_{image_file.name}', ContentFile(image_file.read()))
+                file_name = default_storage.save(f'blog_images/{post.slug}_{image_file.name}',
+                                                 ContentFile(image_file.read()))
                 post.featured_image.name = file_name
                 post.save()
                 return JsonResponse({'success': True, 'message': 'Image uploaded', 'image_url': f'/media/{file_name}'})
@@ -661,8 +666,8 @@ def generate_roundup(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            news_type = data.get('type', 'nigeria')   # 'foreign' or 'nigeria'
-            category  = data.get('category', 'news')
+            news_type = data.get('type', 'nigeria')  # 'foreign' or 'nigeria'
+            category = data.get('category', 'news')
 
             from blog.ai_service import EnhancedNewsFetcher
             post, error = EnhancedNewsFetcher.generate_roundup_post(
@@ -682,7 +687,8 @@ def generate_roundup(request):
             return JsonResponse({'success': False, 'message': error or 'Failed to generate post'})
 
         except Exception as e:
-            import traceback; traceback.print_exc()
+            import traceback;
+            traceback.print_exc()
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'POST required'})

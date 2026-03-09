@@ -269,7 +269,7 @@
     </div>
   </div>
 
-  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – with updated sources and display === -->
+  <!-- === EXISTING ADMIN DASHBOARD (stats, fetch, tables) – with simplified fetch form === -->
   <div class="admin-section">
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
@@ -299,7 +299,7 @@
       </div>
     </div>
 
-    <!-- Fetch Form – now uses publications (via Google News) -->
+    <!-- Fetch Form – simplified: only categories and fetch button -->
     <div class="panel mb-4">
       <div class="panel-header">
         <span class="panel-title">Fetch News</span>
@@ -307,32 +307,9 @@
       <div class="panel-body">
         <form id="fetchForm" action="{% url 'fetch_news_now' %}">
           {% csrf_token %}
-          <div class="row g-3">
-            <!-- Publications (via Google News) -->
-            <div class="col-md-4">
-              <div class="form-label">Publications</div>
-              <div class="d-flex flex-wrap gap-2">
-                <label class="source-chip">
-                  <input type="checkbox" name="publications" value="punch" checked>
-                  <span class="dot"></span> Punch
-                </label>
-                <label class="source-chip">
-                  <input type="checkbox" name="publications" value="vanguard" checked>
-                  <span class="dot"></span> Vanguard
-                </label>
-                <label class="source-chip">
-                  <input type="checkbox" name="publications" value="channels" checked>
-                  <span class="dot"></span> Channels
-                </label>
-                <label class="source-chip">
-                  <input type="checkbox" name="publications" value="thisday" checked>
-                  <span class="dot"></span> This Day
-                </label>
-              </div>
-              <small class="text-muted d-block mt-2">All fetched via Google News</small>
-            </div>
-            <!-- Categories (unchanged) -->
-            <div class="col-md-5">
+          <div class="row g-3 align-items-end">
+            <!-- Categories (full width) -->
+            <div class="col-md-9">
               <div class="form-label">Categories</div>
               <div>
                 <label class="cat-pill"><input type="checkbox" name="categories" value="news" checked> News</label>
@@ -356,7 +333,7 @@
               </div>
             </div>
             <!-- Button -->
-            <div class="col-md-3 d-flex align-items-end">
+            <div class="col-md-3">
               <button type="submit" class="fetch-btn" id="fetchBtn">
                 <i class="fas fa-satellite-dish me-2"></i> Fetch News
               </button>
@@ -553,7 +530,7 @@
 </div>
 
 <script>
-// === UPDATED JAVASCRIPT – now uses publications, simplified display ===
+// === UPDATED JAVASCRIPT – no publications, only categories ===
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -563,15 +540,13 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Fetching...';
     btn.disabled = true;
 
-    // Get selected publications (instead of sources)
-    const publications = [...this.querySelectorAll('input[name="publications"]:checked')].map(c => c.value);
+    // Get selected categories only
     const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
     const limit = this.querySelector('input[name="limit_per_source"]').value;
     const autoSave = this.querySelector('#autoSave').checked;
 
     const fd = new FormData();
     fd.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-    publications.forEach(p => fd.append('publications', p));
     categories.forEach(c => fd.append('categories', c));
     fd.append('limit_per_source', limit);
     fd.append('auto_save', autoSave);
