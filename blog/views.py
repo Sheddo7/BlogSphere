@@ -131,15 +131,14 @@ def enhanced_news_dashboard(request):
         },
     ]
 
-    # ---- NEW: Category counts (including zero) ----
+    # Category counts (including zero)
     all_categories = Category.objects.all()
     category_counts = []
     for cat in all_categories:
-        # Count posts in this category - adjust filter if you have a status field
         count = Post.objects.filter(category=cat).count()
         category_counts.append({'name': cat.name, 'count': count})
 
-    # ---- NEW: Three most recent posts for "Latest Stories" ----
+    # Three most recent posts for "Latest Stories"
     latest_stories = Post.objects.order_by('-published_date')[:3]
 
     return render(request, 'blog/enhanced-news-dashboard.html', {
@@ -239,7 +238,7 @@ def fetch_news_now(request):
     """
     if request.method == 'POST':
         try:
-            # Fixed publications – you can change or extend this list
+            # Fixed publications
             PUBLICATIONS = [
                 {'name': 'Punch', 'domain': 'punchng.com'},
                 {'name': 'Vanguard', 'domain': 'vanguardngr.com'},
@@ -260,13 +259,12 @@ def fetch_news_now(request):
                     try:
                         articles = google_news.get_news(query)
                         for art in articles:
-                            # GNews returns: title, url, publisher, published date, description
                             all_articles.append({
                                 'title': art['title'],
                                 'url': art['url'],
                                 'description': art.get('description', ''),
-                                'source': pub['name'],  # e.g., 'Punch'
-                                'category': cat.upper(),  # e.g., 'NEWS'
+                                'source': pub['name'],
+                                'category': cat.upper(),
                                 'image_url': art.get('image', ''),
                                 'published': art.get('published date', ''),
                             })
@@ -287,7 +285,7 @@ def fetch_news_now(request):
                     if url and not NewsArticle.objects.filter(url=url).exists():
                         NewsArticle.objects.create(
                             title=article['title'][:499],
-                            content='',  # gnews doesn't provide full content
+                            content='',
                             summary=article.get('description', '')[:500],
                             url=url,
                             source=article['source'],
@@ -413,10 +411,38 @@ def post_article(request):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
+            # Build rich content with sources
+            content_parts = []
+
+            # Add main article content if available
+            if article.get('content'):
+                content_parts.append(article['content'])
+            elif article.get('description'):
+                content_parts.append(article['description'])
+
+            # Add source links section
+            if article.get('url'):
+                source_html = f'''
+<div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+    <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Source</h4>
+    <ul style="list-style: none; padding: 0;">
+        <li style="margin-bottom: 0.5rem;">
+            <a href="{article['url']}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">
+                {article.get('source', 'Original Article')}
+            </a>
+        </li>
+    </ul>
+</div>
+'''
+                content_parts.append(source_html)
+
+            # Combine all parts
+            full_content = '\n\n'.join(content_parts)
+
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article.get('content', article.get('description', ''))[:5000],
+                content=full_content,
                 excerpt=article.get('description', '')[:200],
                 author=author,
                 category=category_obj,
@@ -424,6 +450,7 @@ def post_article(request):
                 published_date=timezone.now(),
                 is_featured=data.get('is_featured', False)
             )
+
             tags = data.get('tags', ['news'])
             if isinstance(tags, str):
                 tags = [t.strip() for t in tags.split(',')]
@@ -470,39 +497,119 @@ def post_multiple_articles(request):
             from django.utils.text import slugify
             from django.contrib.auth.models import User
 
-            for article in articles:
-                category_name = article.get('category', 'NEWS')
+            # If multiple articles, combine them into one post with multiple sources
+            if len(articles) > 1:
+                # Use the first article's title as base
+                first_article = articles[0]
+                category_name = first_article.get('category', 'NEWS')
                 category_obj, _ = Category.objects.get_or_create(name=category_name)
                 try:
                     author = User.objects.get(username='admin')
                 except User.DoesNotExist:
                     author = User.objects.first()
 
-                base_slug = slugify(article['title'][:50])
+                base_slug = slugify(first_article['title'][:50])
                 slug = base_slug
                 counter = 1
                 while Post.objects.filter(slug=slug).exists():
                     slug = f"{base_slug}-{counter}"
                     counter += 1
 
+                # Build combined content
+                content_parts = []
+
+                # Add all article descriptions
+                for i, art in enumerate(articles):
+                    if art.get('description'):
+                        content_parts.append(f"<h3>{art['title']}</h3>\n{art['description']}")
+
+                # Add sources section with all URLs
+                sources_html = '<div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;"><h4>Sources</h4><ul style="list-style: none; padding: 0;">'
+                for art in articles:
+                    sources_html += f'<li style="margin-bottom: 0.5rem;"><a href="{art["url"]}" target="_blank" style="color: var(--accent); text-decoration: none;">{art.get("source", "Original Article")}</a></li>'
+                sources_html += '</ul></div>'
+                content_parts.append(sources_html)
+
+                full_content = '\n\n'.join(content_parts)
+
                 post = Post.objects.create(
-                    title=article['title'][:200],
+                    title=f"News Roundup: {first_article['title'][:50]}...",
                     slug=slug,
-                    content=article.get('content', article.get('description', ''))[:5000],
-                    excerpt=article.get('description', '')[:200],
+                    content=full_content,
+                    excerpt=f"Roundup of {len(articles)} news articles",
                     author=author,
                     category=category_obj,
-                    featured_image=article.get('image_url', ''),
+                    featured_image=first_article.get('image_url', ''),
                     published_date=timezone.now(),
                 )
+
                 tags = data.get('tags', ['news'])
                 if isinstance(tags, str):
                     tags = [t.strip() for t in tags.split(',')]
                 for tag in tags:
                     post.tags.add(tag.strip())
 
-                posted_count += 1
+                posted_count = 1
                 post_titles.append(post.title)
+
+            else:
+                # Single article - use existing logic
+                for article in articles:
+                    category_name = article.get('category', 'NEWS')
+                    category_obj, _ = Category.objects.get_or_create(name=category_name)
+                    try:
+                        author = User.objects.get(username='admin')
+                    except User.DoesNotExist:
+                        author = User.objects.first()
+
+                    base_slug = slugify(article['title'][:50])
+                    slug = base_slug
+                    counter = 1
+                    while Post.objects.filter(slug=slug).exists():
+                        slug = f"{base_slug}-{counter}"
+                        counter += 1
+
+                    # Build rich content with sources
+                    content_parts = []
+                    if article.get('description'):
+                        content_parts.append(article['description'])
+
+                    if article.get('url'):
+                        source_html = f'''
+<div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 8px;">
+    <h4 style="margin-bottom: 1rem; font-size: 1.1rem;">Source</h4>
+    <ul style="list-style: none; padding: 0;">
+        <li style="margin-bottom: 0.5rem;">
+            <a href="{article['url']}" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none;">
+                {article.get('source', 'Original Article')}
+            </a>
+        </li>
+    </ul>
+</div>
+'''
+                        content_parts.append(source_html)
+
+                    full_content = '\n\n'.join(content_parts)
+
+                    post = Post.objects.create(
+                        title=article['title'][:200],
+                        slug=slug,
+                        content=full_content,
+                        excerpt=article.get('description', '')[:200],
+                        author=author,
+                        category=category_obj,
+                        featured_image=article.get('image_url', ''),
+                        published_date=timezone.now(),
+                    )
+
+                    tags = data.get('tags', ['news'])
+                    if isinstance(tags, str):
+                        tags = [t.strip() for t in tags.split(',')]
+                    for tag in tags:
+                        post.tags.add(tag.strip())
+
+                    posted_count += 1
+                    post_titles.append(post.title)
 
             return JsonResponse({
                 'success': True,
