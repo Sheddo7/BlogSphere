@@ -1,782 +1,407 @@
-# blog/ai_service.py
+# blog/ai_service.py - ENHANCED VERSION WITH NEWSAPI
 import os
 import requests
+import json
+from datetime import datetime, timedelta
 import feedparser
-from datetime import datetime
 from django.conf import settings
 from django.utils import timezone
+import hashlib
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 
 
-# ── Google News RSS URLs ──────────────────────────────────────────────────────
-# These use geo-targeting so results are actually latest Nigerian news
-GOOGLE_NEWS_NIGERIA = {
-    'news':          'https://news.google.com/rss/search?q=Nigeria&hl=en-NG&gl=NG&ceid=NG:en',
-    'sport':         'https://news.google.com/rss/search?q=Nigeria+football+sport+Super+Eagles&hl=en-NG&gl=NG&ceid=NG:en',
-    'entertainment': 'https://news.google.com/rss/search?q=Nigeria+Nollywood+entertainment+music+Afrobeats&hl=en-NG&gl=NG&ceid=NG:en',
-    'economy':       'https://news.google.com/rss/search?q=Nigeria+economy+naira+CBN+dollar+inflation&hl=en-NG&gl=NG&ceid=NG:en',
-    'politics':      'https://news.google.com/rss/search?q=Nigeria+politics+Tinubu+government+NASS&hl=en-NG&gl=NG&ceid=NG:en',
-    'technology':    'https://news.google.com/rss/search?q=Nigeria+technology+fintech+startup+tech&hl=en-NG&gl=NG&ceid=NG:en',
-}
-
-# Google News general topic feeds
-GOOGLE_NEWS_GLOBAL = {
-    'news':          'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
-    'sport':         'https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en-NG&gl=NG&ceid=NG:en',
-    'entertainment': 'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=en-NG&gl=NG&ceid=NG:en',
-    'economy':       'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-NG&gl=NG&ceid=NG:en',
-    'politics':      'https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-NG&gl=NG&ceid=NG:en',
-    'technology':    'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-NG&gl=NG&ceid=NG:en',
-}
-
-# Nigerian RSS outlets
-NIGERIAN_RSS = {
-    'punch': {
-        'news':          'https://punchng.com/feed/',
-        'sport':         'https://punchng.com/category/sports/feed/',
-        'entertainment': 'https://punchng.com/category/entertainment/feed/',
-        'economy':       'https://punchng.com/category/business/feed/',
-        'politics':      'https://punchng.com/category/politics/feed/',
-    },
-    'vanguard': {
-        'news':          'https://www.vanguardngr.com/feed/',
-        'sport':         'https://www.vanguardngr.com/category/sports/feed/',
-        'entertainment': 'https://www.vanguardngr.com/category/entertainment/feed/',
-        'economy':       'https://www.vanguardngr.com/category/business/feed/',
-        'politics':      'https://www.vanguardngr.com/category/politics/feed/',
-    },
-    'channels': {
-        'news':          'https://www.channelstv.com/feed/',
-        'politics':      'https://www.channelstv.com/category/politics/feed/',
-        'economy':       'https://www.channelstv.com/category/business/feed/',
-        'entertainment': 'https://www.channelstv.com/category/entertainment/feed/',
-        'sport':         'https://www.channelstv.com/category/sports/feed/',
-    },
-    'thisday': {
-        'news':          'https://www.thisdaylive.com/feed/',
-        'economy':       'https://www.thisdaylive.com/category/business/feed/',
-        'politics':      'https://www.thisdaylive.com/category/politics/feed/',
-        'sport':         'https://www.thisdaylive.com/category/sports/feed/',
-    },
-    'guardian_ng': {
-        'news':          'https://guardian.ng/feed/',
-        'sport':         'https://guardian.ng/sport/feed/',
-        'entertainment': 'https://guardian.ng/entertainment/feed/',
-        'economy':       'https://guardian.ng/business-services/feed/',
-        'politics':      'https://guardian.ng/politics/feed/',
-    },
-    'thecable': {
-        'news':          'https://www.thecable.ng/feed',
-        'politics':      'https://www.thecable.ng/category/politics/feed',
-        'economy':       'https://www.thecable.ng/category/business/feed',
-    },
-    'premiumtimes': {
-        'news':          'https://www.premiumtimesng.com/feed',
-        'politics':      'https://www.premiumtimesng.com/news/top-news/feed',
-        'sport':         'https://www.premiumtimesng.com/sports/feed',
-    },
-}
-
-BBC_RSS = {
-    'news':          'http://feeds.bbci.co.uk/news/rss.xml',
-    'sport':         'http://feeds.bbci.co.uk/sport/rss.xml',
-    'entertainment': 'http://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',
-    'economy':       'http://feeds.bbci.co.uk/news/business/rss.xml',
-    'technology':    'http://feeds.bbci.co.uk/news/technology/rss.xml',
-    'politics':      'http://feeds.bbci.co.uk/news/politics/rss.xml',
-}
-
-HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-    'Accept': 'application/rss+xml, application/xml, text/xml, */*',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Connection': 'keep-alive',
-}
-
-
 class EnhancedNewsFetcher:
+    """Enhanced news fetcher with multiple sources and category support"""
 
+    # News source configurations
     SOURCES = {
-        'google': {'category_urls': GOOGLE_NEWS_GLOBAL},
-        'google_nigeria': {'category_urls': GOOGLE_NEWS_NIGERIA},
-        'nigerian_sources': NIGERIAN_RSS,
-        'bbc': {'category_urls': BBC_RSS},
+        'google': {
+            'base_url': 'https://news.google.com/rss',
+            'category_urls': {
+                'news': 'https://news.google.com/rss',
+                'sport': 'https://news.google.com/rss/headlines/section/topic/SPORT',
+                'entertainment': 'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT',
+                'economy': 'https://news.google.com/rss/headlines/section/topic/BUSINESS',
+                'politics': 'https://news.google.com/rss/headlines/section/topic/POLITICS',
+                'technology': 'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY',
+            }
+        },
+        'reddit': {
+            'subreddits': {
+                'news': 'news',
+                'sport': 'sports',
+                'entertainment': 'entertainment',
+                'economy': 'economy',
+                'politics': 'politics',
+                'technology': 'technology',
+            }
+        },
+        'newsapi': {
+            'base_url': 'https://newsapi.org/v2',
+            'categories': {
+                'news': 'general',
+                'sport': 'sports',
+                'entertainment': 'entertainment',
+                'economy': 'business',
+                'politics': 'politics',
+                'technology': 'technology',
+            }
+        },
+        'bbc': {
+            'base_url': 'http://feeds.bbci.co.uk',
+            'category_urls': {
+                'news': 'http://feeds.bbci.co.uk/news/rss.xml',
+                'sport': 'http://feeds.bbci.co.uk/sport/rss.xml',
+                'entertainment': 'http://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',
+                'economy': 'http://feeds.bbci.co.uk/news/business/rss.xml',
+                'technology': 'http://feeds.bbci.co.uk/news/technology/rss.xml',
+                'politics': 'http://feeds.bbci.co.uk/news/politics/rss.xml',
+            }
+        }
     }
 
     @staticmethod
-    def _parse_image(entry):
-        """Extract image URL from RSS entry."""
-        if hasattr(entry, 'media_content') and entry.media_content:
-            return entry.media_content[0].get('url', '')
-        if hasattr(entry, 'media_thumbnail') and entry.media_thumbnail:
-            return entry.media_thumbnail[0].get('url', '')
-        if hasattr(entry, 'enclosures') and entry.enclosures:
-            enc = entry.enclosures[0]
-            if 'image' in enc.get('type', ''):
-                return enc.get('href', '')
-        # Try to pull image from summary HTML
-        summary = entry.get('summary', '')
-        if '<img' in summary:
-            try:
-                soup = BeautifulSoup(summary, 'html.parser')
-                img = soup.find('img')
-                if img:
-                    return img.get('src', '')
-            except Exception:
-                pass
-        return ''
-
-    @staticmethod
-    def fetch_rss(url, source_name, category, limit=8):
-        """Fetch and parse an RSS feed."""
-        try:
-            resp = requests.get(url, headers=HEADERS, timeout=12)
-            if resp.status_code != 200:
-                print(f"⚠️  {source_name} [{category}] → HTTP {resp.status_code}")
-                return []
-
-            feed = feedparser.parse(resp.content)
-            if not feed.entries:
-                print(f"⚠️  {source_name} [{category}] → empty feed")
-                return []
-
-            items = []
-            for entry in feed.entries[:limit]:
-                url_link = entry.get('link', '')
-                if not url_link:
-                    continue
-
-                # Clean description — strip HTML tags
-                raw_desc = entry.get('summary', entry.get('description', ''))
-                try:
-                    desc = BeautifulSoup(raw_desc, 'html.parser').get_text(separator=' ').strip()
-                except Exception:
-                    desc = raw_desc
-
-                items.append({
-                    'title':        entry.get('title', 'Untitled').strip(),
-                    'description':  desc[:500],
-                    'content':      desc,
-                    'url':          url_link,
-                    'published_at': entry.get('published', ''),
-                    'source':       source_name,
-                    'category':     category.upper(),
-                    'image_url':    EnhancedNewsFetcher._parse_image(entry),
-                })
-
-            print(f"✅ {source_name} [{category}] → {len(items)} articles")
-            return items
-
-        except requests.exceptions.Timeout:
-            print(f"⏱️  Timeout: {source_name} [{category}]")
-            return []
-        except Exception as e:
-            print(f"❌ {source_name} [{category}] error: {e}")
-            return []
-
-    # ── Public fetch methods ──────────────────────────────────────────────────
-
-    @staticmethod
-    def fetch_google_nigeria_news(category='news', limit=8):
-        """Fetch Nigeria-specific news from Google News RSS (geo-targeted)."""
-        url = GOOGLE_NEWS_NIGERIA.get(
-            category,
-            'https://news.google.com/rss/search?q=Nigeria&hl=en-NG&gl=NG&ceid=NG:en'
-        )
-        return EnhancedNewsFetcher.fetch_rss(url, 'Google News Nigeria', category, limit)
-
-    @staticmethod
-    def fetch_google_news_by_category(category='news', limit=8):
-        """Fetch global topic news from Google News, geo-set to Nigeria."""
-        url = GOOGLE_NEWS_GLOBAL.get(
-            category,
-            'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en'
-        )
-        return EnhancedNewsFetcher.fetch_rss(url, 'Google News', category, limit)
-
-    @staticmethod
-    def fetch_nigerian_rss(outlet='punch', category='news', limit=8):
-        """Fetch from a specific Nigerian news outlet RSS."""
-        outlet_display = {
-            'punch': 'Punch Nigeria', 'vanguard': 'Vanguard Nigeria',
-            'channels': 'Channels TV', 'thisday': 'ThisDay Live',
-            'guardian_ng': 'Guardian Nigeria', 'thecable': 'The Cable',
-            'premiumtimes': 'Premium Times',
-        }
-        feeds = NIGERIAN_RSS.get(outlet, {})
-        url = feeds.get(category) or feeds.get('news')
-        if not url:
-            return []
-        return EnhancedNewsFetcher.fetch_rss(url, outlet_display.get(outlet, outlet), category, limit)
-
-    @staticmethod
-    def fetch_bbc_rss(category='news', limit=8):
-        url = BBC_RSS.get(category, BBC_RSS['news'])
-        return EnhancedNewsFetcher.fetch_rss(url, 'BBC News', category, limit)
-
-    @staticmethod
-    def fetch_news_api(category='general', country='ng', limit=10):
-        """Fetch from NewsAPI (requires NEWS_API_KEY in settings)."""
+    def fetch_news_api(category='general', country='us', limit=10):
+        """Fetch news from NewsAPI"""
         api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
-        if not api_key:
-            return []
-        try:
-            r = requests.get("https://newsapi.org/v2/top-headlines", timeout=10, params={
-                'apiKey': api_key, 'category': category,
-                'country': country, 'pageSize': limit, 'language': 'en',
-            })
-            if r.status_code == 200:
-                return [{
-                    'title':        a.get('title', 'Untitled'),
-                    'description':  a.get('description', ''),
-                    'content':      a.get('content', ''),
-                    'url':          a.get('url', ''),
-                    'image_url':    a.get('urlToImage', ''),
-                    'published_at': a.get('publishedAt', ''),
-                    'source':       a.get('source', {}).get('name', 'NewsAPI'),
-                    'category':     category.upper(),
-                } for a in r.json().get('articles', []) if a.get('url')]
-        except Exception as e:
-            print(f"❌ NewsAPI error: {e}")
-        return []
 
-    # ── Main fetch orchestrator ───────────────────────────────────────────────
+        if not api_key:
+            print("⚠️  NewsAPI key not found. Set NEWS_API_KEY in environment or settings.")
+            return []
+
+        try:
+            url = f"https://newsapi.org/v2/top-headlines"
+            params = {
+                'apiKey': api_key,
+                'category': category,
+                'country': country,
+                'pageSize': limit,
+                'language': 'en'
+            }
+
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                articles = []
+
+                for article in data.get('articles', []):
+                    articles.append({
+                        'title': article.get('title', 'Untitled'),
+                        'description': article.get('description', ''),
+                        'content': article.get('content', ''),
+                        'url': article.get('url', ''),
+                        'image_url': article.get('urlToImage', ''),
+                        'published_at': article.get('publishedAt', ''),
+                        'source': article.get('source', {}).get('name', 'NewsAPI'),
+                        'category': category.upper(),
+                    })
+                return articles
+            else:
+                print(f"❌ NewsAPI error: {response.status_code} - {response.text}")
+                return []
+        except Exception as e:
+            print(f"❌ Error fetching NewsAPI: {e}")
+            return []
 
     @staticmethod
-    def fetch_latest_nigerian_news(limit_per_source=6):
-        """
-        Priority fetch: latest Nigerian news from all available sources.
-        This is the MAIN method called by the scheduler and dashboard button.
-        Returns deduplicated articles sorted by source priority.
-        """
-        all_articles = []
-        seen_urls = set()
-        seen_titles = set()
+    def fetch_google_news_by_category(category='news', limit=10):
+        """Fetch news from Google News by specific category"""
+        try:
+            # Get the category URL or default to general news
+            category_url = EnhancedNewsFetcher.SOURCES['google']['category_urls'].get(
+                category,
+                'https://news.google.com/rss'
+            )
 
-        def add_articles(articles):
-            for a in articles:
-                url   = a.get('url', '').strip()
-                title = a.get('title', '').strip().lower()[:80]
-                if not url or url in seen_urls:
-                    continue
-                if title and title in seen_titles:
-                    continue
-                seen_urls.add(url)
-                seen_titles.add(title)
-                all_articles.append(a)
+            feed = feedparser.parse(category_url)
+            news_items = []
 
-        categories = ['news', 'politics', 'economy', 'entertainment', 'sport', 'technology']
+            for entry in feed.entries[:limit]:
+                news_items.append({
+                    'title': entry.title,
+                    'description': entry.get('summary', ''),
+                    'content': entry.get('summary', ''),
+                    'url': entry.link,
+                    'published_at': entry.get('published', ''),
+                    'source': entry.get('source', {}).get('title', 'Google News'),
+                    'category': category.upper(),
+                })
+            return news_items
+        except Exception as e:
+            print(f"❌ Error fetching Google News ({category}): {e}")
+            return []
 
-        # ── Priority 1: Google News Nigeria (best for latest) ──
-        print("\n📡 Fetching Google News Nigeria...")
-        for cat in categories:
-            add_articles(EnhancedNewsFetcher.fetch_google_nigeria_news(cat, limit_per_source))
-            time.sleep(0.3)
+    @staticmethod
+    def fetch_reddit_by_category(category='news', limit=10):
+        """Fetch news from Reddit by category/subreddit"""
+        try:
+            subreddit = EnhancedNewsFetcher.SOURCES['reddit']['subreddits'].get(
+                category, 'news'
+            )
 
-        # ── Priority 2: Google News global topics (geo=NG) ──
-        print("\n📡 Fetching Google News (global topics, NG locale)...")
-        for cat in categories:
-            add_articles(EnhancedNewsFetcher.fetch_google_news_by_category(cat, limit_per_source))
-            time.sleep(0.3)
+            url = f'https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}'
+            headers = {'User-agent': 'newsbot/1.0'}
+            response = requests.get(url, headers=headers, timeout=10)
 
-        # ── Priority 3: Nigerian RSS outlets ──
-        print("\n📡 Fetching Nigerian RSS outlets...")
-        for outlet in ['punch', 'vanguard', 'channels', 'premiumtimes', 'thecable', 'guardian_ng', 'thisday']:
-            for cat in ['news', 'politics', 'economy', 'entertainment', 'sport']:
-                add_articles(EnhancedNewsFetcher.fetch_nigerian_rss(outlet, cat, limit_per_source))
-                time.sleep(0.2)
+            if response.status_code == 200:
+                data = response.json()
+                news_items = []
 
-        # ── Priority 4: BBC for international context ──
-        print("\n📡 Fetching BBC News...")
-        for cat in ['news', 'economy', 'technology']:
-            add_articles(EnhancedNewsFetcher.fetch_bbc_rss(cat, limit_per_source))
-            time.sleep(0.2)
+                for post in data['data']['children']:
+                    post_data = post['data']
+                    news_items.append({
+                        'title': post_data['title'],
+                        'description': post_data.get('selftext', '')[:200],
+                        'content': post_data.get('selftext', ''),
+                        'url': f"https://reddit.com{post_data['permalink']}",
+                        'published_at': datetime.fromtimestamp(
+                            post_data['created_utc']
+                        ).isoformat(),
+                        'source': f'Reddit r/{subreddit}',
+                        'category': category.upper(),
+                        'score': post_data['score'],
+                        'comments': post_data['num_comments'],
+                    })
+                return news_items
+            else:
+                print(f"❌ Reddit error: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"❌ Error fetching Reddit ({category}): {e}")
+            return []
 
-        print(f"\n🎉 Total unique articles: {len(all_articles)}")
-        return all_articles
+    @staticmethod
+    def fetch_bbc_rss(category='news', limit=10):
+        """Fetch news from BBC RSS feeds"""
+        try:
+            feed_url = EnhancedNewsFetcher.SOURCES['bbc']['category_urls'].get(
+                category, 'http://feeds.bbci.co.uk/news/rss.xml'
+            )
+
+            feed = feedparser.parse(feed_url)
+            news_items = []
+
+            for entry in feed.entries[:limit]:
+                news_items.append({
+                    'title': entry.title,
+                    'description': entry.get('summary', ''),
+                    'content': entry.get('summary', ''),
+                    'url': entry.link,
+                    'published_at': entry.get('published', ''),
+                    'source': 'BBC News',
+                    'category': category.upper(),
+                })
+            return news_items
+        except Exception as e:
+            print(f"❌ Error fetching BBC RSS ({category}): {e}")
+            return []
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        """
-        Flexible fetch — used by dashboard manual button and API endpoints.
-        Defaults to Nigerian-first fetch if no sources specified.
-        """
-        # If called with defaults, use the smarter Nigerian-first fetcher
-        nigerian_outlets = {'punch', 'vanguard', 'channels', 'thisday', 'guardian_ng', 'thecable', 'premiumtimes'}
-
+        """Fetch news from multiple sources and categories"""
         if categories is None:
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
+
         if sources is None:
-            return EnhancedNewsFetcher.fetch_latest_nigerian_news(limit_per_source)
+            sources = ['google', 'reddit', 'bbc']
 
         all_articles = []
-        seen_urls = set()
-
-        def add(articles):
-            for a in articles:
-                if a.get('url') and a['url'] not in seen_urls:
-                    seen_urls.add(a['url'])
-                    all_articles.append(a)
 
         for source in sources:
             for category in categories:
-                print(f"📡 {source} [{category}]")
-                if source == 'google_nigeria':
-                    add(EnhancedNewsFetcher.fetch_google_nigeria_news(category, limit_per_source))
-                elif source == 'google':
-                    add(EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source))
-                elif source in nigerian_outlets:
-                    add(EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source))
-                elif source == 'bbc':
-                    add(EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source))
+                print(f"📡 Fetching {category} from {source}...")
+
+                if source == 'google':
+                    articles = EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source)
+                elif source == 'reddit':
+                    articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
                 elif source == 'newsapi':
-                    cat_map = {'news': 'general', 'sport': 'sports', 'entertainment': 'entertainment',
-                               'economy': 'business', 'politics': 'general', 'technology': 'technology'}
-                    add(EnhancedNewsFetcher.fetch_news_api(cat_map.get(category, 'general'), limit=limit_per_source))
-                time.sleep(0.3)
+                    articles = EnhancedNewsFetcher.fetch_news_api(
+                        EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(category, 'general'),
+                        limit=limit_per_source
+                    )
+                elif source == 'bbc':
+                    articles = EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source)
+                else:
+                    continue
 
-        print(f"🎉 Total: {len(all_articles)} articles")
+                if articles:
+                    all_articles.extend(articles)
+                    print(f"✅ Found {len(articles)} articles from {source}/{category}")
+
+                # Avoid rate limiting
+                time.sleep(1)
+
+        print(f"🎉 Total articles fetched: {len(all_articles)}")
         return all_articles
-
-    # ── Post generation ───────────────────────────────────────────────────────
-
-    @staticmethod
-    def scrape_article(url):
-        """
-        Scrape a real article page and return:
-          { 'paragraphs': [...], 'image_url': '...', 'description': '...' }
-        Works for Punch, Vanguard, Channels, Guardian NG, Premium Times, etc.
-        Falls back gracefully if scraping fails.
-        """
-        result = {'paragraphs': [], 'image_url': '', 'description': ''}
-        try:
-            resp = requests.get(url, headers=HEADERS, timeout=12)
-            if resp.status_code != 200:
-                return result
-
-            soup = BeautifulSoup(resp.content, 'html.parser')
-
-            # ── 1. Best image: og:image first ──
-            og_img = soup.find('meta', property='og:image')
-            if og_img and og_img.get('content'):
-                result['image_url'] = og_img['content'].strip()
-
-            if not result['image_url']:
-                tw_img = soup.find('meta', attrs={'name': 'twitter:image'})
-                if tw_img and tw_img.get('content'):
-                    result['image_url'] = tw_img['content'].strip()
-
-            # ── 2. Description from og:description ──
-            og_desc = soup.find('meta', property='og:description')
-            if og_desc and og_desc.get('content'):
-                result['description'] = og_desc['content'].strip()
-
-            # ── 3. Article body — try common article containers ──
-            body_text = []
-            containers = [
-                soup.find('article'),
-                soup.find(class_=['article-body', 'entry-content', 'post-content',
-                                   'story-body', 'content-body', 'td-post-content',
-                                   'article-content', 'article__body', 'the-content']),
-                soup.find('div', attrs={'itemprop': 'articleBody'}),
-            ]
-            article_el = next((c for c in containers if c), None)
-
-            if article_el:
-                # Remove junk
-                for tag in article_el(['script', 'style', 'aside', 'figure', 'figcaption',
-                                        'nav', 'footer', '.related', '.adsbygoogle']):
-                    tag.decompose()
-                paras = article_el.find_all('p')
-                body_text = [p.get_text(separator=' ').strip() for p in paras
-                             if len(p.get_text().strip()) > 60]
-
-            # ── 4. Fallback: grab all <p> tags site-wide ──
-            if len(body_text) < 3:
-                for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
-                    tag.decompose()
-                body_text = [p.get_text(separator=' ').strip()
-                             for p in soup.find_all('p')
-                             if len(p.get_text().strip()) > 80]
-
-            # Remove duplicates, keep order
-            seen = set()
-            for p in body_text:
-                if p not in seen:
-                    seen.add(p)
-                    result['paragraphs'].append(p)
-
-            # Fill description from first paragraph if still empty
-            if not result['description'] and result['paragraphs']:
-                result['description'] = result['paragraphs'][0][:300]
-
-            # If still no image, try first large <img> in article
-            if not result['image_url'] and article_el:
-                for img in article_el.find_all('img'):
-                    src = img.get('src', '') or img.get('data-src', '')
-                    if src and src.startswith('http') and not any(x in src for x in ['logo','icon','avatar','ad','blank']):
-                        result['image_url'] = src
-                        break
-
-        except Exception as e:
-            print(f"⚠️  scrape_article failed for {url}: {e}")
-
-        return result
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        """
-        Convert a fetched news article into a blog Post.
-        Scrapes the real article content from the source URL so posts
-        contain actual paragraphs instead of Google News link lists.
-        """
+        """Generate a blog post from a news article"""
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
+        from django.utils import timezone
 
         try:
-            # ── Category ──
-            cat_name = article.get('category', 'NEWS').upper()
-            cat_map = {
-                'SPORT': 'SPORT', 'SPORTS': 'SPORT',
-                'ECONOMY': 'ECONOMY', 'BUSINESS': 'ECONOMY',
-                'ENTERTAINMENT': 'ENTERTAINMENT',
-                'POLITICS': 'POLITICS',
-                'TECHNOLOGY': 'TECHNOLOGY',
-                'NEWS': 'NEWS',
-            }
-            cat_name = cat_map.get(cat_name, cat_name)
-            category_obj, _ = Category.objects.get_or_create(name=cat_name)
+            # Get or create category
+            category_name = article.get('category', 'NEWS')
+            category_obj, created = Category.objects.get_or_create(
+                name=category_name
+            )
 
-            # ── Author ──
+            # Get admin user
             try:
                 author = User.objects.get(username='admin')
             except User.DoesNotExist:
                 author = User.objects.first()
-            if not author:
-                print("❌ No user found")
-                return None
 
-            title    = article.get('title', 'Untitled').replace('[News] ', '').strip()
-            orig_url = article.get('url', '#')
-            source   = article.get('source', 'Unknown')
-
-            # ── Slug ──
-            base_slug = slugify(title[:80])
+            # Generate slug
+            base_slug = slugify(article['title'][:50])
             slug = base_slug
             counter = 1
             while Post.objects.filter(slug=slug).exists():
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # ── Scrape real article content from source URL ──
-            print(f"🔍 Scraping content from: {orig_url}")
-            scraped = EnhancedNewsFetcher.scrape_article(orig_url)
+            # Enhance content
+            enhanced_content = f"""
+            <h1>{article['title']}</h1>
+            <div class="alert alert-info">
+                <strong>Source:</strong> {article.get('source', 'Unknown')}<br>
+                <strong>Published:</strong> {article.get('published_at', 'N/A')}<br>
+                <strong>Original URL:</strong> <a href="{article['url']}" target="_blank">{article['url'][:100]}...</a>
+            </div>
+            <hr>
+            """
 
-            paragraphs  = scraped['paragraphs']
-            scraped_img = scraped['image_url']
-            scraped_desc = scraped['description']
+            if article.get('description'):
+                enhanced_content += f"<p><strong>Summary:</strong> {article['description']}</p>"
 
-            # ── Description / excerpt ──
-            rss_desc = article.get('description', '') or article.get('content', '')
-            # Strip HTML from RSS description (Google News wraps links in <ol><li>)
-            try:
-                rss_desc_clean = BeautifulSoup(rss_desc, 'html.parser').get_text(separator=' ').strip()
-            except Exception:
-                rss_desc_clean = rss_desc
-            # Prefer scraped description over RSS junk
-            excerpt = scraped_desc or rss_desc_clean or title
-            # Remove Google News "Read more" link noise
-            if '<a href' in excerpt or 'Read more' in excerpt:
-                excerpt = title
+            if article.get('content'):
+                enhanced_content += f"\n<div class='article-content'>{article['content'][:2000]}"
+                if len(article.get('content', '')) > 2000:
+                    enhanced_content += "... [Content truncated]"
+                enhanced_content += "</div>"
 
-            # ── Image ── scraped > RSS > nothing
-            image_url = article.get('image_url', '') or scraped_img
+            enhanced_content += f"""
+            <hr>
+            <div class="alert alert-secondary">
+                <em>This article was automatically generated from {article.get('source', 'a news source')}. 
+                <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    Read original article
+                </a></em>
+            </div>
+            """
 
-            # ── Build article HTML ──
-            paras_html = ''
-            if paragraphs:
-                # Cap at 15 paragraphs to keep posts readable
-                for p in paragraphs[:15]:
-                    paras_html += f'<p>{p}</p>\n'
-            else:
-                # No content scraped — use RSS description as single paragraph
-                paras_html = f'<p>{excerpt}</p>'
-
-            content = f"""<div class="art-body">
-{paras_html}
-<div style="margin-top:2rem;padding:1rem 1.25rem;border-left:3px solid #c0392b;background:#faf8f5;font-size:.88rem;color:#555;">
-  <strong>Source:</strong> {source} &nbsp;·&nbsp;
-  <a href="{orig_url}" target="_blank" rel="noopener noreferrer" style="color:#c0392b;">
-    Read original article →
-  </a>
-</div>
-</div>"""
-
+            # Create blog post
             post = Post.objects.create(
-                title=title[:499],
+                title=f"[News] {article['title'][:100]}",
                 slug=slug,
-                content=content,
-                excerpt=excerpt[:499],
+                content=enhanced_content,
+                excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
                 author=author,
                 category=category_obj,
-                featured_image=image_url,
                 published_date=timezone.now(),
             )
-            post.tags.add('news', source.lower().split()[0], cat_name.lower())
-            print(f"✅ Created post: {post.title[:60]} ({len(paragraphs)} paragraphs scraped)")
+
+            # Add tags
+            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+
+            print(f"✅ Created blog post: {post.title}")
             return post
 
         except Exception as e:
-            print(f"❌ Error generating post: {e}")
-            import traceback; traceback.print_exc()
+            print(f"❌ Error generating blog post: {e}")
             return None
 
     @staticmethod
     def extract_content_from_url(url):
-        """Scrape full article text from a URL (plain text, for legacy use)."""
+        """Extract main content from URL"""
         try:
-            result = EnhancedNewsFetcher.scrape_article(url)
-            return ' '.join(result['paragraphs'])[:5000] if result['paragraphs'] else None
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Remove script and style elements
+            for script in soup(["script", "style", "nav", "footer", "header"]):
+                script.decompose()
+
+            # Get text
+            text = soup.get_text()
+
+            # Clean up text
+            lines = (line.strip() for line in text.splitlines())
+            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+            text = ' '.join(chunk for chunk in chunks if chunk)
+
+            return text[:5000]
         except Exception as e:
-            print(f"❌ Content extract error: {e}")
+            print(f"❌ Error extracting content: {e}")
             return None
 
 
-# ── Backward-compatible wrapper ───────────────────────────────────────────────
-
+# Keep the original SimpleNewsFetcher for backward compatibility
 class SimpleNewsFetcher:
+    """Original simple news fetcher (for backward compatibility)"""
 
     @staticmethod
     def fetch_google_news_rss():
-        nigerian = EnhancedNewsFetcher.fetch_google_nigeria_news('news', 8)
-        global_  = EnhancedNewsFetcher.fetch_google_news_by_category('news', 5)
-        punch    = EnhancedNewsFetcher.fetch_nigerian_rss('punch', 'news', 5)
-        vanguard = EnhancedNewsFetcher.fetch_nigerian_rss('vanguard', 'news', 5)
-        return nigerian + global_ + punch + vanguard
+        return EnhancedNewsFetcher.fetch_google_news_by_category('news', 15)
 
     @staticmethod
     def fetch_reddit_news(subreddit='news', limit=10):
-        return []  # Reddit is unreliable, removed
-
-    @staticmethod
-    def fetch_newsapi():
-        return EnhancedNewsFetcher.fetch_news_api('general', 'ng', 10)
+        return EnhancedNewsFetcher.fetch_reddit_by_category('news', limit)
 
     @staticmethod
     def categorize_article(title, description):
         text = (title + ' ' + description).lower()
+
         categories = {
-            'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'nollywood', 'afrobeats', 'wizkid', 'davido', 'burna'],
-            'SPORT':         ['sport', 'football', 'basketball', 'soccer', 'super eagles', 'afcon', 'premier league', 'npfl', 'score', 'goal'],
-            'POLITICS':      ['government', 'president', 'minister', 'election', 'vote', 'party', 'senate', 'tinubu', 'abuja', 'governor', 'national assembly'],
-            'ECONOMY':       ['economy', 'market', 'stock', 'price', 'bank', 'naira', 'cbn', 'inflation', 'oil', 'forex', 'budget', 'dollar'],
-            'TECHNOLOGY':    ['technology', 'tech', 'software', 'app', 'digital', 'startup', 'fintech', 'ai', 'internet'],
+            'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'tv', 'hollywood'],
+            'SPORT': ['sport', 'football', 'basketball', 'soccer', 'game', 'team', 'player', 'score', 'win'],
+            'POLITICS': ['government', 'president', 'minister', 'election', 'vote', 'party', 'congress', 'senate'],
+            'ECONOMY': ['economy', 'market', 'stock', 'price', 'bank', 'money', 'business', 'company', 'dollar'],
+            'NEWS': ['news', 'report', 'announce', 'official', 'statement', 'update', 'latest'],
+            'VIRAL GIST': ['viral', 'trending', 'social media', 'tiktok', 'instagram', 'twitter', 'facebook'],
         }
-        scores = {cat: sum(1 for kw in kws if kw in text) for cat, kws in categories.items()}
-        best = max(scores, key=scores.get)
-        return best if scores[best] >= 2 else 'NEWS'
+
+        scores = {}
+        for category, keywords in categories.items():
+            score = sum(1 for keyword in keywords if keyword in text)
+            scores[category] = score
+
+        best_category = max(scores, key=scores.get)
+
+        if scores[best_category] < 2:
+            return 'NEWS'
+
+        return best_category
 
     @staticmethod
     def generate_summary(text, max_length=150):
         if not text:
-            return ''
+            return ""
+
         if len(text) <= max_length:
             return text
-        return text[:max_length].rsplit(' ', 1)[0] + '...'
+
+        sentences = text.split('. ')
+        if len(sentences) <= 3:
+            return text[:max_length] + '...'
+
+        summary = sentences[0]
+        if len(sentences) > 1:
+            summary += '. ' + sentences[-1]
+
+        if len(summary) > max_length:
+            summary = summary[:max_length] + '...'
+
+        return summary
 
     @staticmethod
     def extract_content_from_url(url):
         return EnhancedNewsFetcher.extract_content_from_url(url)
-
-
-    @staticmethod
-    def fetch_best_image(article_url):
-        """
-        Try to get the best image for an article URL.
-        Priority: og:image > twitter:image > first large <img> in article body.
-        Returns image URL string or None.
-        """
-        try:
-            resp = requests.get(article_url, headers=HEADERS, timeout=10)
-            if resp.status_code != 200:
-                return None
-
-            soup = BeautifulSoup(resp.content, 'html.parser')
-
-            # 1. og:image
-            og = soup.find('meta', property='og:image')
-            if og and og.get('content'):
-                return og['content'].strip()
-
-            # 2. twitter:image
-            tw = soup.find('meta', attrs={'name': 'twitter:image'})
-            if tw and tw.get('content'):
-                return tw['content'].strip()
-
-            # 3. First large img in article body
-            for tag in ['article', 'main', '.post-content', '.entry-content', '.article-body']:
-                section = soup.select_one(tag) if tag.startswith('.') else soup.find(tag)
-                if section:
-                    for img in section.find_all('img'):
-                        src = img.get('src', '')
-                        if src and src.startswith('http') and not any(x in src for x in ['logo', 'icon', 'avatar', 'ad']):
-                            return src
-
-            # 4. Any large img on page
-            for img in soup.find_all('img'):
-                src = img.get('src', '')
-                width = img.get('width', '0')
-                try:
-                    w = int(str(width).replace('px',''))
-                except Exception:
-                    w = 0
-                if src and src.startswith('http') and w >= 200:
-                    return src
-
-            return None
-
-        except Exception as e:
-            print(f"❌ fetch_best_image error: {e}")
-            return None
-
-
-    @staticmethod
-    def generate_roundup_post(category='news', news_type='nigeria', limit=8):
-        """
-        Fetch latest news for a category, scrape og:image from first story,
-        then create ONE well-formatted roundup post with clickable story links.
-        No AI labels. No link dumps. Just a clean news digest.
-        """
-        from django.utils.text import slugify
-        from django.contrib.auth.models import User
-        from django.utils import timezone
-        from blog.models import Category, Post
-
-        # ── Sources based on type ──
-        if news_type == 'nigeria':
-            sources = ['google_nigeria', 'punch', 'vanguard', 'channels',
-                       'premiumtimes', 'thecable', 'guardian_ng', 'thisday']
-            edition_label = 'Nigerian'
-        else:
-            sources = ['google', 'bbc']
-            edition_label = 'International'
-
-        # Fetch articles
-        articles = EnhancedNewsFetcher.fetch_multiple_sources(
-            categories=[category],
-            sources=sources,
-            limit_per_source=limit
-        )
-
-        if not articles:
-            return None, 'No articles found. Sources may be temporarily unavailable.'
-
-        # Deduplicate by title similarity
-        seen_titles = set()
-        unique = []
-        for a in articles:
-            t = a.get('title', '').lower()[:60]
-            if t and t not in seen_titles:
-                seen_titles.add(t)
-                unique.append(a)
-
-        articles = unique[:20]  # cap at 20 stories
-
-        # ── Auto-fetch cover image from first article ──
-        cover_image = ''
-        for a in articles[:5]:
-            if a.get('image_url'):
-                cover_image = a['image_url']
-                break
-        if not cover_image:
-            for a in articles[:5]:
-                if a.get('url'):
-                    scraped = EnhancedNewsFetcher.scrape_article(a['url'])
-                    if scraped.get('image_url'):
-                        cover_image = scraped['image_url']
-                        break
-
-        # ── Build post content ──
-        from datetime import datetime
-        today = datetime.now().strftime('%B %d, %Y')
-        cat_display = category.upper()
-
-        # Intro line
-        intro = (f"Here is a roundup of the latest {edition_label} {cat_display.title()} "
-                 f"stories for {today}. Click any headline to read the full story.")
-
-        # Story list
-        stories_html = ''
-        for i, a in enumerate(articles, 1):
-            title   = a.get('title', '').strip()
-            url     = a.get('url', '#')
-            source  = a.get('source', '')
-            desc    = a.get('description', '').strip()
-            # Strip HTML from description
-            try:
-                desc = BeautifulSoup(desc, 'html.parser').get_text(separator=' ').strip()
-            except Exception:
-                pass
-            # Skip if description looks like a link dump
-            if '<a href' in desc or desc.count('http') > 1:
-                desc = ''
-            desc_html = f'<p style="margin:.3rem 0 0;font-size:.88rem;color:#555;line-height:1.55;">{desc[:200]}</p>' if desc else ''
-
-            stories_html += f'''
-<div style="padding:1rem 0;border-bottom:1px solid #e0ddd6;">
-  <div style="display:flex;align-items:flex-start;gap:.5rem;">
-    <span style="font-family:Georgia,serif;font-size:1.1rem;font-weight:700;color:#c0392b;flex-shrink:0;min-width:1.5rem;">{i}.</span>
-    <div>
-      <a href="{url}" target="_blank" rel="noopener noreferrer"
-         style="font-family:'Playfair Display',Georgia,serif;font-size:1rem;font-weight:700;
-                color:#111;text-decoration:none;line-height:1.35;display:block;">
-        {title}
-      </a>
-      {desc_html}
-      <span style="font-size:.72rem;color:#888;margin-top:.3rem;display:block;">
-        {source}
-      </span>
-    </div>
-  </div>
-</div>'''
-
-        content = f'''<div class="art-body">
-<p style="font-size:1rem;color:#444;border-left:3px solid #c0392b;padding-left:1rem;margin-bottom:1.5rem;">{intro}</p>
-{stories_html}
-</div>'''
-
-        # ── Create post ──
-        try:
-            author = User.objects.get(username='admin')
-        except User.DoesNotExist:
-            author = User.objects.first()
-
-        cat_map = {
-            'sport': 'SPORT', 'economy': 'ECONOMY', 'entertainment': 'ENTERTAINMENT',
-            'politics': 'POLITICS', 'technology': 'TECHNOLOGY', 'news': 'NEWS',
-        }
-        cat_name = cat_map.get(category.lower(), category.upper())
-        category_obj, _ = Category.objects.get_or_create(name=cat_name)
-
-        post_title = f"{edition_label} {cat_display.title()} Roundup — {today}"
-        base_slug  = slugify(post_title[:80])
-        slug = base_slug
-        ctr = 1
-        while Post.objects.filter(slug=slug).exists():
-            slug = f"{base_slug}-{ctr}"; ctr += 1
-
-        post = Post.objects.create(
-            title=post_title,
-            slug=slug,
-            content=content,
-            excerpt=intro,
-            author=author,
-            category=category_obj,
-            featured_image=cover_image,
-            published_date=timezone.now(),
-        )
-        post.tags.add(category.lower(), edition_label.lower(), 'roundup', 'latest')
-        print(f"✅ Roundup post created: {post.title} ({len(articles)} stories)")
-        return post, None
