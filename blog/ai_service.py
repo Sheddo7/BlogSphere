@@ -18,7 +18,7 @@ class EnhancedNewsFetcher:
     # News source configurations
     SOURCES = {
 
-        'google_nigeria': {
+        'google': {
             'base_url': 'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
             'category_urls': {
                 'news': 'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
@@ -146,7 +146,7 @@ class EnhancedNewsFetcher:
         """
         try:
             # Choose source based on country parameter
-            source_key = 'google_nigeria' if country == 'nigeria' else 'google'
+            source_key = 'google' if country == 'nigeria' else 'google'
 
             # Get the category URL or default to general news
             category_url = EnhancedNewsFetcher.SOURCES[source_key]['category_urls'].get(
@@ -293,13 +293,26 @@ class EnhancedNewsFetcher:
                 print(f"📡 Fetching {category} from {source}...")
 
                 if source == 'google':
-                    # International Google News ONLY (no Nigerian mix)
+                    # Fetch BOTH international AND Nigerian Google News
+                    # International first
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
-                        limit=limit_per_source
+                        limit=limit_per_source // 2  # Split limit between international and Nigerian
                     )
-                elif source == 'google_nigeria':
-                    # Nigerian Google News ONLY
+                    if articles:
+                        all_articles.extend(articles)
+
+                    # Then Nigerian
+                    ng_articles = EnhancedNewsFetcher.fetch_google_news_by_category(
+                        category,
+                        limit=limit_per_source // 2,
+                        country='nigeria'
+                    )
+                    if ng_articles:
+                        all_articles.extend(ng_articles)
+                        articles = articles + ng_articles  # For count
+
+                elif source == 'google':
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
                         limit=limit_per_source,
@@ -320,7 +333,9 @@ class EnhancedNewsFetcher:
                     continue
 
                 if articles:
-                    all_articles.extend(articles)
+                    # Only extend if we haven't already (google case handles it above)
+                    if source != 'google':
+                        all_articles.extend(articles)
                     print(f"✅ Found {len(articles)} articles from {source}/{category}")
 
                 # Avoid rate limiting
