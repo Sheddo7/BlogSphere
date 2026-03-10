@@ -1,4 +1,4 @@
-# blog/ai_service.py - ENHANCED VERSION WITH NIGERIAN NEWS SUPPORT
+# blog/ai_service.py - ENHANCED VERSION WITH LONGER ARTICLE CONTENT
 import os
 import requests
 import json
@@ -17,7 +17,6 @@ class EnhancedNewsFetcher:
 
     # News source configurations
     SOURCES = {
-
         'google': {
             'base_url': 'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
             'category_urls': {
@@ -276,10 +275,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        """Fetch news from multiple sources and categories
-
-        NOW SUPPORTS: google_nigeria, punch, vanguard, channels sources
-        """
+        """Fetch news from multiple sources and categories"""
         if categories is None:
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
 
@@ -293,26 +289,13 @@ class EnhancedNewsFetcher:
                 print(f"📡 Fetching {category} from {source}...")
 
                 if source == 'google':
-                    # Fetch BOTH international AND Nigerian Google News
-                    # International first
+                    # International Google News ONLY (no Nigerian mix)
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
-                        limit=limit_per_source // 2  # Split limit between international and Nigerian
+                        limit=limit_per_source
                     )
-                    if articles:
-                        all_articles.extend(articles)
-
-                    # Then Nigerian
-                    ng_articles = EnhancedNewsFetcher.fetch_google_news_by_category(
-                        category,
-                        limit=limit_per_source // 2,
-                        country='nigeria'
-                    )
-                    if ng_articles:
-                        all_articles.extend(ng_articles)
-                        articles = articles + ng_articles  # For count
-
-                elif source == 'google':
+                elif source == 'google_nigeria':
+                    # Nigerian Google News ONLY
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
                         limit=limit_per_source,
@@ -333,9 +316,7 @@ class EnhancedNewsFetcher:
                     continue
 
                 if articles:
-                    # Only extend if we haven't already (google case handles it above)
-                    if source != 'google':
-                        all_articles.extend(articles)
+                    all_articles.extend(articles)
                     print(f"✅ Found {len(articles)} articles from {source}/{category}")
 
                 # Avoid rate limiting
@@ -344,10 +325,9 @@ class EnhancedNewsFetcher:
         print(f"🎉 Total articles fetched: {len(all_articles)}")
         return all_articles
 
-    # Keep all other methods unchanged from your original file
-    # (generate_blog_post_from_article, scrape_article, etc.)
+    @staticmethod
     def generate_blog_post_from_article(article):
-        """Generate a blog post from a news article"""
+        """Generate a blog post from a news article, with full text if possible"""
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
@@ -374,51 +354,64 @@ class EnhancedNewsFetcher:
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # Enhance content
+            # --- Fetch full content if needed ---
+            content_text = article.get('content', '')
+            # If content is too short (< 500 chars) and we have a URL, try to scrape
+            if len(content_text) < 500 and article.get('url'):
+                print(f"📥 Fetching full content from {article['url']}")
+                full_text = EnhancedNewsFetcher.extract_content_from_url(article['url'])
+                if full_text and len(full_text) > len(content_text):
+                    content_text = full_text
+
+            # Truncate to a reasonable length (e.g., 10,000 chars ≈ 1500–2000 words)
+            MAX_CONTENT_CHARS = 10000
+            if len(content_text) > MAX_CONTENT_CHARS:
+                content_text = content_text[:MAX_CONTENT_CHARS] + "... [Content truncated]"
+
+            # Build the post content with rich formatting
             enhanced_content = f"""
-            <h1>{article['title']}</h1>
-            <div class="alert alert-info">
-                <strong>Source:</strong> {article.get('source', 'Unknown')}<br>
-                <strong>Published:</strong> {article.get('published_at', 'N/A')}<br>
-                <strong>Original URL:</strong> <a href="{article['url']}" target="_blank">{article['url'][:100]}...</a>
-            </div>
-            <hr>
-            """
+<h1>{article['title']}</h1>
+<div class="alert alert-info">
+    <strong>Source:</strong> {article.get('source', 'Unknown')}<br>
+    <strong>Published:</strong> {article.get('published_at', 'N/A')}<br>
+    <strong>Original URL:</strong> <a href="{article['url']}" target="_blank" rel="noopener">{article['url'][:100]}...</a>
+</div>
+<hr>
+"""
 
+            # Add summary if available
             if article.get('description'):
-                enhanced_content += f"<p><strong>Summary:</strong> {article['description']}</p>"
+                enhanced_content += f"<h3>Summary</h3>\n<p>{article['description']}</p>\n<hr>\n"
 
-            if article.get('content'):
-                enhanced_content += f"\n<div class='article-content'>{article['content'][:2000]}"
-                if len(article.get('content', '')) > 2000:
-                    enhanced_content += "... [Content truncated]"
-                enhanced_content += "</div>"
+            # Add main content (now much longer)
+            if content_text:
+                enhanced_content += f"<h3>Full Article</h3>\n<div class='article-content'>{content_text}</div>\n<hr>\n"
 
+            # Attribution footer
             enhanced_content += f"""
-            <hr>
-            <div class="alert alert-secondary">
-                <em>This article was automatically generated from {article.get('source', 'a news source')}. 
-                <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    Read original article
-                </a></em>
-            </div>
-            """
+<div class="alert alert-secondary">
+    <em>This article was automatically generated from {article.get('source', 'a news source')}. 
+    <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
+        Read original article
+    </a></em>
+</div>
+"""
 
             # Create blog post
             post = Post.objects.create(
                 title=f"[News] {article['title'][:100]}",
                 slug=slug,
                 content=enhanced_content,
-                excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
+                excerpt=article.get('description', '')[:300] or article.get('title', '')[:200],
                 author=author,
                 category=category_obj,
                 published_date=timezone.now(),
             )
 
-            # Add tags
-            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+            # Add tags (without "auto-generated" to avoid clutter)
+            post.tags.add('news', article.get('category', 'general').lower())
 
-            print(f"✅ Created blog post: {post.title}")
+            print(f"✅ Created blog post: {post.title} ({len(content_text)} chars)")
             return post
 
         except Exception as e:
@@ -446,7 +439,7 @@ class EnhancedNewsFetcher:
             chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
             text = ' '.join(chunk for chunk in chunks if chunk)
 
-            return text[:5000]
+            return text[:5000]   # can increase to 10000 if desired
         except Exception as e:
             print(f"❌ Error extracting content: {e}")
             return None

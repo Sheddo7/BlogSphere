@@ -375,7 +375,7 @@ def post_article(request):
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article.get('content', article.get('description', ''))[:5000],
+                content=article.get('content', article.get('description', ''))[:10000],
                 excerpt=article.get('description', '')[:200],
                 author=author,
                 category=category_obj,
@@ -462,7 +462,7 @@ def post_multiple_articles(request):
                 post = Post.objects.create(
                     title=article['title'][:200],
                     slug=slug,
-                    content=article.get('content', article.get('description', ''))[:5000],
+                    content=article.get('content', article.get('description', ''))[:10000],
                     excerpt=article.get('description', '')[:200],
                     author=author,
                     category=category_obj,
