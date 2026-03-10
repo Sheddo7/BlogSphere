@@ -93,7 +93,7 @@ class EnhancedNewsFetcher:
     }
 
     @staticmethod
-    def fetch_news_api(category='general', country='us', limit=10):
+    def fetch_news_api(category='general', country='nigeria', limit=10):
         """Fetch news from NewsAPI"""
         api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
 
@@ -136,7 +136,7 @@ class EnhancedNewsFetcher:
             return []
 
     @staticmethod
-    def fetch_google_news_by_category(category='news', limit=10, country=None):
+    def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
         """Fetch news from Google News by specific category
 
         Args:
