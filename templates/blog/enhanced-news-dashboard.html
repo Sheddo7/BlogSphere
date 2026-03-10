@@ -740,7 +740,7 @@ function saveArticleEdits() {
     modal.hide();
 }
 
-// Post single article (without auto-generated tag)
+// UPDATED: Post single article with AI processing indicator
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
@@ -748,6 +748,9 @@ function postSingleArticle(index = null) {
     const article = fetchedArticles[articleIndex];
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
+
+    // Show processing toast with longer duration
+    const processingToastId = showToast('🤖 AI is processing article... This may take 10-30 seconds', 'info', 30000);
 
     fetch('/api/post-article/', {
         method: 'POST',
@@ -761,13 +764,25 @@ function postSingleArticle(index = null) {
             format: 'fetch_news',
             is_featured: isFeatured,
             save_article: saveArticle,
-            tags: article.tags || ['news'] // No auto-generated tag
+            tags: article.tags || ['news']
         })
     })
     .then(response => response.json())
     .then(data => {
+        // Remove processing toast
+        if (processingToastId) removeToast(processingToastId);
+
         if (data.success) {
-            showToast(`Posted: ${data.post_title}`, 'success');
+            // Show success with word count if available
+            let message = `✅ Posted: ${data.post_title}`;
+            if (data.word_count) {
+                message += ` (${data.word_count} words)`;
+            }
+            if (data.ai_processed) {
+                message += ' 🤖';
+            }
+            showToast(message, 'success');
+
             // Remove from fetched articles
             fetchedArticles.splice(articleIndex, 1);
             displayFetchedArticles();
@@ -778,13 +793,15 @@ function postSingleArticle(index = null) {
                 if (modal) modal.hide();
             }
 
-            // Reload the page to show new post
-            setTimeout(() => location.reload(), 1000);
+            // Refresh page after delay
+            setTimeout(() => location.reload(), 2000);
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
     })
     .catch(error => {
+        // Remove processing toast
+        if (processingToastId) removeToast(processingToastId);
         showToast('Error posting article', 'danger');
     });
 }
@@ -1052,8 +1069,11 @@ function convertToPost(articleId) {
     });
 }
 
-function showToast(message, type) {
+// UPDATED: Show toast with duration and return ID (Bootstrap style)
+function showToast(message, type = 'success', duration = 3000) {
     const toast = document.createElement('div');
+    const toastId = 'toast-' + Date.now();
+    toast.id = toastId;
     toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed bottom-0 end-0 m-3';
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
@@ -1065,7 +1085,31 @@ function showToast(message, type) {
     document.body.appendChild(toast);
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
-    setTimeout(() => toast.remove(), 3000);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                // Hide and remove
+                const bsToastInstance = bootstrap.Toast.getInstance(toastElement);
+                if (bsToastInstance) bsToastInstance.hide();
+                setTimeout(() => toastElement.remove(), 300); // Wait for hide animation
+            }
+        }, duration);
+    }
+
+    return toastId;  // Return ID so we can remove it manually
+}
+
+// New function to manually remove a toast by ID
+function removeToast(toastId) {
+    const toast = document.getElementById(toastId);
+    if (toast) {
+        const bsToast = bootstrap.Toast.getInstance(toast);
+        if (bsToast) bsToast.hide();
+        setTimeout(() => toast.remove(), 300);
+    }
 }
 </script>
 

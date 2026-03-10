@@ -1,4 +1,4 @@
-# blog/ai_service.py - ENHANCED VERSION WITH LONGER ARTICLE CONTENT
+# blog/ai_service.py - ENHANCED VERSION WITH AI CONTENT SUMMARIZATION
 import os
 import requests
 import json
@@ -10,10 +10,11 @@ import hashlib
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
+import re
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with multiple sources and category support"""
+    """Enhanced news fetcher with multiple sources and AI content summarization"""
 
     # News source configurations
     SOURCES = {
@@ -92,6 +93,234 @@ class EnhancedNewsFetcher:
     }
 
     @staticmethod
+    def scrape_full_article_content(url):
+        """Scrape the full article content from a URL"""
+        try:
+            print(f"🔍 Scraping content from: {url[:80]}...")
+
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Remove unwanted elements
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside',
+                                 'iframe', 'noscript', 'form', 'button']):
+                element.decompose()
+
+            # Try to find main content area
+            content_areas = []
+
+            # Look for common article containers
+            article_selectors = [
+                'article',
+                '[class*="article-content"]',
+                '[class*="post-content"]',
+                '[class*="entry-content"]',
+                '[class*="story-body"]',
+                '[class*="article-body"]',
+                'main',
+                '[role="main"]',
+            ]
+
+            for selector in article_selectors:
+                elements = soup.select(selector)
+                if elements:
+                    content_areas.extend(elements)
+                    break
+
+            # If no specific content area found, use body
+            if not content_areas:
+                content_areas = [soup.body] if soup.body else [soup]
+
+            # Extract text from content areas
+            article_text = []
+            for area in content_areas:
+                # Get paragraphs
+                paragraphs = area.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
+                for p in paragraphs:
+                    text = p.get_text(strip=True)
+                    if len(text) > 30:  # Only paragraphs with substantial content
+                        article_text.append(text)
+
+            # Join and clean the text
+            full_text = '\n\n'.join(article_text)
+
+            # Clean up whitespace
+            full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+            full_text = re.sub(r' +', ' ', full_text)
+
+            if len(full_text) < 100:
+                print("⚠️  Article content too short, using fallback method")
+                # Fallback: get all text
+                full_text = soup.get_text(separator='\n', strip=True)
+                full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+
+            print(f"✅ Scraped {len(full_text)} characters")
+            return full_text[:10000]  # Limit to 10k characters
+
+        except Exception as e:
+            print(f"❌ Error scraping article: {e}")
+            return None
+
+    @staticmethod
+    def summarize_and_rewrite_with_ai(article_title, article_content, source, category, min_words=500):
+        """
+        Use Google Gemini (FREE) to summarize and rewrite article content
+
+        Args:
+            article_title: The article title
+            article_content: The scraped article content
+            source: News source name
+            category: Article category
+            min_words: Minimum word count for output (default 500)
+
+        Returns:
+            dict with 'content', 'summary', and 'word_count'
+        """
+        try:
+            # Get Gemini API key from environment or settings
+            gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
+
+            if not gemini_api_key:
+                print("⚠️  GEMINI_API_KEY not found. Set it in your environment variables.")
+                print("   Get a free key at: https://makersuite.google.com/app/apikey")
+                return {
+                    'content': article_content[:2000] + "...",
+                    'summary': article_content[:300],
+                    'word_count': len(article_content.split())
+                }
+
+            print(f"🤖 Using AI to rewrite article (target: {min_words}+ words)...")
+
+            # Prepare the prompt
+            prompt = f"""You are a professional news writer. Rewrite the following news article in your own words.
+
+REQUIREMENTS:
+- Write at least {min_words} words
+- Use original phrasing and sentence structure (DO NOT copy the original)
+- Keep all important facts, quotes, and details
+- Write in a clear, engaging journalistic style
+- Maintain the news tone appropriate for the category: {category}
+- Structure with introduction, main body, and conclusion
+- Use proper paragraphs (separate with blank lines)
+
+ORIGINAL ARTICLE:
+Title: {article_title}
+Source: {source}
+
+Content:
+{article_content[:5000]}
+
+WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
+
+            # Call Gemini API
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}"
+
+            payload = {
+                "contents": [{
+                    "parts": [{
+                        "text": prompt
+                    }]
+                }],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 2048,
+                }
+            }
+
+            response = requests.post(url, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                data = response.json()
+
+                # Extract the generated content
+                if 'candidates' in data and len(data['candidates']) > 0:
+                    generated_text = data['candidates'][0]['content']['parts'][0]['text']
+
+                    # Clean up the text
+                    generated_text = generated_text.strip()
+
+                    # Calculate word count
+                    word_count = len(generated_text.split())
+
+                    # Create summary (first 200 words)
+                    summary = ' '.join(generated_text.split()[:200])
+
+                    print(f"✅ AI generated {word_count} words")
+
+                    return {
+                        'content': generated_text,
+                        'summary': summary,
+                        'word_count': word_count
+                    }
+                else:
+                    print("❌ No content in AI response")
+                    return None
+            else:
+                print(f"❌ Gemini API error: {response.status_code} - {response.text}")
+                return None
+
+        except Exception as e:
+            print(f"❌ Error calling AI API: {e}")
+            return None
+
+    @staticmethod
+    def process_article_with_ai(article_dict):
+        """
+        Process a single article: scrape content and rewrite with AI
+
+        Args:
+            article_dict: Dictionary with 'url', 'title', 'source', 'category'
+
+        Returns:
+            Updated article_dict with 'content', 'description' fields populated
+        """
+        try:
+            # Step 1: Scrape the full article content
+            scraped_content = EnhancedNewsFetcher.scrape_full_article_content(article_dict['url'])
+
+            if not scraped_content or len(scraped_content) < 100:
+                print("⚠️  Could not scrape enough content, using description")
+                article_dict['content'] = article_dict.get('description', '')
+                return article_dict
+
+            # Step 2: Rewrite with AI
+            ai_result = EnhancedNewsFetcher.summarize_and_rewrite_with_ai(
+                article_title=article_dict['title'],
+                article_content=scraped_content,
+                source=article_dict.get('source', 'Unknown'),
+                category=article_dict.get('category', 'NEWS'),
+                min_words=500
+            )
+
+            if ai_result:
+                # Update article with AI-generated content
+                article_dict['content'] = ai_result['content']
+                article_dict['description'] = ai_result['summary']
+                article_dict['word_count'] = ai_result['word_count']
+                article_dict['ai_processed'] = True
+                print(f"✅ Article processed: {ai_result['word_count']} words")
+            else:
+                # Fallback to scraped content
+                article_dict['content'] = scraped_content[:2000]
+                article_dict['description'] = scraped_content[:300]
+                article_dict['ai_processed'] = False
+                print("⚠️  Using scraped content (AI failed)")
+
+            return article_dict
+
+        except Exception as e:
+            print(f"❌ Error processing article: {e}")
+            return article_dict
+
+    # === KEEP ALL YOUR EXISTING METHODS BELOW ===
+
+    @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
         """Fetch news from NewsAPI"""
         api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
@@ -135,22 +364,13 @@ class EnhancedNewsFetcher:
             return []
 
     @staticmethod
-    def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
-        """Fetch news from Google News by specific category
-
-        Args:
-            category: news category (news, sport, entertainment, etc.)
-            limit: number of articles to fetch
-            country: if 'nigeria', fetches from Nigerian Google News
-        """
+    def fetch_google_news_by_category(category='news', limit=10, country=None):
+        """Fetch news from Google News by specific category"""
         try:
-            # Choose source based on country parameter
-            source_key = 'google' if country == 'nigeria' else 'google'
-
             # Get the category URL or default to general news
-            category_url = EnhancedNewsFetcher.SOURCES[source_key]['category_urls'].get(
+            category_url = EnhancedNewsFetcher.SOURCES['google']['category_urls'].get(
                 category,
-                EnhancedNewsFetcher.SOURCES[source_key]['base_url']
+                EnhancedNewsFetcher.SOURCES['google']['base_url']
             )
 
             feed = feedparser.parse(category_url)
@@ -158,8 +378,6 @@ class EnhancedNewsFetcher:
 
             for entry in feed.entries[:limit]:
                 source_name = entry.get('source', {}).get('title', 'Google News')
-                if country == 'nigeria':
-                    source_name = f"{source_name} (Nigeria)"
 
                 news_items.append({
                     'title': entry.title,
@@ -172,7 +390,7 @@ class EnhancedNewsFetcher:
                 })
             return news_items
         except Exception as e:
-            print(f"❌ Error fetching Google News ({category}, {country}): {e}")
+            print(f"❌ Error fetching Google News ({category}): {e}")
             return []
 
     @staticmethod
@@ -289,18 +507,7 @@ class EnhancedNewsFetcher:
                 print(f"📡 Fetching {category} from {source}...")
 
                 if source == 'google':
-                    # International Google News ONLY (no Nigerian mix)
-                    articles = EnhancedNewsFetcher.fetch_google_news_by_category(
-                        category,
-                        limit=limit_per_source
-                    )
-                elif source == 'google_nigeria':
-                    # Nigerian Google News ONLY
-                    articles = EnhancedNewsFetcher.fetch_google_news_by_category(
-                        category,
-                        limit=limit_per_source,
-                        country='nigeria'
-                    )
+                    articles = EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source)
                 elif source == 'reddit':
                     articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
                 elif source == 'newsapi':
@@ -327,7 +534,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        """Generate a blog post from a news article, with full text if possible"""
+        """Generate a blog post from a news article"""
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
@@ -354,64 +561,27 @@ class EnhancedNewsFetcher:
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # --- Fetch full content if needed ---
-            content_text = article.get('content', '')
-            # If content is too short (< 500 chars) and we have a URL, try to scrape
-            if len(content_text) < 500 and article.get('url'):
-                print(f"📥 Fetching full content from {article['url']}")
-                full_text = EnhancedNewsFetcher.extract_content_from_url(article['url'])
-                if full_text and len(full_text) > len(content_text):
-                    content_text = full_text
-
-            # Truncate to a reasonable length (e.g., 10,000 chars ≈ 1500–2000 words)
-            MAX_CONTENT_CHARS = 10000
-            if len(content_text) > MAX_CONTENT_CHARS:
-                content_text = content_text[:MAX_CONTENT_CHARS] + "... [Content truncated]"
-
-            # Build the post content with rich formatting
-            enhanced_content = f"""
-<h1>{article['title']}</h1>
-<div class="alert alert-info">
-    <strong>Source:</strong> {article.get('source', 'Unknown')}<br>
-    <strong>Published:</strong> {article.get('published_at', 'N/A')}<br>
-    <strong>Original URL:</strong> <a href="{article['url']}" target="_blank" rel="noopener">{article['url'][:100]}...</a>
-</div>
-<hr>
-"""
-
-            # Add summary if available
-            if article.get('description'):
-                enhanced_content += f"<h3>Summary</h3>\n<p>{article['description']}</p>\n<hr>\n"
-
-            # Add main content (now much longer)
-            if content_text:
-                enhanced_content += f"<h3>Full Article</h3>\n<div class='article-content'>{content_text}</div>\n<hr>\n"
-
-            # Attribution footer
-            enhanced_content += f"""
-<div class="alert alert-secondary">
-    <em>This article was automatically generated from {article.get('source', 'a news source')}. 
-    <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
-        Read original article
-    </a></em>
-</div>
-"""
+            # Use AI-processed content if available
+            content = article.get('content', '')
 
             # Create blog post
             post = Post.objects.create(
-                title=f"[News] {article['title'][:100]}",
+                title=article['title'][:200],
                 slug=slug,
-                content=enhanced_content,
-                excerpt=article.get('description', '')[:300] or article.get('title', '')[:200],
+                content=content,
+                excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
                 author=author,
                 category=category_obj,
                 published_date=timezone.now(),
             )
 
-            # Add tags (without "auto-generated" to avoid clutter)
-            post.tags.add('news', article.get('category', 'general').lower())
+            # Add tags
+            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
 
-            print(f"✅ Created blog post: {post.title} ({len(content_text)} chars)")
+            if article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
+
+            print(f"✅ Created blog post: {post.title}")
             return post
 
         except Exception as e:
@@ -420,29 +590,8 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def extract_content_from_url(url):
-        """Extract main content from URL"""
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.content, 'html.parser')
-
-            # Remove script and style elements
-            for script in soup(["script", "style", "nav", "footer", "header"]):
-                script.decompose()
-
-            # Get text
-            text = soup.get_text()
-
-            # Clean up text
-            lines = (line.strip() for line in text.splitlines())
-            chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-            text = ' '.join(chunk for chunk in chunks if chunk)
-
-            return text[:5000]   # can increase to 10000 if desired
-        except Exception as e:
-            print(f"❌ Error extracting content: {e}")
-            return None
+        """Extract main content from URL (legacy method, use scrape_full_article_content instead)"""
+        return EnhancedNewsFetcher.scrape_full_article_content(url)
 
 
 # Keep the original SimpleNewsFetcher for backward compatibility

@@ -12,6 +12,7 @@ import json
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
 
+
 # ===== BASIC VIEWS =====
 
 def home(request):
@@ -24,6 +25,7 @@ def home(request):
         'latest_posts': latest_posts,
     }
     return render(request, 'blog/home.html', context)
+
 
 def post_detail(request, slug):
     """Individual post detail view"""
@@ -43,6 +45,7 @@ def post_detail(request, slug):
     }
     return render(request, 'blog/post_detail.html', context)
 
+
 def category_posts(request, slug):
     """Category posts listing view"""
     category = get_object_or_404(Category, slug=slug)
@@ -56,6 +59,7 @@ def category_posts(request, slug):
         'category': category,
     }
     return render(request, 'blog/category.html', context)
+
 
 def search(request):
     """Search results view"""
@@ -74,6 +78,7 @@ def search(request):
         'query': query,
     }
     return render(request, 'blog/search.html', context)
+
 
 def news_dashboard(request):
     """Simple dashboard to view fetched news"""
@@ -98,11 +103,13 @@ def news_dashboard(request):
 
     return render(request, 'blog/news_dashboard.html', context)
 
+
 # ===== ENHANCED NEWS DASHBOARD VIEWS =====
 
 def is_staff(user):
     """Check if user is staff"""
     return user.is_staff
+
 
 @login_required
 @user_passes_test(is_staff)
@@ -162,6 +169,7 @@ def enhanced_news_dashboard(request):
 
     return render(request, 'blog/enhanced-news-dashboard.html', context)
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -217,6 +225,7 @@ def fetch_news_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -268,6 +277,7 @@ def generate_posts_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def dashboard_stats(request):
@@ -285,6 +295,7 @@ def dashboard_stats(request):
         'auto_posts': auto_posts,
         'to_process': to_process,
     })
+
 
 # ===== HELPER VIEWS =====
 
@@ -333,13 +344,14 @@ def convert_to_post(request, article_id):
             'message': f'Error: {str(e)}'
         })
 
+
 # ===== NEW API ENDPOINTS =====
 
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
-    """Post a single article to the blog in fetch_news.py format"""
+    """Post a single article to the blog with AI content generation"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -371,12 +383,28 @@ def post_article(request):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # Create blog post in fetch_news.py format
+            # === NEW: Process article with AI before posting ===
+            print(f"🤖 Processing article with AI: {article['title'][:60]}...")
+
+            # Import the AI fetcher
+            from blog.ai_service import EnhancedNewsFetcher
+
+            # Process article with AI (scrape + summarize + rewrite)
+            processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
+
+            # Use the AI-generated content (500+ words, original writing)
+            article_content = processed_article.get('content', article.get('description', ''))
+            article_description = processed_article.get('description', article.get('description', ''))[:200]
+
+            print(f"✅ Content processed: {processed_article.get('word_count', 0)} words")
+            # === END NEW CODE ===
+
+            # Create blog post with AI-generated content
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article.get('content', article.get('description', ''))[:10000],
-                excerpt=article.get('description', '')[:200],
+                content=article_content,  # ← AI-rewritten 500+ words
+                excerpt=article_description,  # ← AI-generated summary
                 author=author,
                 category=category_obj,
                 featured_image=article.get('image_url', ''),
@@ -391,13 +419,17 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
+            # Add AI tag if processed
+            if processed_article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
+
             # Also save as NewsArticle if requested
             if data.get('save_article', True):
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
-                        content=article.get('content', '')[:5000],
-                        summary=article.get('description', '')[:500],
+                        content=processed_article.get('content', '')[:5000],
+                        summary=article_description[:500],
                         url=article.get('url', ''),
                         source=article.get('source', 'Unknown'),
                         category=category_name,
@@ -410,16 +442,21 @@ def post_article(request):
                 'success': True,
                 'message': 'Article posted successfully',
                 'post_title': post.title,
-                'post_slug': post.slug
+                'post_slug': post.slug,
+                'word_count': processed_article.get('word_count', 0),  # ← NEW
+                'ai_processed': processed_article.get('ai_processed', False),  # ← NEW
             })
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return JsonResponse({
                 'success': False,
                 'message': f'Error: {str(e)}'
             })
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
+
 
 @csrf_exempt
 @login_required
@@ -462,7 +499,7 @@ def post_multiple_articles(request):
                 post = Post.objects.create(
                     title=article['title'][:200],
                     slug=slug,
-                    content=article.get('content', article.get('description', ''))[:10000],
+                    content=article.get('content', article.get('description', ''))[:5000],
                     excerpt=article.get('description', '')[:200],
                     author=author,
                     category=category_obj,
@@ -495,6 +532,7 @@ def post_multiple_articles(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -518,6 +556,7 @@ def get_post(request, post_id):
         return JsonResponse({'success': False, 'message': 'Post not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
 
 @csrf_exempt
 @login_required
@@ -584,6 +623,7 @@ def update_post_image(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -605,6 +645,7 @@ def remove_post_image(request, post_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def delete_news_article(request, article_id):
@@ -624,6 +665,7 @@ def delete_news_article(request, article_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def delete_post(request, post_id):
@@ -642,6 +684,7 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
