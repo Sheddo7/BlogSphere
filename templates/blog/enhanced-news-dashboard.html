@@ -1,10 +1,12 @@
-<!-- templates/blog/enhanced-news-dashboard.html -->
+<!-- templates/blog/enhanced-news-dashboard.html - Integrated version -->
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}BlogSphere — Latest News{% endblock %}
+{% block title %}BlogSphere — News Dashboard{% endblock %}
 
 {% block content %}
+<!-- Bootstrap 5 (if not already in base) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap');
 
@@ -65,21 +67,22 @@
   .hero-image { width: 100%; height: 500px; object-fit: cover; }
   .hero-placeholder { width: 100%; height: 500px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem; font-family: 'Playfair Display', serif; }
 
-  /* Numbered Articles List (BlogSphere Style) */
+  /* Numbered Articles List */
   .articles-section { }
   .articles-list { background: var(--bg-white); }
   .article-item { padding: 1.5rem 0; border-bottom: 1px solid var(--border-color); display: flex; gap: 1rem; align-items: flex-start; }
   .article-item:first-child { padding-top: 0; }
   .article-item:last-child { border-bottom: none; }
 
+  .article-checkbox { margin-top: 0.3rem; transform: scale(1.2); }
   .article-number { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 700; color: var(--secondary-text); min-width: 35px; }
-
+  .article-thumb { width: 80px; height: 60px; object-fit: cover; border-radius: 4px; }
   .article-content { flex: 1; }
   .article-title { font-size: 1.1rem; line-height: 1.4; margin-bottom: 0.3rem; }
   .article-title a { color: var(--accent-red); text-decoration: none; font-weight: 500; }
   .article-title a:hover { text-decoration: underline; }
-
   .article-source { font-size: 0.85rem; color: var(--secondary-text); }
+  .article-actions { display: flex; gap: 0.3rem; align-items: center; }
 
   /* Sidebar */
   .topics-panel, .stories-panel {
@@ -171,12 +174,12 @@
     transition: max-height 0.3s ease;
   }
   .admin-controls-content.active {
-    max-height: 500px;
+    max-height: 800px;
     margin-top: 1rem;
   }
 
-  /* Fetch Form */
-  .category-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+  /* Chip styles for sources and categories */
+  .chip-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
   .chip {
     display: inline-flex;
     align-items: center;
@@ -195,6 +198,7 @@
     background: var(--accent-red);
     color: white;
   }
+  .chip i { font-size: 0.9rem; }
 
   .fetch-button {
     background: var(--ink);
@@ -258,6 +262,27 @@
   .empty-state-text { font-size: 1.2rem; font-weight: 500; }
   .empty-state-subtext { font-size: 0.9rem; margin-top: 0.5rem; }
 
+  /* Tables (for posted posts and news articles) */
+  .table-custom {
+    width: 100%;
+    background: var(--bg-white);
+    border-collapse: collapse;
+  }
+  .table-custom th {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 2px solid var(--border-color);
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .table-custom td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+  }
+  .table-custom tr:hover { background: var(--bg-gray); }
+  .post-thumbnail { width: 60px; height: 40px; object-fit: cover; border-radius: 4px; }
+
   /* Responsive */
   @media (max-width: 968px) {
     .content-grid { grid-template-columns: 1fr; }
@@ -266,6 +291,42 @@
 </style>
 
 <div class="blog-container">
+
+  <!-- Stats Cards (using Bootstrap cards, custom colors) -->
+  <div class="row mb-4">
+    <div class="col-md-3 mb-3">
+      <div class="card text-white bg-primary">
+        <div class="card-body">
+          <h5 class="card-title">Total Articles</h5>
+          <h2>{{ stats.total_articles }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-white bg-success">
+        <div class="card-body">
+          <h5 class="card-title">Today's Articles</h5>
+          <h2>{{ stats.today_articles }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-white bg-info">
+        <div class="card-body">
+          <h5 class="card-title">Auto Posts</h5>
+          <h2>{{ stats.auto_posts }}</h2>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 mb-3">
+      <div class="card text-white bg-warning">
+        <div class="card-body">
+          <h5 class="card-title">To Process</h5>
+          <h2>{{ stats.to_process }}</h2>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- BlogSphere Header -->
   <div class="blogsphere-header">
@@ -281,44 +342,54 @@
     </div>
   </div>
 
-  <!-- Admin Controls (Collapsible) -->
+  <!-- Admin Controls (Collapsible with enhanced fetch form) -->
   <div class="admin-controls">
     <div class="admin-controls-header" onclick="toggleAdminControls()">
       <h3><i class="fas fa-tools"></i> Fetch Latest News</h3>
       <span class="toggle-icon" id="toggleIcon">▼</span>
     </div>
-
     <div class="admin-controls-content" id="adminControlsContent">
       <form id="fetchForm">
         {% csrf_token %}
-        <div style="margin-bottom: 0.5rem; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--secondary-text);">
-          Select Categories
+
+        <!-- Sources -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">News Sources</label>
+          <div class="chip-container">
+            <label class="chip"><input type="checkbox" name="sources" value="google" checked><i class="fab fa-google text-danger"></i> Google</label>
+            <label class="chip"><input type="checkbox" name="sources" value="reddit"><i class="fab fa-reddit text-danger"></i> Reddit</label>
+            <label class="chip"><input type="checkbox" name="sources" value="bbc"><i class="fas fa-tv text-primary"></i> BBC</label>
+            <label class="chip"><input type="checkbox" name="sources" value="newsapi"><i class="fas fa-newspaper text-info"></i> NewsAPI</label>
+            <label class="chip"><input type="checkbox" name="sources" value="punch"><i class="fas fa-newspaper"></i> Punch</label>
+            <label class="chip"><input type="checkbox" name="sources" value="vanguard"><i class="fas fa-newspaper"></i> Vanguard</label>
+          </div>
         </div>
-        <div class="category-chips">
-          <label class="chip">
-            <input type="checkbox" name="categories" value="news" checked>
-            <span>News</span>
-          </label>
-          <label class="chip">
-            <input type="checkbox" name="categories" value="sport" checked>
-            <span>Sport</span>
-          </label>
-          <label class="chip">
-            <input type="checkbox" name="categories" value="entertainment" checked>
-            <span>Entertainment</span>
-          </label>
-          <label class="chip">
-            <input type="checkbox" name="categories" value="economy">
-            <span>Economy</span>
-          </label>
-          <label class="chip">
-            <input type="checkbox" name="categories" value="politics">
-            <span>Politics</span>
-          </label>
-          <label class="chip">
-            <input type="checkbox" name="categories" value="technology">
-            <span>Technology</span>
-          </label>
+
+        <!-- Categories -->
+        <div class="mb-3">
+          <label class="form-label fw-bold">Categories</label>
+          <div class="chip-container">
+            <label class="chip"><input type="checkbox" name="categories" value="news" checked> News</label>
+            <label class="chip"><input type="checkbox" name="categories" value="sport" checked> Sport</label>
+            <label class="chip"><input type="checkbox" name="categories" value="entertainment" checked> Entertainment</label>
+            <label class="chip"><input type="checkbox" name="categories" value="economy"> Economy</label>
+            <label class="chip"><input type="checkbox" name="categories" value="politics"> Politics</label>
+            <label class="chip"><input type="checkbox" name="categories" value="technology"> Technology</label>
+          </div>
+        </div>
+
+        <!-- Limit and options -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="limit" class="form-label fw-bold">Articles per source</label>
+            <input type="number" class="form-control" id="limit" name="limit_per_source" value="5" min="1" max="20">
+          </div>
+          <div class="col-md-6 d-flex align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="auto_save" id="autoSave">
+              <label class="form-check-label" for="autoSave">Auto-save to database</label>
+            </div>
+          </div>
         </div>
 
         <button type="submit" class="fetch-button" id="fetchBtn">
@@ -328,10 +399,9 @@
     </div>
   </div>
 
-  <!-- Content Grid -->
+  <!-- Main Content Grid -->
   <div class="content-grid">
-
-    <!-- Main Content -->
+    <!-- Main Column -->
     <main>
       <!-- Hero Image -->
       <div class="hero-section" id="heroSection">
@@ -340,7 +410,25 @@
         </div>
       </div>
 
-      <!-- Articles Section -->
+      <!-- Articles Toolbar (batch actions) -->
+      <div class="d-flex justify-content-between align-items-center mb-2" id="resultsToolbar" style="display: none;">
+        <div>
+          <span class="fw-bold"><span id="resultsCount">0</span> articles fetched</span>
+        </div>
+        <div>
+          <button class="btn btn-sm btn-success me-2" onclick="postAllArticles()">
+            <i class="fas fa-paper-plane me-1"></i> Post Selected
+          </button>
+          <button class="btn btn-sm btn-danger me-2" onclick="deleteSelectedArticles()">
+            <i class="fas fa-trash me-1"></i> Delete Selected
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="clearResults()">
+            <i class="fas fa-times me-1"></i> Clear
+          </button>
+        </div>
+      </div>
+
+      <!-- Articles List (numbered) -->
       <div class="articles-section">
         <div class="articles-list" id="articlesList">
           <!-- Empty State -->
@@ -364,81 +452,207 @@
           <span class="topic-count">{{ cat.count }} posts</span>
         </div>
         {% empty %}
-        <div class="topic-item">
-          <span class="topic-name">ENTERTAINMENT</span>
-          <span class="topic-count">5 posts</span>
-        </div>
-        <div class="topic-item">
-          <span class="topic-name">NEWS</span>
-          <span class="topic-count">11 posts</span>
-        </div>
-        <div class="topic-item">
-          <span class="topic-name">ECONOMY</span>
-          <span class="topic-count">4 posts</span>
-        </div>
-        <div class="topic-item">
-          <span class="topic-name">POLITICS</span>
-          <span class="topic-count">0 posts</span>
-        </div>
-        <div class="topic-item">
-          <span class="topic-name">TECHNOLOGY</span>
-          <span class="topic-count">2 posts</span>
-        </div>
-        <div class="topic-item">
-          <span class="topic-name">SPORT</span>
-          <span class="topic-count">1 posts</span>
-        </div>
+        <div class="topic-item"><span class="topic-name">ENTERTAINMENT</span><span class="topic-count">5 posts</span></div>
+        <div class="topic-item"><span class="topic-name">NEWS</span><span class="topic-count">11 posts</span></div>
+        <div class="topic-item"><span class="topic-name">ECONOMY</span><span class="topic-count">4 posts</span></div>
+        <div class="topic-item"><span class="topic-name">POLITICS</span><span class="topic-count">0 posts</span></div>
+        <div class="topic-item"><span class="topic-name">TECHNOLOGY</span><span class="topic-count">2 posts</span></div>
+        <div class="topic-item"><span class="topic-name">SPORT</span><span class="topic-count">1 posts</span></div>
         {% endfor %}
       </div>
 
-      <!-- Latest Stories -->
+      <!-- Latest Stories (from recent posts) -->
       <div class="stories-panel">
         <h2>Latest Stories</h2>
         {% for story in latest_stories %}
         <div class="story-item">
-          <div class="story-title">
-            <a href="{% url 'post_detail' story.slug %}">{{ story.title|truncatechars:60 }}</a>
-          </div>
+          <div class="story-title"><a href="{% url 'post_detail' story.slug %}">{{ story.title|truncatechars:60 }}</a></div>
           <div class="story-date">{{ story.published_date|date:"M d, Y" }}</div>
         </div>
         {% empty %}
-        <div class="story-item">
-          <div class="story-title">
-            <a href="#">IWD: No country has achieved full gender equality, say...</a>
-          </div>
-          <div class="story-date">Mar 08, 2026</div>
-        </div>
-        <div class="story-item">
-          <div class="story-title">
-            <a href="#">International News Roundup — March 08, 2026</a>
-          </div>
-          <div class="story-date">Mar 08, 2026</div>
-        </div>
-        <div class="story-item">
-          <div class="story-title">
-            <a href="#">Nigerian News Roundup — March 08, 2026</a>
-          </div>
-          <div class="story-date">Mar 08, 2026</div>
-        </div>
+        <div class="story-item"><div class="story-title"><a href="#">IWD: No country has achieved full gender equality, say...</a></div><div class="story-date">Mar 08, 2026</div></div>
+        <div class="story-item"><div class="story-title"><a href="#">International News Roundup — March 08, 2026</a></div><div class="story-date">Mar 08, 2026</div></div>
+        <div class="story-item"><div class="story-title"><a href="#">Nigerian News Roundup — March 08, 2026</a></div><div class="story-date">Mar 08, 2026</div></div>
         {% endfor %}
       </div>
     </aside>
+  </div>
 
+  <!-- Posted Posts Table -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4>Recently Posted Blog Posts</h4>
+      <a href="{% url 'admin:blog_post_changelist' %}" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table-custom">
+        <thead><tr><th>Image</th><th>Title</th><th>Category</th><th>Posted</th><th>Views</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for post in recent_posts|slice:":10" %}
+          <tr id="post-row-{{ post.id }}">
+            <td>{% if post.featured_image %}<img src="{{ post.featured_image.url }}" class="post-thumbnail" alt="">{% else %}<div class="bg-light rounded d-flex align-items-center justify-content-center" style="width:60px;height:40px;"><i class="fas fa-image text-muted"></i></div>{% endif %}</td>
+            <td>{{ post.title|truncatechars:50 }}</td>
+            <td><span class="badge bg-info">{{ post.category.name }}</span></td>
+            <td>{{ post.published_date|date:"M d, Y" }}</td>
+            <td><span class="badge bg-secondary">{{ post.views }}</span></td>
+            <td>
+              <a href="{% url 'post_detail' post.slug %}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'admin:blog_post_change' post.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+              <button onclick="editPostImage({{ post.id }})" class="btn btn-sm btn-outline-info"><i class="fas fa-image"></i></button>
+              <button onclick="deletePost({{ post.id }})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-center">No posts yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent News Articles Table -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4>Recent News Articles</h4>
+      <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn btn-sm btn-primary">View All</a>
+    </div>
+    <div class="card-body p-0">
+      <table class="table-custom">
+        <thead><tr><th>Title</th><th>Source</th><th>Category</th><th>Published</th><th>Converted</th><th>Actions</th></tr></thead>
+        <tbody>
+          {% for article in recent_articles %}
+          <tr id="article-row-{{ article.id }}">
+            <td>{{ article.title|truncatechars:60 }}</td>
+            <td><span class="badge bg-secondary">{{ article.source }}</span></td>
+            <td><span class="badge bg-info">{{ article.category }}</span></td>
+            <td>{{ article.published_at|date:"M d, Y"|default:"N/A" }}</td>
+            <td>{% if article.created_as_post %}<span class="badge bg-success">Yes</span>{% else %}<span class="badge bg-warning">No</span>{% endif %}</td>
+            <td>
+              <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fas fa-external-link-alt"></i></a>
+              <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="btn btn-sm btn-outline-secondary"><i class="fas fa-edit"></i></a>
+              <button onclick="convertToPost({{ article.id }})" class="btn btn-sm btn-outline-success"><i class="fas fa-file-alt"></i></button>
+              <button onclick="deleteNewsArticle({{ article.id }})" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="6" class="text-center">No articles found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Article Editor Modal (Bootstrap) -->
+<div class="modal fade" id="articleEditorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Article</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="articleEditorForm">
+          <input type="hidden" id="editArticleIndex">
+          <div class="row">
+            <div class="col-md-8">
+              <div class="mb-3"><label class="form-label fw-bold">Title</label><input type="text" class="form-control" id="editTitle" required></div>
+              <div class="mb-3"><label class="form-label fw-bold">Content</label><textarea class="form-control" id="editContent" rows="10" required></textarea></div>
+              <div class="mb-3"><label class="form-label fw-bold">Description/Summary</label><textarea class="form-control" id="editDescription" rows="4"></textarea></div>
+              <div class="mb-3"><label class="form-label fw-bold">Tags (comma separated)</label><input type="text" class="form-control" id="editTags" value="news"></div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Article Image</label>
+                <div class="border rounded p-3 text-center">
+                  <img id="articleImagePreview" src="{% static 'img/default-article.jpg' %}" class="img-fluid mb-2" style="max-height:200px;">
+                  <input type="file" class="form-control mb-2" id="imageUpload" accept="image/*">
+                  <input type="text" class="form-control" id="imageUrl" placeholder="Or image URL">
+                </div>
+              </div>
+              <div class="mb-3"><label class="form-label fw-bold">Source</label><input type="text" class="form-control" id="editSource"></div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Category</label>
+                <select class="form-select" id="editCategory">
+                  <option>NEWS</option><option>SPORT</option><option>ENTERTAINMENT</option><option>ECONOMY</option><option>POLITICS</option><option>TECHNOLOGY</option>
+                </select>
+              </div>
+              <div class="mb-3"><label class="form-label fw-bold">Original URL</label><input type="url" class="form-control" id="editUrl"></div>
+              <div class="card">
+                <div class="card-body">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" id="makeFeatured"><label class="form-check-label">Make featured post</label></div>
+                  <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="saveArticle" checked><label class="form-check-label">Save as NewsArticle</label></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" onclick="deleteFetchedArticle()"><i class="fas fa-trash"></i> Delete</button>
+        <button type="button" class="btn btn-primary" onclick="saveArticleEdits()">Save Changes</button>
+        <button type="button" class="btn btn-success" onclick="postSingleArticle()"><i class="fas fa-paper-plane"></i> Post to Blog</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Post Image Editor Modal -->
+<div class="modal fade" id="postImageEditorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Post Image</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="postImageForm">
+          <input type="hidden" id="editPostId">
+          <div class="text-center mb-4"><h6 id="postTitle"></h6><small class="text-muted" id="postCategory"></small></div>
+          <div class="row">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Current Image</label>
+              <div class="border rounded p-3 text-center">
+                <img id="currentPostImage" src="" class="img-fluid" style="max-height:300px;">
+                <p id="noImageText" class="text-muted mt-2" style="display:none;">No image set</p>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Upload New Image</label>
+              <div class="border rounded p-3 text-center">
+                <img id="newImagePreview" src="{% static 'img/default-article.jpg' %}" class="img-fluid mb-2" style="max-height:200px;">
+                <input type="file" class="form-control mb-2" id="postImageUpload" accept="image/*">
+                <input type="text" class="form-control mb-2" id="postImageUrl" placeholder="Or image URL">
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePostImage()"><i class="fas fa-times"></i> Remove Image</button>
+              </div>
+              <div class="card mt-3">
+                <div class="card-body">
+                  <div class="form-check"><input class="form-check-input" type="checkbox" id="useDefaultImage"><label class="form-check-label">Use default blog image</label></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="updatePostImage()"><i class="fas fa-save"></i> Update Image</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Loading Overlay -->
-<div class="loading-overlay" id="loadingOverlay">
-  <div class="spinner"></div>
-</div>
+<div class="loading-overlay" id="loadingOverlay"><div class="spinner"></div></div>
 
 <!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 let fetchedArticles = [];
+let currentEditIndex = -1;
 
-// Toggle Admin Controls
+// Toggle admin controls
 function toggleAdminControls() {
   const content = document.getElementById('adminControlsContent');
   const icon = document.getElementById('toggleIcon');
@@ -446,117 +660,350 @@ function toggleAdminControls() {
   icon.classList.toggle('rotated');
 }
 
-// Fetch News Form
+// Fetch news
 document.getElementById('fetchForm').addEventListener('submit', async function(e) {
   e.preventDefault();
+  const form = this;
+  const btn = document.getElementById('fetchBtn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
+  btn.disabled = true;
 
-  const categories = [...this.querySelectorAll('input[name="categories"]:checked')].map(c => c.value);
-
-  if (!categories.length) {
-    showToast('Please select at least one category', 'error');
+  const sources = Array.from(form.querySelectorAll('input[name="sources"]:checked')).map(c => c.value);
+  const categories = Array.from(form.querySelectorAll('input[name="categories"]:checked')).map(c => c.value);
+  if (!sources.length || !categories.length) {
+    showToast('Select at least one source and category', 'error');
+    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch Latest News';
+    btn.disabled = false;
     return;
   }
 
   const formData = new FormData();
   formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-  // Add default sources
-  const sources = ['google', 'google_nigeria', 'bbc', 'punch', 'vanguard'];
   sources.forEach(s => formData.append('sources', s));
   categories.forEach(c => formData.append('categories', c));
-  formData.append('limit_per_source', '10');
-  formData.append('auto_save', 'false');
+  formData.append('limit_per_source', document.getElementById('limit').value);
+  formData.append('auto_save', document.getElementById('autoSave').checked);
 
   showLoading(true);
-
   try {
-    const response = await fetch('{% url "fetch_news_now" %}', {
-      method: 'POST',
-      body: formData
-    });
-
-    const data = await response.json();
-
-    if (data.success && data.articles && data.articles.length > 0) {
+    const res = await fetch('{% url "fetch_news_now" %}', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    const data = await res.json();
+    if (data.success && data.articles?.length) {
       fetchedArticles = data.articles;
       displayArticles();
-      showToast(`Fetched ${data.articles.length} articles successfully!`, 'success');
-
-      // Close admin controls after fetch
+      document.getElementById('resultsToolbar').style.display = 'flex';
+      document.getElementById('resultsCount').innerText = fetchedArticles.length;
+      showToast(`Fetched ${fetchedArticles.length} articles`, 'success');
+      // Collapse admin controls
       document.getElementById('adminControlsContent').classList.remove('active');
       document.getElementById('toggleIcon').classList.remove('rotated');
     } else {
       showToast(data.message || 'No articles found', 'error');
     }
-  } catch (error) {
-    console.error('Fetch error:', error);
-    showToast('Error fetching news. Please try again.', 'error');
+  } catch (err) {
+    showToast('Fetch error', 'error');
   } finally {
     showLoading(false);
+    btn.innerHTML = '<i class="fas fa-sync-alt"></i> Fetch Latest News';
+    btn.disabled = false;
   }
 });
 
-// Display Articles in Numbered List Format (BlogSphere Style)
+// Display articles in numbered list with actions
 function displayArticles() {
-  const articlesList = document.getElementById('articlesList');
-  const heroSection = document.getElementById('heroSection');
-  const emptyState = document.getElementById('emptyState');
+  const list = document.getElementById('articlesList');
+  const hero = document.getElementById('heroSection');
+  const empty = document.getElementById('emptyState');
+  empty.style.display = 'none';
 
-  if (!fetchedArticles || fetchedArticles.length === 0) {
-    emptyState.style.display = 'block';
+  if (!fetchedArticles.length) {
+    empty.style.display = 'block';
+    hero.innerHTML = '<div class="hero-placeholder"><span>Latest Breaking News</span></div>';
+    document.getElementById('resultsToolbar').style.display = 'none';
     return;
   }
 
-  emptyState.style.display = 'none';
-
-  // Update hero image with first article's image
-  const firstArticle = fetchedArticles[0];
-  if (firstArticle.image_url) {
-    heroSection.innerHTML = `<img src="${firstArticle.image_url}" alt="${firstArticle.title}" class="hero-image" onerror="this.src='https://via.placeholder.com/1200x500/667eea/ffffff?text=BlogSphere+News'">`;
+  // Update hero with first article's image
+  const first = fetchedArticles[0];
+  if (first.image_url) {
+    hero.innerHTML = `<img src="${first.image_url}" alt="${first.title}" class="hero-image" onerror="this.src='https://via.placeholder.com/1200x500/667eea/ffffff?text=BlogSphere+News'">`;
+  } else {
+    hero.innerHTML = '<div class="hero-placeholder"><span>Latest Breaking News</span></div>';
   }
 
-  // Clear and populate articles list in numbered format
-  articlesList.innerHTML = '';
-
-  fetchedArticles.forEach((article, index) => {
-    const articleItem = document.createElement('div');
-    articleItem.className = 'article-item';
-    articleItem.innerHTML = `
-      <div class="article-number">${index + 1}.</div>
-      <div class="article-content">
-        <div class="article-title">
-          <a href="${article.url}" target="_blank">${article.title}</a>
+  // Build articles
+  list.innerHTML = '';
+  fetchedArticles.forEach((article, idx) => {
+    const div = document.createElement('div');
+    div.className = 'article-item';
+    div.innerHTML = `
+      <div class="d-flex gap-2 w-100">
+        <div><input type="checkbox" class="article-checkbox" value="${idx}" checked></div>
+        <div class="article-number">${idx+1}.</div>
+        ${article.image_url ? `<img src="${article.image_url}" class="article-thumb" onerror="this.style.display='none'">` : ''}
+        <div class="article-content">
+          <div class="article-title"><a href="${article.url}" target="_blank">${article.title}</a></div>
+          <div class="article-source mb-1">${article.source} • ${article.category}</div>
+          <div class="small text-muted">${article.description || article.content?.substring(0,150) || ''}</div>
         </div>
-        <div class="article-source">${article.source || 'Unknown Source'}</div>
+        <div class="article-actions">
+          <button class="btn btn-sm btn-outline-primary" onclick="openArticleEditor(${idx})"><i class="fas fa-edit"></i></button>
+          <button class="btn btn-sm btn-outline-success" onclick="postSingleArticle(${idx})"><i class="fas fa-paper-plane"></i></button>
+          <button class="btn btn-sm btn-outline-danger" onclick="deleteFetchedArticle(${idx})"><i class="fas fa-trash"></i></button>
+        </div>
       </div>
     `;
-    articlesList.appendChild(articleItem);
+    list.appendChild(div);
   });
 }
 
-// Show/Hide Loading
+// Open editor
+function openArticleEditor(idx) {
+  currentEditIndex = idx;
+  const a = fetchedArticles[idx];
+  document.getElementById('editArticleIndex').value = idx;
+  document.getElementById('editTitle').value = a.title || '';
+  document.getElementById('editContent').value = a.content || '';
+  document.getElementById('editDescription').value = a.description || a.summary || '';
+  document.getElementById('editTags').value = a.tags ? a.tags.join(', ') : 'news';
+  document.getElementById('editSource').value = a.source || '';
+  document.getElementById('editCategory').value = a.category || 'NEWS';
+  document.getElementById('editUrl').value = a.url || '';
+  document.getElementById('articleImagePreview').src = a.image_url || "{% static 'img/default-article.jpg' %}";
+  document.getElementById('imageUrl').value = a.image_url || '';
+  document.getElementById('makeFeatured').checked = a.is_featured || false;
+  document.getElementById('saveArticle').checked = a.save_article !== false;
+  new bootstrap.Modal(document.getElementById('articleEditorModal')).show();
+}
+
+// Save edits
+function saveArticleEdits() {
+  if (currentEditIndex === -1) return;
+  const a = fetchedArticles[currentEditIndex];
+  a.title = document.getElementById('editTitle').value;
+  a.content = document.getElementById('editContent').value;
+  a.description = document.getElementById('editDescription').value;
+  a.source = document.getElementById('editSource').value;
+  a.category = document.getElementById('editCategory').value;
+  a.url = document.getElementById('editUrl').value;
+  a.tags = document.getElementById('editTags').value.split(',').map(t => t.trim());
+  const url = document.getElementById('imageUrl').value;
+  if (url) a.image_url = url;
+  const file = document.getElementById('imageUpload').files[0];
+  if (file) a.image_url = URL.createObjectURL(file); // simplified; real upload needed
+  a.is_featured = document.getElementById('makeFeatured').checked;
+  a.save_article = document.getElementById('saveArticle').checked;
+  showToast('Article updated', 'success');
+  displayArticles();
+  bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
+}
+
+// Post single article
+function postSingleArticle(idx = null) {
+  const i = (idx !== null) ? idx : currentEditIndex;
+  if (i === -1 || !fetchedArticles[i]) return;
+  const article = fetchedArticles[i];
+  fetch('/api/post-article/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify({
+      article: article,
+      format: 'fetch_news',
+      is_featured: article.is_featured || false,
+      save_article: article.save_article !== false,
+      tags: article.tags || ['news']
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showToast(`Posted: ${data.post_title}`, 'success');
+      fetchedArticles.splice(i, 1);
+      displayArticles();
+      document.getElementById('resultsCount').innerText = fetchedArticles.length;
+      if (i === currentEditIndex) bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'))?.hide();
+      setTimeout(() => location.reload(), 1000);
+    } else showToast('Error: ' + data.message, 'danger');
+  })
+  .catch(() => showToast('Error posting', 'danger'));
+}
+
+// Post all selected
+function postAllArticles() {
+  const selected = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => parseInt(cb.value));
+  if (!selected.length) return showToast('No articles selected', 'warning');
+  const articles = selected.map(i => fetchedArticles[i]);
+  fetch('/api/post-multiple-articles/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' },
+    body: JSON.stringify({ articles: articles, format: 'fetch_news', tags: ['news'] })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      showToast(`Posted ${data.posted_count} articles`, 'success');
+      fetchedArticles = fetchedArticles.filter((_, i) => !selected.includes(i));
+      displayArticles();
+      document.getElementById('resultsCount').innerText = fetchedArticles.length;
+      setTimeout(() => location.reload(), 1000);
+    } else showToast('Error: ' + data.message, 'danger');
+  })
+  .catch(() => showToast('Error posting', 'danger'));
+}
+
+// Delete selected
+function deleteSelectedArticles() {
+  const selected = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => parseInt(cb.value));
+  if (!selected.length) return showToast('No articles selected', 'warning');
+  if (confirm(`Delete ${selected.length} articles?`)) {
+    fetchedArticles = fetchedArticles.filter((_, i) => !selected.includes(i));
+    displayArticles();
+    document.getElementById('resultsCount').innerText = fetchedArticles.length;
+    showToast('Deleted', 'info');
+  }
+}
+
+// Delete single fetched article
+function deleteFetchedArticle(idx = null) {
+  const i = (idx !== null) ? idx : currentEditIndex;
+  if (i === -1) return;
+  if (confirm('Delete this article?')) {
+    fetchedArticles.splice(i, 1);
+    displayArticles();
+    document.getElementById('resultsCount').innerText = fetchedArticles.length;
+    if (i === currentEditIndex) bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'))?.hide();
+    showToast('Deleted', 'info');
+  }
+}
+
+// Clear results
+function clearResults() {
+  if (!fetchedArticles.length) return;
+  if (confirm('Clear all fetched articles?')) {
+    fetchedArticles = [];
+    displayArticles();
+    document.getElementById('resultsToolbar').style.display = 'none';
+    showToast('Cleared', 'info');
+  }
+}
+
+// Delete NewsArticle (from table)
+function deleteNewsArticle(id) {
+  if (!confirm('Delete this news article?')) return;
+  fetch(`/api/delete-news-article/${id}/`, {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) { document.getElementById(`article-row-${id}`).remove(); showToast('Deleted', 'success'); }
+    else showToast('Error', 'danger');
+  });
+}
+
+// Delete Post (from table)
+function deletePost(id) {
+  if (!confirm('Delete this blog post?')) return;
+  fetch(`/api/delete-post/${id}/`, {
+    method: 'DELETE',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) { document.getElementById(`post-row-${id}`).remove(); showToast('Deleted', 'success'); }
+    else showToast('Error', 'danger');
+  });
+}
+
+// Edit post image
+function editPostImage(id) {
+  fetch(`/api/get-post/${id}/`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        document.getElementById('editPostId').value = id;
+        document.getElementById('postTitle').innerText = data.post.title;
+        document.getElementById('postCategory').innerText = `Category: ${data.post.category}`;
+        if (data.post.featured_image) {
+          document.getElementById('currentPostImage').src = data.post.featured_image;
+          document.getElementById('currentPostImage').style.display = 'block';
+          document.getElementById('noImageText').style.display = 'none';
+        } else {
+          document.getElementById('currentPostImage').style.display = 'none';
+          document.getElementById('noImageText').style.display = 'block';
+        }
+        new bootstrap.Modal(document.getElementById('postImageEditorModal')).show();
+      } else showToast('Error loading post', 'danger');
+    });
+}
+
+function updatePostImage() {
+  const id = document.getElementById('editPostId').value;
+  const formData = new FormData();
+  formData.append('post_id', id);
+  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+  if (document.getElementById('useDefaultImage').checked) formData.append('use_default', 'true');
+  const file = document.getElementById('postImageUpload').files[0];
+  if (file) formData.append('image', file);
+  const url = document.getElementById('postImageUrl').value;
+  if (url) formData.append('image_url', url);
+
+  fetch('/api/update-post-image/', { method: 'POST', body: formData, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        showToast('Image updated', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal')).hide();
+        setTimeout(() => location.reload(), 1000);
+      } else showToast('Error', 'danger');
+    });
+}
+
+function removePostImage() {
+  const id = document.getElementById('editPostId').value;
+  if (!confirm('Remove image from post?')) return;
+  fetch(`/api/remove-post-image/${id}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      document.getElementById('currentPostImage').style.display = 'none';
+      document.getElementById('noImageText').style.display = 'block';
+      showToast('Image removed', 'success');
+    } else showToast('Error', 'danger');
+  });
+}
+
+function convertToPost(id) {
+  fetch(`/api/convert-to-post/${id}/`, {
+    method: 'POST',
+    headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tags: ['news'] })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) { showToast('Converted', 'success'); setTimeout(() => location.reload(), 1500); }
+    else showToast('Error', 'danger');
+  });
+}
+
 function showLoading(show) {
   document.getElementById('loadingOverlay').classList.toggle('active', show);
 }
 
-// Show Toast Notification
-function showToast(message, type = 'success') {
-  const container = document.getElementById('toastContainer');
+function showToast(msg, type = 'success') {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.textContent = message;
-  container.appendChild(toast);
-
-  setTimeout(() => {
-    toast.remove();
-  }, 3000);
+  toast.innerText = msg;
+  document.getElementById('toastContainer').appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
 }
 
-// Initialize - admin controls collapsed by default
-document.addEventListener('DOMContentLoaded', function() {
-  // Admin controls start collapsed
+// On load: ensure admin controls collapsed
+document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('adminControlsContent').classList.remove('active');
 });
 </script>
-
 {% endblock %}
