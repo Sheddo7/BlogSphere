@@ -642,3 +642,6 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+# Backward compatibility alias
+auto_fetch_news = fetch_news_now
