@@ -303,26 +303,13 @@ class EnhancedNewsFetcher:
                 print(f"📡 Fetching {category} from {source}...")
 
                 if source == 'google':
-                    # Fetch BOTH international AND Nigerian Google News
-                    # International first
+                    # Fetch ONLY international Google News
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
-                        limit=limit_per_source // 2  # Split limit between international and Nigerian
+                        limit=limit_per_source
                     )
-                    if articles:
-                        all_articles.extend(articles)
-
-                    # Then Nigerian
-                    ng_articles = EnhancedNewsFetcher.fetch_google_news_by_category(
-                        category,
-                        limit=limit_per_source // 2,
-                        country='nigeria'
-                    )
-                    if ng_articles:
-                        all_articles.extend(ng_articles)
-                        articles = articles + ng_articles  # For count
-
                 elif source == 'google_nigeria':
+                    # Fetch ONLY Nigerian Google News
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(
                         category,
                         limit=limit_per_source,
@@ -343,9 +330,7 @@ class EnhancedNewsFetcher:
                     continue
 
                 if articles:
-                    # Only extend if we haven't already (google case handles it above)
-                    if source != 'google':
-                        all_articles.extend(articles)
+                    all_articles.extend(articles)
                     print(f"✅ Found {len(articles)} articles from {source}/{category}")
 
                 # Avoid rate limiting
