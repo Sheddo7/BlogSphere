@@ -274,140 +274,84 @@ WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
 
     @staticmethod
     def scrape_full_article_content(url):
-        """Scrape the full article content from a URL - FIXED for Google redirects"""
+        """Scrape article content - Fixed for Google consent pages"""
         try:
-            print(f"🔍 Scraping content from: {url[:80]}...")
+            print(f"🔍 Scraping: {url[:60]}...")
 
-            # Check if it's a Google News redirect URL
+            # Check for Google News redirect
             if 'news.google.com' in url:
-                print("⚠️  Google News URL detected - attempting to extract real article URL...")
                 try:
-                    # Follow the redirect to get the real article URL
                     response = requests.get(url, allow_redirects=True, timeout=10)
-                    real_url = response.url
-                    print(f"✅ Redirected to: {real_url[:80]}...")
-                    url = real_url
+                    url = response.url
+                    print(f"✅ Redirected to: {url[:60]}...")
                 except:
-                    print("❌ Could not follow Google redirect")
                     return None
 
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1'
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
 
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
-            response.raise_for_status()
 
-            # Check if we got a cookie consent page
-            if 'consent.google.com' in response.url or 'Before you continue' in response.text:
-                print("❌ Hit Google consent page - cannot scrape")
-                return None
+            # DETECT CONSENT PAGE
+            consent_markers = ['Before you continue', 'Accept all', 'consent.google.com', 'cookies and data']
+            if any(marker in response.text for marker in consent_markers):
+                print("❌ Consent page detected - returning None")
+                return None  # This triggers the fallback
 
             soup = BeautifulSoup(response.content, 'html.parser')
 
-            # Remove unwanted elements
-            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside',
-                                 'iframe', 'noscript', 'form', 'button']):
-                element.decompose()
+            # Remove junk
+            for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside']):
+                tag.decompose()
 
-            # Try to find main content area
-            content_areas = []
+            # Get paragraphs
+            paragraphs = soup.find_all(['p', 'h2', 'h3'])
+            text = '\n\n'.join([p.get_text(strip=True) for p in paragraphs if len(p.get_text(strip=True)) > 30])
 
-            # Look for common article containers
-            article_selectors = [
-                'article',
-                '[class*="article-content"]',
-                '[class*="post-content"]',
-                '[class*="entry-content"]',
-                '[class*="story-body"]',
-                '[class*="article-body"]',
-                '[class*="content-body"]',
-                '[itemprop="articleBody"]',
-                'main',
-                '[role="main"]',
-            ]
+            if len(text) < 200:
+                return None  # Too short, use fallback
 
-            for selector in article_selectors:
-                elements = soup.select(selector)
-                if elements:
-                    content_areas.extend(elements)
-                    break
+            print(f"✅ Scraped {len(text)} chars")
+            return text[:10000]
 
-            # If no specific content area found, use body
-            if not content_areas:
-                content_areas = [soup.body] if soup.body else [soup]
-
-            # Extract text from content areas
-            article_text = []
-            for area in content_areas:
-                # Get paragraphs
-                paragraphs = area.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
-                for p in paragraphs:
-                    text = p.get_text(strip=True)
-                    if len(text) > 30:  # Only paragraphs with substantial content
-                        article_text.append(text)
-
-            # Join and clean the text
-            full_text = '\n\n'.join(article_text)
-
-            # Clean up whitespace
-            full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
-            full_text = re.sub(r' +', ' ', full_text)
-
-            # Check if we actually got article content
-            google_consent_indicators = [
-                'Before you continue to Google',
-                'Accept all',
-                'Reject all',
-                'Privacy settings',
-                'cookies and data',
-                'tailored ads'
-            ]
-
-            if any(indicator in full_text for indicator in google_consent_indicators):
-                print("❌ Content appears to be consent page, rejecting")
-                return None
-
-            if len(full_text) < 200:
-                print("⚠️  Article content too short, using fallback method")
-                # Fallback: get all text
-                full_text = soup.get_text(separator='\n', strip=True)
-                full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
-
-            print(f"✅ Scraped {len(full_text)} characters")
-            return full_text[:10000]  # Limit to 10k characters
-
-        except Exception as e:
-            print(f"❌ Error scraping article: {e}")
+        except:
             return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
-        """
-        Process a single article: scrape content and rewrite with AI
-        UPDATED: Better fallback handling
-        """
+        """Process article - with consent page fallback"""
         try:
-            # Step 1: Try to scrape the full article content
+            # Try to scrape
             scraped_content = EnhancedNewsFetcher.scrape_full_article_content(article_dict['url'])
 
-            # If scraping failed or content is the cookie consent page, use description
-            if not scraped_content or len(scraped_content) < 200:
-                print("⚠️  Could not scrape article, using RSS description + AI expansion")
+            # If scraping failed (consent page, etc.), use description + AI
+            if not scraped_content:
+                print("⚠️  Scraping failed - using AI to expand description")
 
-                # Use the RSS description/summary as seed content
-                seed_content = article_dict.get('description', '') or article_dict.get('content', '')
+                description = article_dict.get('description', '') or article_dict.get('content', '')
 
-                if len(seed_content) < 50:
-                    print("❌ Not enough content to work with")
-                    article_dict[
-                        'content'] = "Article content unavailable. Please visit the source link to read the full article."
+                if len(description) < 50:
+                    article_dict['content'] = article_dict.get('title',
+                                                               '') + "\n\nFull article available at source link."
                     article_dict['ai_processed'] = False
+                    return article_dict
+
+                # Use AI to expand the description into full article
+                ai_result = EnhancedNewsFetcher.expand_description_with_ai(
+                    article_title=article_dict['title'],
+                    description=description,
+                    source=article_dict.get('source', 'Unknown'),
+                    category=article_dict.get('category', 'NEWS'),
+                    min_words=500
+                )
+
+                if ai_result:
+                    article_dict['content'] = ai_result['content']
+                    article_dict['description'] = ai_result['summary']
+                    article_dict['word_count'] = ai_result['word_count']
+                    article_dict['ai_processed'] = True
+                    print(f"✅ Expanded from description: {ai_result['word_count']} words")
                     return article_dict
 
                 # Ask AI to expand the description into a full article
@@ -878,3 +822,54 @@ class SimpleNewsFetcher:
     @staticmethod
     def extract_content_from_url(url):
         return EnhancedNewsFetcher.extract_content_from_url(url)
+
+    @staticmethod
+    def expand_description_with_ai(article_title, description, source, category, min_words=500):
+        """Expand short description into full article using AI"""
+        try:
+            gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
+
+            if not gemini_api_key:
+                return None
+
+            print(f"🤖 Expanding description with AI...")
+
+            prompt = f"""You are a professional news writer. Expand this brief news summary into a comprehensive {min_words}+ word article.
+
+    Title: {article_title}
+    Source: {source}
+    Category: {category}
+    Summary: {description}
+
+    Write a detailed {min_words}+ word news article that:
+    - Expands on the information above
+    - Adds context and background
+    - Explains significance
+    - Uses professional journalistic style
+    - Separates into clear paragraphs
+
+    WRITE THE FULL ARTICLE NOW:"""
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}"
+
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.8, "maxOutputTokens": 2048}
+            }
+
+            response = requests.post(url, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'candidates' in data:
+                    text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+                    word_count = len(text.split())
+                    print(f"✅ AI expanded to {word_count} words")
+                    return {
+                        'content': text,
+                        'summary': ' '.join(text.split()[:200]),
+                        'word_count': word_count
+                    }
+            return None
+        except:
+            return None
