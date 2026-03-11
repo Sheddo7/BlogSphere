@@ -318,10 +318,10 @@ WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
             print(f"❌ Error processing article: {e}")
             return article_dict
 
-    # === KEEP ALL YOUR EXISTING METHODS BELOW ===
+    # ========== FETCH METHODS ==========
 
     @staticmethod
-    def fetch_news_api(category='general', country='nigeria', limit=10):
+    def fetch_news_api(category='general', country='ng', limit=10):
         """Fetch news from NewsAPI"""
         api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
 
@@ -498,7 +498,8 @@ WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
 
         if sources is None:
-            sources = ['google', 'reddit', 'bbc']
+            # Use NewsAPI, Reddit, BBC and Nigerian RSS sources (Google removed to avoid consent page)
+            sources = ['newsapi', 'reddit', 'bbc', 'punch', 'vanguard', 'channels']
 
         all_articles = []
 
@@ -511,8 +512,11 @@ WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
                 elif source == 'reddit':
                     articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
                 elif source == 'newsapi':
+                    # Map category to NewsAPI category
+                    newsapi_category = EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(category, 'general')
                     articles = EnhancedNewsFetcher.fetch_news_api(
-                        EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(category, 'general'),
+                        category=newsapi_category,
+                        country='ng',
                         limit=limit_per_source
                     )
                 elif source == 'bbc':
@@ -987,4 +991,3 @@ class SimpleNewsFetcher:
             import traceback
             traceback.print_exc()
             return article_dict
-

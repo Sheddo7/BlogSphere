@@ -178,8 +178,8 @@ def fetch_news_now(request):
     if request.method == 'POST':
         try:
             # Get categories and sources from POST data
-            categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment'])
-            sources = request.POST.getlist('sources', ['google', 'reddit'])
+            categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology'])
+            sources = request.POST.getlist('sources', ['newsapi', 'bbc', 'punch', 'vanguard', 'channels', 'reddit'])
             limit_per_source = int(request.POST.get('limit_per_source', 3))
 
             # Import and use the enhanced news fetcher
