@@ -1,39 +1,40 @@
-# blog/views.py - COMPLETE UPDATED VERSION WITH SAFE DEBUG VIEW
+
+# blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
-import requests
-import feedparser
-import traceback
 
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
 
-
 # ===== BASIC VIEWS =====
 
 def home(request):
+    """Homepage view"""
     featured_posts = Post.objects.filter(is_featured=True)[:3]
     latest_posts = Post.objects.all()[:8]
+
     context = {
         'featured_posts': featured_posts,
         'latest_posts': latest_posts,
     }
     return render(request, 'blog/home.html', context)
 
-
 def post_detail(request, slug):
+    """Individual post detail view"""
     post = get_object_or_404(Post, slug=slug)
     post.views += 1
     post.save()
 
+    # Get comments for this post
     comments = Comment.objects.filter(post=post, is_approved=True)
+
     related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
 
     context = {
@@ -43,8 +44,8 @@ def post_detail(request, slug):
     }
     return render(request, 'blog/post_detail.html', context)
 
-
 def category_posts(request, slug):
+    """Category posts listing view"""
     category = get_object_or_404(Category, slug=slug)
     posts_list = Post.objects.filter(category=category)
     paginator = Paginator(posts_list, 10)
@@ -57,8 +58,8 @@ def category_posts(request, slug):
     }
     return render(request, 'blog/category.html', context)
 
-
 def search(request):
+    """Search results view"""
     query = request.GET.get('q', '')
     if query:
         results = Post.objects.filter(
@@ -75,14 +76,16 @@ def search(request):
     }
     return render(request, 'blog/search.html', context)
 
-
 def news_dashboard(request):
+    """Simple dashboard to view fetched news"""
     if not request.user.is_authenticated:
         return redirect('admin:login')
 
+    # Get stats
     total_articles = NewsArticle.objects.count()
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:10]
 
+    # Group by category
     from django.db.models import Count
     category_stats = NewsArticle.objects.values('category').annotate(
         count=Count('id')
@@ -96,29 +99,36 @@ def news_dashboard(request):
 
     return render(request, 'blog/news_dashboard.html', context)
 
-
 # ===== ENHANCED NEWS DASHBOARD VIEWS =====
 
 def is_staff(user):
+    """Check if user is staff"""
     return user.is_staff
-
 
 @login_required
 @user_passes_test(is_staff)
 def enhanced_news_dashboard(request):
+    """Enhanced news dashboard view"""
+    # Get statistics
     total_articles = NewsArticle.objects.count()
     today_articles = NewsArticle.objects.filter(
         imported_at__date=timezone.now().date()
     ).count()
 
+    # Count auto-generated posts
     auto_posts = Post.objects.filter(title__startswith='[News]').count()
     to_process = NewsArticle.objects.filter(created_as_post=False).count()
 
+    # Get recent articles
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
+
+    # Get recent posts
     recent_posts = Post.objects.order_by('-published_date')[:10]
+
+    # Get categories
     categories = Category.objects.all()
 
-    # Mock scheduled jobs (for demo)
+    # Mock scheduled jobs (for demo - you can implement real job tracking later)
     scheduled_jobs = [
         {
             'id': 1,
@@ -153,26 +163,28 @@ def enhanced_news_dashboard(request):
 
     return render(request, 'blog/enhanced-news-dashboard.html', context)
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def fetch_news_now(request):
-    """AJAX endpoint to fetch news immediately – Nigerian sources prioritized."""
+    """AJAX endpoint to fetch news immediately"""
     if request.method == 'POST':
         try:
-            # Default: all categories, Nigerian sources first
-            categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology'])
-            sources = request.POST.getlist('sources', ['punch', 'vanguard', 'channels', 'newsapi', 'bbc', 'reddit'])
-            limit_per_source = int(request.POST.get('limit_per_source', 5))
+            # Get categories and sources from POST data
+            categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment'])
+            sources = request.POST.getlist('sources', ['google', 'reddit'])
+            limit_per_source = int(request.POST.get('limit_per_source', 3))
 
+            # Import and use the enhanced news fetcher
             from blog.ai_service import EnhancedNewsFetcher
-            articles = EnhancedNewsFetcher.fetch_multiple_sources(
+            fetcher = EnhancedNewsFetcher()
+            articles = fetcher.fetch_multiple_sources(
                 categories=categories,
                 sources=sources,
                 limit_per_source=limit_per_source
             )
 
+            # Save articles if auto_save is enabled
             saved_count = 0
             auto_save = request.POST.get('auto_save') == 'true'
 
@@ -199,7 +211,6 @@ def fetch_news_now(request):
             })
 
         except Exception as e:
-            traceback.print_exc()
             return JsonResponse({
                 'success': False,
                 'message': f'Error: {str(e)}'
@@ -207,16 +218,17 @@ def fetch_news_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def generate_posts_now(request):
+    """AJAX endpoint to generate posts immediately"""
     if request.method == 'POST':
         try:
             count = int(request.POST.get('count', 5))
             category_filter = request.POST.get('category', '')
 
+            # Get articles to convert
             queryset = NewsArticle.objects.filter(created_as_post=False)
             if category_filter:
                 queryset = queryset.filter(category=category_filter)
@@ -224,6 +236,7 @@ def generate_posts_now(request):
             articles = queryset.order_by('-published_at')[:count]
 
             from blog.ai_service import EnhancedNewsFetcher
+            fetcher = EnhancedNewsFetcher()
             created_count = 0
 
             for article in articles:
@@ -237,7 +250,7 @@ def generate_posts_now(request):
                     'published_at': article.published_at.isoformat() if article.published_at else None,
                 }
 
-                post = EnhancedNewsFetcher.generate_blog_post_from_article(article_dict)
+                post = fetcher.generate_blog_post_from_article(article_dict)
                 if post:
                     article.created_as_post = True
                     article.save()
@@ -256,10 +269,10 @@ def generate_posts_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @login_required
 @user_passes_test(is_staff)
 def dashboard_stats(request):
+    """AJAX endpoint for dashboard statistics"""
     total_articles = NewsArticle.objects.count()
     today_articles = NewsArticle.objects.filter(
         imported_at__date=timezone.now().date()
@@ -274,16 +287,17 @@ def dashboard_stats(request):
         'to_process': to_process,
     })
 
-
 # ===== HELPER VIEWS =====
 
 @login_required
 @user_passes_test(is_staff)
 def convert_to_post(request, article_id):
+    """Convert a single news article to blog post"""
     try:
         article = NewsArticle.objects.get(id=article_id)
 
         from blog.ai_service import EnhancedNewsFetcher
+        fetcher = EnhancedNewsFetcher()
 
         article_dict = {
             'title': article.title,
@@ -295,7 +309,7 @@ def convert_to_post(request, article_id):
             'published_at': article.published_at.isoformat() if article.published_at else None,
         }
 
-        post = EnhancedNewsFetcher.generate_blog_post_from_article(article_dict)
+        post = fetcher.generate_blog_post_from_article(article_dict)
         if post:
             article.created_as_post = True
             article.save()
@@ -320,39 +334,37 @@ def convert_to_post(request, article_id):
             'message': f'Error: {str(e)}'
         })
 
-
 # ===== NEW API ENDPOINTS =====
 
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
-    """Post a single article with AI processing."""
+    """Post a single article to the blog in fetch_news.py format"""
     if request.method == 'POST':
         try:
-            try:
-                data = json.loads(request.body)
-            except json.JSONDecodeError:
-                return JsonResponse({'success': False, 'message': 'Invalid JSON'})
-
+            data = json.loads(request.body)
             article = data.get('article')
+
             if not article:
                 return JsonResponse({'success': False, 'message': 'No article data provided'})
 
-            if not isinstance(article, dict):
-                return JsonResponse({'success': False, 'message': 'Article must be an object'})
-
+            # Get or create category
             category_name = article.get('category', 'NEWS')
             from django.utils.text import slugify
             from django.contrib.auth.models import User
 
-            category_obj, created = Category.objects.get_or_create(name=category_name)
+            category_obj, created = Category.objects.get_or_create(
+                name=category_name
+            )
 
+            # Get admin user
             try:
                 author = User.objects.get(username='admin')
             except User.DoesNotExist:
                 author = User.objects.first()
 
+            # Generate slug
             base_slug = slugify(article['title'][:50])
             slug = base_slug
             counter = 1
@@ -360,23 +372,12 @@ def post_article(request):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            print(f"🤖 Processing article with AI: {article['title'][:60]}...")
-            from blog.ai_service import EnhancedNewsFetcher
-
-            processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
-            if processed_article is None:
-                processed_article = article
-
-            article_content = processed_article.get('content', article.get('description', ''))
-            article_description = processed_article.get('description', article.get('description', ''))[:200]
-
-            print(f"✅ Content processed: {processed_article.get('word_count', 0)} words")
-
+            # Create blog post in fetch_news.py format
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article_content,
-                excerpt=article_description,
+                content=article.get('content', article.get('description', ''))[:5000],
+                excerpt=article.get('description', '')[:200],
                 author=author,
                 category=category_obj,
                 featured_image=article.get('image_url', ''),
@@ -384,21 +385,20 @@ def post_article(request):
                 is_featured=data.get('is_featured', False)
             )
 
+            # Add tags (without auto-generated)
             tags = data.get('tags', ['news'])
             if isinstance(tags, str):
                 tags = [tag.strip() for tag in tags.split(',')]
             for tag in tags:
                 post.tags.add(tag.strip())
 
-            if processed_article.get('ai_processed'):
-                post.tags.add('ai-rewritten')
-
+            # Also save as NewsArticle if requested
             if data.get('save_article', True):
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
-                        content=processed_article.get('content', '')[:5000],
-                        summary=article_description[:500],
+                        content=article.get('content', '')[:5000],
+                        summary=article.get('description', '')[:500],
                         url=article.get('url', ''),
                         source=article.get('source', 'Unknown'),
                         category=category_name,
@@ -411,13 +411,10 @@ def post_article(request):
                 'success': True,
                 'message': 'Article posted successfully',
                 'post_title': post.title,
-                'post_slug': post.slug,
-                'word_count': processed_article.get('word_count', 0),
-                'ai_processed': processed_article.get('ai_processed', False),
+                'post_slug': post.slug
             })
 
         except Exception as e:
-            traceback.print_exc()
             return JsonResponse({
                 'success': False,
                 'message': f'Error: {str(e)}'
@@ -425,11 +422,11 @@ def post_article(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def post_multiple_articles(request):
+    """Post multiple articles at once"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -439,17 +436,22 @@ def post_multiple_articles(request):
             post_titles = []
 
             for article in articles:
+                # Get or create category
                 category_name = article.get('category', 'NEWS')
                 from django.utils.text import slugify
                 from django.contrib.auth.models import User
 
-                category_obj, created = Category.objects.get_or_create(name=category_name)
+                category_obj, created = Category.objects.get_or_create(
+                    name=category_name
+                )
 
+                # Get admin user
                 try:
                     author = User.objects.get(username='admin')
                 except User.DoesNotExist:
                     author = User.objects.first()
 
+                # Generate slug
                 base_slug = slugify(article['title'][:50])
                 slug = base_slug
                 counter = 1
@@ -457,6 +459,7 @@ def post_multiple_articles(request):
                     slug = f"{base_slug}-{counter}"
                     counter += 1
 
+                # Create blog post
                 post = Post.objects.create(
                     title=article['title'][:200],
                     slug=slug,
@@ -468,6 +471,7 @@ def post_multiple_articles(request):
                     published_date=timezone.now(),
                 )
 
+                # Add tags (without auto-generated)
                 tags = data.get('tags', ['news'])
                 if isinstance(tags, str):
                     tags = [tag.strip() for tag in tags.split(',')]
@@ -492,11 +496,11 @@ def post_multiple_articles(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def get_post(request, post_id):
+    """Get post details for editing"""
     try:
         post = Post.objects.get(id=post_id)
         return JsonResponse({
@@ -516,11 +520,11 @@ def get_post(request, post_id):
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def update_post_image(request):
+    """Update post's featured image"""
     if request.method == 'POST':
         try:
             post_id = request.POST.get('post_id')
@@ -529,6 +533,7 @@ def update_post_image(request):
             post = Post.objects.get(id=post_id)
 
             if use_default:
+                # Use default image
                 post.featured_image = 'blog_images/default.jpg'
                 post.save()
                 return JsonResponse({
@@ -537,11 +542,14 @@ def update_post_image(request):
                     'image_url': '/media/blog_images/default.jpg'
                 })
 
+            # Handle uploaded file
             if 'image' in request.FILES:
                 image_file = request.FILES['image']
+                # Validate file size (5MB limit)
                 if image_file.size > 5 * 1024 * 1024:
                     return JsonResponse({'success': False, 'message': 'File size too large (max 5MB)'})
 
+                # Save file
                 file_name = default_storage.save(
                     f'blog_images/{post.slug}_{image_file.name}',
                     ContentFile(image_file.read())
@@ -555,8 +563,11 @@ def update_post_image(request):
                     'image_url': f'/media/{file_name}'
                 })
 
+            # Handle image URL
             image_url = request.POST.get('image_url')
             if image_url:
+                # For now, just save the URL
+                # In production, you might want to download and save the image
                 post.featured_image = image_url
                 post.save()
                 return JsonResponse({
@@ -574,11 +585,11 @@ def update_post_image(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def remove_post_image(request, post_id):
+    """Remove post's featured image"""
     if request.method == 'POST':
         try:
             post = Post.objects.get(id=post_id)
@@ -595,10 +606,10 @@ def remove_post_image(request, post_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
-
 @login_required
 @user_passes_test(is_staff)
 def delete_news_article(request, article_id):
+    """Delete a news article"""
     if request.method == 'DELETE':
         try:
             article = NewsArticle.objects.get(id=article_id)
@@ -614,10 +625,10 @@ def delete_news_article(request, article_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
-
 @login_required
 @user_passes_test(is_staff)
 def delete_post(request, post_id):
+    """Delete a blog post"""
     if request.method == 'DELETE':
         try:
             post = Post.objects.get(id=post_id)
@@ -632,68 +643,6 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
-
-
-# ===== DIAGNOSTIC VIEW FOR NIGERIAN RSS FEEDS (SELF-CONTAINED) =====
-@login_required
-@user_passes_test(is_staff)
-def debug_nigerian_feeds(request):
-    """Check each Nigerian RSS feed and show raw response and feedparser results."""
-    feeds = {
-        'Punch Main': 'https://punchng.com/feed/',
-        'Punch News': 'https://punchng.com/feed/',
-        'Punch Sport': 'https://punchng.com/sports/feed/',
-        'Punch Entertainment': 'https://punchng.com/entertainment/feed/',
-        'Punch Business': 'https://punchng.com/business/feed/',
-        'Punch Politics': 'https://punchng.com/politics/feed/',
-        'Vanguard Main': 'https://www.vanguardngr.com/feed/',
-        'Vanguard News': 'https://www.vanguardngr.com/feed/',
-        'Vanguard Sport': 'https://www.vanguardngr.com/category/sports/feed/',
-        'Vanguard Entertainment': 'https://www.vanguardngr.com/category/entertainment/feed/',
-        'Vanguard Business': 'https://www.vanguardngr.com/category/business/feed/',
-        'Vanguard Politics': 'https://www.vanguardngr.com/category/politics/feed/',
-        'Channels Main': 'https://www.channelstv.com/feed/',
-        'Channels News': 'https://www.channelstv.com/feed/',
-        'Channels Sport': 'https://www.channelstv.com/category/sports/feed/',
-        'Channels Entertainment': 'https://www.channelstv.com/category/entertainment/feed/',
-        'Channels Politics': 'https://www.channelstv.com/category/politics/feed/',
-    }
-
-    output = []
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-
-    for name, url in feeds.items():
-        output.append(f"\n{'='*60}")
-        output.append(f"FEED: {name}")
-        output.append(f"URL: {url}")
-        try:
-            resp = requests.get(url, headers=headers, timeout=15)
-            output.append(f"HTTP Status: {resp.status_code}")
-            output.append(f"Content-Type: {resp.headers.get('Content-Type', 'unknown')}")
-            output.append(f"Content Length: {len(resp.text)}")
-            if resp.status_code == 200:
-                # Show first 500 chars of raw content (sanitized)
-                preview = resp.text[:500].replace('\n', ' ').replace('\r', '')
-                output.append(f"Preview: {preview}")
-
-                # Parse with feedparser
-                feed = feedparser.parse(resp.text)
-                output.append(f"feedparser entries: {len(feed.entries)}")
-                if feed.entries:
-                    output.append(f"First title: {feed.entries[0].title}")
-                    output.append(f"First link: {feed.entries[0].link}")
-                else:
-                    # Check for bozo error
-                    if feed.bozo:
-                        output.append(f"Bozo error: {feed.bozo_exception}")
-            else:
-                output.append("Failed to fetch feed.")
-        except Exception as e:
-            output.append(f"EXCEPTION: {e}")
-            output.append(traceback.format_exc())
-
-    return HttpResponse('<pre>' + '\n'.join(output) + '</pre>')
-
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
