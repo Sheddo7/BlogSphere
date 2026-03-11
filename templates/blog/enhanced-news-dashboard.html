@@ -1,4 +1,4 @@
-<!-- templates/blog/enhanced-news-dashboard.html - WITH DELETE AND POST IMAGE EDITING -->
+<!-- templates/blog/enhanced-news-dashboard.html - WITH GEMINI AI SUMMARISATION & COLLATION -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -155,8 +155,12 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <h4>Fetched Articles <span id="resultsCount" class="badge bg-primary ms-2">0</span></h4>
             <div>
+                <!-- NEW: Collate Selected button -->
+                <button class="btn btn-sm btn-info me-2" onclick="collateSelected()">
+                    <i class="fas fa-compress-alt me-1"></i> Collate Selected
+                </button>
                 <button class="btn btn-sm btn-success me-2" onclick="postAllArticles()">
-                    <i class="fas fa-paper-plane me-1"></i> Post All
+                    <i class="fas fa-robot me-1"></i> Post All (AI)
                 </button>
                 <button class="btn btn-sm btn-danger me-2" onclick="deleteSelectedArticles()">
                     <i class="fas fa-trash me-1"></i> Delete Selected
@@ -413,7 +417,7 @@
                 </button>
                 <button type="button" class="btn btn-primary" onclick="saveArticleEdits()">Save Changes</button>
                 <button type="button" class="btn btn-success" onclick="postSingleArticle()">
-                    <i class="fas fa-paper-plane me-1"></i> Post to Blog
+                    <i class="fas fa-robot me-1"></i> Post to Blog (AI)
                 </button>
             </div>
         </div>
@@ -608,8 +612,9 @@ function displayFetchedArticles() {
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="openArticleEditor(${index})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
+                    <!-- UPDATED: Post button now shows robot icon and (AI) -->
                     <button class="btn btn-sm btn-outline-success me-1" onclick="postSingleArticle(${index})">
-                        <i class="fas fa-paper-plane"></i> Post
+                        <i class="fas fa-robot me-1"></i> Post (AI)
                     </button>
                     <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteFetchedArticle(${index})">
                         <i class="fas fa-trash"></i>
@@ -632,7 +637,6 @@ function deleteFetchedArticle(index) {
         document.getElementById('resultsCount').textContent = fetchedArticles.length;
         showToast('Article deleted', 'info');
 
-        // Close modal if it's open
         if (currentEditIndex === index) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
             if (modal) modal.hide();
@@ -652,11 +656,9 @@ function deleteSelectedArticles() {
     }
 
     if (confirm(`Are you sure you want to delete ${selectedIndices.length} selected articles?`)) {
-        // Remove in reverse order to maintain indices
         selectedIndices.sort((a, b) => b - a).forEach(index => {
             fetchedArticles.splice(index, 1);
         });
-
         displayFetchedArticles();
         document.getElementById('resultsCount').textContent = fetchedArticles.length;
         showToast(`Deleted ${selectedIndices.length} articles`, 'info');
@@ -672,7 +674,7 @@ function openArticleEditor(index) {
     document.getElementById('editTitle').value = article.title || '';
     document.getElementById('editContent').value = article.content || '';
     document.getElementById('editDescription').value = article.description || article.summary || '';
-    document.getElementById('editTags').value = article.tags || 'news'; // Default tag without auto-generated
+    document.getElementById('editTags').value = article.tags || 'news';
     document.getElementById('editSource').value = article.source || '';
     document.getElementById('editCategory').value = article.category || 'NEWS';
     document.getElementById('editUrl').value = article.url || '';
@@ -685,7 +687,6 @@ function openArticleEditor(index) {
         document.getElementById('imageUrl').value = '';
     }
 
-    // Set up image upload preview
     document.getElementById('imageUpload').onchange = function(e) {
         if (e.target.files[0]) {
             const reader = new FileReader();
@@ -705,8 +706,6 @@ function saveArticleEdits() {
     if (currentEditIndex === -1) return;
 
     const article = fetchedArticles[currentEditIndex];
-
-    // Update article with form values
     article.title = document.getElementById('editTitle').value;
     article.content = document.getElementById('editContent').value;
     article.description = document.getElementById('editDescription').value;
@@ -715,32 +714,25 @@ function saveArticleEdits() {
     article.url = document.getElementById('editUrl').value;
     article.tags = document.getElementById('editTags').value.split(',').map(tag => tag.trim());
 
-    // Update image
     const imageUrl = document.getElementById('imageUrl').value;
-    if (imageUrl) {
-        article.image_url = imageUrl;
-    }
+    if (imageUrl) article.image_url = imageUrl;
 
-    // Handle file upload
     const fileInput = document.getElementById('imageUpload');
     if (fileInput.files[0]) {
-        // In a real implementation, you would upload the file here
-        // For now, we'll just update with a placeholder
         article.image_url = `/media/uploads/${fileInput.files[0].name}`;
     }
 
-    // Update post options
     article.is_featured = document.getElementById('makeFeatured').checked;
     article.save_article = document.getElementById('saveArticle').checked;
 
     showToast('Article updated successfully', 'success');
-    displayFetchedArticles(); // Refresh display
+    displayFetchedArticles();
 
     const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
     modal.hide();
 }
 
-// UPDATED: Post single article with AI processing indicator
+// Post single article with AI processing
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
@@ -749,7 +741,6 @@ function postSingleArticle(index = null) {
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
 
-    // Show processing toast with longer duration
     const processingToastId = showToast('🤖 AI is processing article... This may take 10-30 seconds', 'info', 30000);
 
     fetch('/api/post-article/', {
@@ -769,21 +760,14 @@ function postSingleArticle(index = null) {
     })
     .then(response => response.json())
     .then(data => {
-        // Remove processing toast
         if (processingToastId) removeToast(processingToastId);
 
         if (data.success) {
-            // Show success with word count if available
             let message = `✅ Posted: ${data.post_title}`;
-            if (data.word_count) {
-                message += ` (${data.word_count} words)`;
-            }
-            if (data.ai_processed) {
-                message += ' 🤖';
-            }
+            if (data.word_count) message += ` (${data.word_count} words)`;
+            if (data.ai_processed) message += ' 🤖';
             showToast(message, 'success');
 
-            // Remove from fetched articles
             fetchedArticles.splice(articleIndex, 1);
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
@@ -793,14 +777,12 @@ function postSingleArticle(index = null) {
                 if (modal) modal.hide();
             }
 
-            // Refresh page after delay
             setTimeout(() => location.reload(), 2000);
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
     })
     .catch(error => {
-        // Remove processing toast
         if (processingToastId) removeToast(processingToastId);
         showToast('Error posting article', 'danger');
     });
@@ -828,19 +810,16 @@ function postAllArticles() {
         body: JSON.stringify({
             articles: articlesToPost,
             format: 'fetch_news',
-            tags: ['news'] // No auto-generated tag
+            tags: ['news']
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showToast(`Posted ${data.posted_count} articles successfully`, 'success');
-            // Remove posted articles
             fetchedArticles = fetchedArticles.filter((_, index) => !selectedIndices.includes(index));
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-
-            // Reload the page to show new posts
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -848,6 +827,56 @@ function postAllArticles() {
     })
     .catch(error => {
         showToast('Error posting articles', 'danger');
+    });
+}
+
+// NEW: Collate selected articles
+function collateSelected() {
+    const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
+        .map(cb => parseInt(cb.value));
+
+    if (selectedIndices.length < 2) {
+        showToast('Select at least 2 articles to collate', 'warning');
+        return;
+    }
+
+    if (!confirm(`Collate ${selectedIndices.length} articles into one post?`)) return;
+
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Collating...';
+    button.disabled = true;
+
+    fetch('/api/collate-articles/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            indices: selectedIndices,
+            articles: fetchedArticles
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            fetchedArticles = fetchedArticles.filter((_, index) => !selectedIndices.includes(index));
+            displayFetchedArticles();
+            document.getElementById('resultsCount').textContent = fetchedArticles.length;
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('Error collating articles', 'danger');
+    })
+    .finally(() => {
+        button.innerHTML = originalText;
+        button.disabled = false;
     });
 }
 
@@ -877,7 +906,6 @@ function deleteNewsArticle(articleId) {
         .then(data => {
             if (data.success) {
                 showToast('Article deleted successfully', 'success');
-                // Remove the row
                 document.getElementById(`article-row-${articleId}`).remove();
             } else {
                 showToast('Error: ' + data.message, 'danger');
@@ -903,7 +931,6 @@ function deletePost(postId) {
         .then(data => {
             if (data.success) {
                 showToast('Post deleted successfully', 'success');
-                // Remove the row
                 document.getElementById(`post-row-${postId}`).remove();
             } else {
                 showToast('Error: ' + data.message, 'danger');
@@ -917,7 +944,6 @@ function deletePost(postId) {
 
 // Edit Post Image
 function editPostImage(postId) {
-    // First, get post details
     fetch('/api/get-post/' + postId + '/')
     .then(response => response.json())
     .then(data => {
@@ -935,7 +961,6 @@ function editPostImage(postId) {
                 document.getElementById('noImageText').style.display = 'block';
             }
 
-            // Set up image upload preview
             document.getElementById('postImageUpload').onchange = function(e) {
                 if (e.target.files[0]) {
                     const reader = new FileReader();
@@ -965,17 +990,13 @@ function updatePostImage() {
     formData.append('post_id', postId);
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
-    // Check if using default image
     if (document.getElementById('useDefaultImage').checked) {
         formData.append('use_default', 'true');
     } else {
-        // Check for uploaded file
         const fileInput = document.getElementById('postImageUpload');
         if (fileInput.files[0]) {
             formData.append('image', fileInput.files[0]);
         }
-
-        // Check for URL
         const imageUrl = document.getElementById('postImageUrl').value;
         if (imageUrl) {
             formData.append('image_url', imageUrl);
@@ -993,17 +1014,12 @@ function updatePostImage() {
     .then(data => {
         if (data.success) {
             showToast('Post image updated successfully', 'success');
-
-            // Update the image in the table
             const imgElement = document.querySelector(`#post-row-${postId} .post-thumbnail`);
             if (imgElement && data.image_url) {
                 imgElement.src = data.image_url;
             }
-
             const modal = bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal'));
             modal.hide();
-
-            // Reload to show updated image
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -1052,7 +1068,7 @@ function convertToPost(articleId) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            tags: ['news'] // No auto-generated tag
+            tags: ['news']
         })
     })
     .then(response => response.json())
@@ -1069,7 +1085,7 @@ function convertToPost(articleId) {
     });
 }
 
-// UPDATED: Show toast with duration and return ID (Bootstrap style)
+// Show toast with duration and return ID
 function showToast(message, type = 'success', duration = 3000) {
     const toast = document.createElement('div');
     const toastId = 'toast-' + Date.now();
@@ -1086,23 +1102,21 @@ function showToast(message, type = 'success', duration = 3000) {
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
 
-    // Auto-remove after duration
     if (duration > 0) {
         setTimeout(() => {
             const toastElement = document.getElementById(toastId);
             if (toastElement) {
-                // Hide and remove
                 const bsToastInstance = bootstrap.Toast.getInstance(toastElement);
                 if (bsToastInstance) bsToastInstance.hide();
-                setTimeout(() => toastElement.remove(), 300); // Wait for hide animation
+                setTimeout(() => toastElement.remove(), 300);
             }
         }, duration);
     }
 
-    return toastId;  // Return ID so we can remove it manually
+    return toastId;
 }
 
-// New function to manually remove a toast by ID
+// Remove a toast manually
 function removeToast(toastId) {
     const toast = document.getElementById(toastId);
     if (toast) {
@@ -1117,48 +1131,38 @@ function removeToast(toastId) {
 .article-item:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
-
 .article-item .form-check-input {
     transform: scale(1.2);
 }
-
 #articlesContainer {
     max-height: 600px;
     overflow-y: auto;
 }
-
 #editContent, #editDescription {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
 }
-
 #articleImagePreview, #currentPostImage, #newImagePreview {
     border: 2px dashed #dee2e6;
     padding: 5px;
 }
-
 .modal-xl {
     max-width: 1200px;
 }
-
 .badge {
     font-size: 0.75em;
 }
-
 .post-thumbnail {
     border-radius: 4px;
     transition: transform 0.2s;
 }
-
 .post-thumbnail:hover {
     transform: scale(1.1);
 }
-
 .btn-outline-danger:hover {
     background-color: #dc3545;
     color: white;
 }
-
 .btn-outline-info:hover {
     background-color: #0dcaf0;
     color: white;
