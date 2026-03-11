@@ -339,7 +339,7 @@ def convert_to_post(request, article_id):
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
-    """Post a single article to the blog in fetch_news.py format"""
+    """Post a single article to the blog with AI content generation"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -371,12 +371,28 @@ def post_article(request):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # Create blog post in fetch_news.py format
+            # === NEW: Process article with AI before posting ===
+            print(f"🤖 Processing article with AI: {article['title'][:60]}...")
+
+            # Import the AI fetcher
+            from blog.ai_service import EnhancedNewsFetcher
+
+            # Process article with AI (scrape + summarize + rewrite)
+            processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
+
+            # Use the AI-generated content (500+ words, original writing)
+            article_content = processed_article.get('content', article.get('description', ''))
+            article_description = processed_article.get('description', article.get('description', ''))[:200]
+
+            print(f"✅ Content processed: {processed_article.get('word_count', 0)} words")
+            # === END NEW CODE ===
+
+            # Create blog post with AI-generated content
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article.get('content', article.get('description', ''))[:5000],
-                excerpt=article.get('description', '')[:200],
+                content=article_content,  # ← AI-rewritten 500+ words
+                excerpt=article_description,  # ← AI-generated summary
                 author=author,
                 category=category_obj,
                 featured_image=article.get('image_url', ''),
@@ -391,13 +407,17 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
+            # Add AI tag if processed
+            if processed_article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
+
             # Also save as NewsArticle if requested
             if data.get('save_article', True):
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
-                        content=article.get('content', '')[:5000],
-                        summary=article.get('description', '')[:500],
+                        content=processed_article.get('content', '')[:5000],
+                        summary=article_description[:500],
                         url=article.get('url', ''),
                         source=article.get('source', 'Unknown'),
                         category=category_name,
@@ -410,10 +430,14 @@ def post_article(request):
                 'success': True,
                 'message': 'Article posted successfully',
                 'post_title': post.title,
-                'post_slug': post.slug
+                'post_slug': post.slug,
+                'word_count': processed_article.get('word_count', 0),  # ← NEW
+                'ai_processed': processed_article.get('ai_processed', False),  # ← NEW
             })
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return JsonResponse({
                 'success': False,
                 'message': f'Error: {str(e)}'

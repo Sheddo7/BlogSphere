@@ -749,6 +749,9 @@ function postSingleArticle(index = null) {
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
 
+    // Show processing toast with longer duration
+    const processingToastId = showToast('🤖 AI is processing article... This may take 10-30 seconds', 'info', 30000);
+
     fetch('/api/post-article/', {
         method: 'POST',
         headers: {
@@ -761,13 +764,25 @@ function postSingleArticle(index = null) {
             format: 'fetch_news',
             is_featured: isFeatured,
             save_article: saveArticle,
-            tags: article.tags || ['news'] // No auto-generated tag
+            tags: article.tags || ['news']
         })
     })
     .then(response => response.json())
     .then(data => {
+        // Remove processing toast
+        if (processingToastId) removeToast(processingToastId);
+
         if (data.success) {
-            showToast(`Posted: ${data.post_title}`, 'success');
+            // Show success with word count if available
+            let message = `✅ Posted: ${data.post_title}`;
+            if (data.word_count) {
+                message += ` (${data.word_count} words)`;
+            }
+            if (data.ai_processed) {
+                message += ' 🤖';
+            }
+            showToast(message, 'success');
+
             // Remove from fetched articles
             fetchedArticles.splice(articleIndex, 1);
             displayFetchedArticles();
@@ -778,16 +793,19 @@ function postSingleArticle(index = null) {
                 if (modal) modal.hide();
             }
 
-            // Reload the page to show new post
-            setTimeout(() => location.reload(), 1000);
+            // Refresh page after delay
+            setTimeout(() => location.reload(), 2000);
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
     })
     .catch(error => {
+        // Remove processing toast
+        if (processingToastId) removeToast(processingToastId);
         showToast('Error posting article', 'danger');
     });
 }
+
 
 // Post all selected articles
 function postAllArticles() {
@@ -1052,20 +1070,32 @@ function convertToPost(articleId) {
     });
 }
 
-function showToast(message, type) {
+function showToast(message, type = 'success', duration = 3000) {
+    const toastStack = document.getElementById('toastStack');
     const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed bottom-0 end-0 m-3';
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    setTimeout(() => toast.remove(), 3000);
+    const toastId = 'toast-' + Date.now();
+    toast.id = toastId;
+    toast.className = `toast-item toast-${type}`;
+    toast.textContent = message;
+    toastStack.appendChild(toast);
+
+    // Auto-remove after duration
+    if (duration > 0) {
+        setTimeout(() => {
+            if (document.getElementById(toastId)) {
+                document.getElementById(toastId).remove();
+            }
+        }, duration);
+    }
+
+    return toastId;  // Return ID so we can remove it manually
+}
+
+function removeToast(toastId) {
+    const toast = document.getElementById(toastId);
+    if (toast) {
+        toast.remove();
+    }
 }
 </script>
 
