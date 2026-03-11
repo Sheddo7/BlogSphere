@@ -28,15 +28,11 @@ urlpatterns = [
     path('api/remove-post-image/<int:post_id>/', views.remove_post_image, name='remove_post_image'),
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
-
-    # Collation endpoint
-    path('api/collate-articles/', views.collate_articles, name='collate_articles'),
-    path('api/preview-rewrite/', views.preview_rewrite, name='preview_rewrite'),
-    path('api/save-rewritten/', views.save_rewritten, name='save_rewritten'),
-    path('post/<slug:slug>/comment/', views.add_comment, name='add_comment'),
-
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+else:
+    # In production, these should be served by your web server
+    pass

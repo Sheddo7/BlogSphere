@@ -247,18 +247,10 @@
       <div class="comments-section">
         <div class="comments-head">Comments</div>
 
-        <form method="post" action="{% url 'add_comment' post.slug %}" style="margin-bottom:2rem;">
+        <form method="post" style="margin-bottom:2rem;">
           {% csrf_token %}
           <label class="comment-form-label">Leave a comment</label>
           <textarea name="content" class="comment-textarea w-100 mb-2" rows="4" placeholder="Share your thoughts..."></textarea>
-          <div class="row mb-2">
-            <div class="col-md-6">
-              <input type="text" name="name" class="form-control" placeholder="Your name" required>
-            </div>
-            <div class="col-md-6">
-              <input type="email" name="email" class="form-control" placeholder="Your email" required>
-            </div>
-          </div>
           <button type="submit" class="comment-submit">Post Comment</button>
         </form>
 
@@ -307,7 +299,7 @@
           {% for category in categories %}
           <a href="{% url 'category_posts' category.slug %}" class="cat-list-item">
             {{ category.name }}
-            <span>{{ category.post_count }} posts</span>
+            <span>{{ category.posts.count }} posts</span>
           </a>
           {% endfor %}
         </div>
