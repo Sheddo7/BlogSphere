@@ -1,16 +1,20 @@
-# blog/views.py - COMPLETE UPDATED VERSION WITH NIGERIAN PRIORITY AND POSTING FIX
+# blog/views.py - COMPLETE UPDATED VERSION WITH NIGERIAN PRIORITY AND DEBUG VIEW
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
+import requests
+import feedparser
+from bs4 import BeautifulSoup
 
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
+from blog.ai_service import EnhancedNewsFetcher   # for debug view
 
 
 # ===== BASIC VIEWS =====
@@ -644,6 +648,69 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+# ===== DIAGNOSTIC VIEW FOR NIGERIAN RSS FEEDS =====
+@login_required
+@user_passes_test(is_staff)
+def debug_nigerian_feeds(request):
+    """Check each Nigerian RSS feed and show raw response and feedparser results."""
+    from blog.ai_service import EnhancedNewsFetcher
+    import requests
+    import feedparser
+
+    sources = ['punch', 'vanguard', 'channels']
+    categories = ['news', 'sport', 'entertainment', 'economy', 'politics']
+    output = []
+
+    for source in sources:
+        output.append(f"\n{'='*60}")
+        output.append(f"SOURCE: {source.upper()}")
+        output.append('='*60)
+
+        # Test main feed
+        main_feed = EnhancedNewsFetcher.SOURCES[source].get('main_feed')
+        if main_feed:
+            output.append(f"\nMAIN FEED: {main_feed}")
+            try:
+                resp = requests.get(main_feed, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
+                output.append(f"HTTP {resp.status_code}, Content-Length: {len(resp.text)}")
+                if resp.status_code == 200:
+                    # Show first 500 chars (sanitized)
+                    preview = resp.text[:500].replace('\n', ' ').replace('\r', '')
+                    output.append(f"Preview: {preview}")
+                    # Parse with feedparser
+                    feed = feedparser.parse(resp.text)
+                    output.append(f"feedparser entries: {len(feed.entries)}")
+                    if feed.entries:
+                        output.append(f"First title: {feed.entries[0].title}")
+                        output.append(f"First link: {feed.entries[0].link}")
+                else:
+                    output.append("Failed to fetch")
+            except Exception as e:
+                output.append(f"Error: {e}")
+
+        # Test category feeds
+        for cat in categories:
+            feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(cat)
+            if feed_url:
+                output.append(f"\nCATEGORY {cat}: {feed_url}")
+                try:
+                    resp = requests.get(feed_url, timeout=15, headers={'User-Agent': 'Mozilla/5.0'})
+                    output.append(f"  HTTP {resp.status_code}, Content-Length: {len(resp.text)}")
+                    if resp.status_code == 200:
+                        preview = resp.text[:300].replace('\n', ' ').replace('\r', '')
+                        output.append(f"  Preview: {preview}")
+                        feed = feedparser.parse(resp.text)
+                        output.append(f"  feedparser entries: {len(feed.entries)}")
+                        if feed.entries:
+                            output.append(f"  First title: {feed.entries[0].title}")
+                    else:
+                        output.append("  Failed to fetch")
+                except Exception as e:
+                    output.append(f"  Error: {e}")
+
+    return HttpResponse('<pre>' + '\n'.join(output) + '</pre>')
 
 
 # Backward compatibility alias
