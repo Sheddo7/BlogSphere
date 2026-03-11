@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/collate-articles/', views.collate_articles, name='collate_articles'),
     path('api/preview-rewrite/', views.preview_rewrite, name='preview_rewrite'),
     path('api/save-rewritten/', views.save_rewritten, name='save_rewritten'),
+    path('post/<slug:slug>/comment/', views.add_comment, name='add_comment'),
 
 ]
 

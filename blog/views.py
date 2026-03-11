@@ -26,12 +26,19 @@ def post_detail(request, slug):
     post = get_object_or_404(Post, slug=slug)
     post.views += 1
     post.save()
+
     comments = Comment.objects.filter(post=post, is_approved=True)
-    related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
+    related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:5]
+    # For sidebar
+    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:8]
+    latest_posts = Post.objects.order_by('-published_date')[:6]
+
     context = {
         'post': post,
         'related_posts': related_posts,
         'comments': comments,
+        'categories': categories,
+        'latest_posts': latest_posts,
     }
     return render(request, 'blog/post_detail.html', context)
 
@@ -608,6 +615,24 @@ def save_rewritten(request):
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+@csrf_exempt
+def add_comment(request, slug):
+    post = get_object_or_404(Post, slug=slug)
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        content = request.POST.get('content')
+        if name and email and content:
+            Comment.objects.create(
+                post=post,
+                name=name,
+                email=email,
+                content=content,
+                is_approved=True   # or False if you want moderation
+            )
+        return redirect('post_detail', slug=slug)
+    return redirect('post_detail', slug=slug)
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
