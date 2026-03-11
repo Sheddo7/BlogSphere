@@ -479,5 +479,135 @@ def collate_articles(request):
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def preview_rewrite(request):
+    """Generate a rewritten version of an article (Gemini) and return it without saving."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            article = data.get('article')
+            if not article:
+                return JsonResponse({'success': False, 'message': 'No article data'})
+
+            from blog.ai_service import EnhancedNewsFetcher
+
+            # Fetch full content if needed
+            content_text = article.get('content', '')
+            if len(content_text) < 500 and article.get('url'):
+                content_text = EnhancedNewsFetcher.extract_content_from_url(article['url']) or ''
+
+            if not content_text or len(content_text) < 200:
+                return JsonResponse({'success': False, 'message': 'Not enough content to rewrite.'})
+
+            # Run Gemini
+            rewritten = EnhancedNewsFetcher.rewrite_with_gemini(content_text, target_words=500)
+            word_count = len(rewritten.split())
+
+            return JsonResponse({
+                'success': True,
+                'rewritten': rewritten,
+                'word_count': word_count,
+                'title': article.get('title', ''),
+                'source': article.get('source', ''),
+                'category': article.get('category', 'NEWS'),
+                'url': article.get('url', ''),
+                'image_url': article.get('image_url', ''),
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def save_rewritten(request):
+    """Save a previously rewritten article as a blog post."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            article = data.get('article')  # original article data
+            rewritten = data.get('rewritten')
+            if not article or not rewritten:
+                return JsonResponse({'success': False, 'message': 'Missing data'})
+
+            from django.utils.text import slugify
+            from django.contrib.auth.models import User
+            from blog.models import Category, Post
+            from django.utils import timezone
+
+            category_name = article.get('category', 'NEWS')
+            category_obj, _ = Category.objects.get_or_create(name=category_name)
+
+            try:
+                author = User.objects.get(username='admin')
+            except User.DoesNotExist:
+                author = User.objects.first()
+
+            base_slug = slugify(article['title'][:50])
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            # Build the post content with the rewritten article
+            enhanced_content = f"""
+<h1>{article['title']}</h1>
+<div class="alert alert-info">
+    <strong>Source:</strong> {article.get('source', 'Unknown')}<br>
+    <strong>Original URL:</strong> <a href="{article['url']}" target="_blank" rel="noopener">{article['url'][:100]}...</a>
+</div>
+<hr>
+<h3>Article (AI‑generated summary)</h3>
+<div class='article-content'>{rewritten}</div>
+<hr>
+<div class="alert alert-secondary">
+    <em>This article was automatically generated from {article.get('source', 'a news source')}. 
+    <a href="{article.get('url', '#')}" target="_blank" class="btn btn-sm btn-outline-primary">
+        Read original article
+    </a></em>
+</div>
+"""
+
+            post = Post.objects.create(
+                title=f"[News] {article['title'][:100]}",
+                slug=slug,
+                content=enhanced_content,
+                excerpt=article.get('description', '')[:300] or article.get('title', '')[:200],
+                author=author,
+                category=category_obj,
+                featured_image=article.get('image_url', ''),
+                published_date=timezone.now(),
+            )
+            post.tags.add('news', article.get('category', 'general').lower())
+
+            # Optionally save as NewsArticle
+            if data.get('save_article', True):
+                if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
+                    NewsArticle.objects.create(
+                        title=article['title'][:499],
+                        content=rewritten[:15000],
+                        summary=article.get('description', '')[:500],
+                        url=article.get('url', ''),
+                        source=article.get('source', 'Unknown'),
+                        category=category_name,
+                        image_url=article.get('image_url', ''),
+                        published_at=timezone.now(),
+                        created_as_post=True
+                    )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Article saved successfully',
+                'post_title': post.title,
+                'post_slug': post.slug
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
