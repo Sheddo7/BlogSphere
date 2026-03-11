@@ -1,4 +1,4 @@
-# blog/ai_service.py - FINAL VERSION (NO GOOGLE NEWS, BETTER DEBUGGING)
+# blog/ai_service.py - FINAL VERSION WITH NIGERIAN PRIORITY AND NO GOOGLE NEWS
 import os
 import requests
 import json
@@ -78,22 +78,223 @@ class EnhancedNewsFetcher:
         }
     }
 
+    # Expanded consent page markers (kept for scraping, though Google is gone)
+    CONSENT_MARKERS = [
+        'before you continue',
+        'accept all',
+        'reject all',
+        'consent.google.com',
+        'cookies and data',
+        'privacy settings',
+        'deliver and maintain google services',
+        'track outages',
+        'measure audience engagement',
+        'personalized content',
+        'personalized ads',
+        'g.co/privacytools'
+    ]
+
     @staticmethod
     def scrape_full_article_content(url):
-        """Scrape article content – returns None if consent page detected."""
-        # ... keep your existing scraping code (same as before)
-        # For brevity, I'm not repeating it here. Keep your current method.
-        pass
+        """Scrape the full article content from a URL – returns None if consent page."""
+        try:
+            print(f"🔍 Scraping content from: {url[:80]}...")
+
+            # Skip Google News URLs entirely (should not happen, but safety)
+            if 'news.google.com' in url:
+                print("⛔ Skipping Google News URL (consent risk)")
+                return None
+
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            }
+
+            response = requests.get(url, headers=headers, timeout=15)
+            response.raise_for_status()
+
+            # Check for consent page
+            text_lower = response.text.lower()
+            for marker in EnhancedNewsFetcher.CONSENT_MARKERS:
+                if marker in text_lower:
+                    print(f"❌ Consent page detected (marker: {marker})")
+                    return None
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Remove unwanted elements
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside',
+                                 'iframe', 'noscript', 'form', 'button', 'advertisement']):
+                element.decompose()
+
+            # Try to find main content area
+            content_areas = []
+            article_selectors = [
+                'article',
+                '[class*="article-content"]',
+                '[class*="post-content"]',
+                '[class*="entry-content"]',
+                '[class*="story-body"]',
+                '[class*="article-body"]',
+                'main',
+                '[role="main"]',
+            ]
+            for selector in article_selectors:
+                elements = soup.select(selector)
+                if elements:
+                    content_areas.extend(elements)
+                    break
+
+            if not content_areas:
+                content_areas = [soup.body] if soup.body else [soup]
+
+            # Extract text from content areas
+            article_text = []
+            for area in content_areas:
+                paragraphs = area.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
+                for p in paragraphs:
+                    text = p.get_text(strip=True)
+                    if len(text) > 40:
+                        article_text.append(text)
+
+            full_text = '\n\n'.join(article_text)
+
+            # Clean up whitespace
+            full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+            full_text = re.sub(r' +', ' ', full_text)
+
+            if len(full_text) < 300:
+                print(f"⚠️  Article content too short ({len(full_text)} chars)")
+                # Fallback: get all text
+                full_text = soup.get_text(separator='\n', strip=True)
+                full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+
+            # Final consent check on extracted text
+            for marker in EnhancedNewsFetcher.CONSENT_MARKERS:
+                if marker in full_text.lower():
+                    print(f"❌ Content contains consent marker: {marker}")
+                    return None
+
+            print(f"✅ Scraped {len(full_text)} characters")
+            return full_text[:12000]  # Limit to 12k characters
+
+        except Exception as e:
+            print(f"❌ Error scraping article: {e}")
+            return None
 
     @staticmethod
     def summarize_and_rewrite_with_ai(article_title, article_content, source, category, min_words=500):
-        # Keep your existing AI method (unchanged)
-        pass
+        """Use Google Gemini to rewrite article content."""
+        try:
+            gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
+            if not gemini_api_key:
+                print("⚠️  GEMINI_API_KEY not found, using original content.")
+                return {
+                    'content': article_content[:2000] + "...",
+                    'summary': article_content[:300],
+                    'word_count': len(article_content.split())
+                }
+
+            print(f"🤖 Using AI to rewrite article (target: {min_words}+ words)...")
+            prompt = f"""You are a professional news writer. Rewrite the following news article in your own words.
+
+REQUIREMENTS:
+- Write at least {min_words} words
+- Use original phrasing and sentence structure (DO NOT copy the original)
+- Keep all important facts, quotes, and details
+- Write in a clear, engaging journalistic style
+- Maintain the news tone appropriate for the category: {category}
+- Structure with introduction, main body, and conclusion
+- Use proper paragraphs (separate with blank lines)
+
+ORIGINAL ARTICLE:
+Title: {article_title}
+Source: {source}
+
+Content:
+{article_content[:5000]}
+
+WRITE THE REWRITTEN ARTICLE NOW (minimum {min_words} words):"""
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}"
+            payload = {
+                "contents": [{
+                    "parts": [{"text": prompt}]
+                }],
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 2048,
+                }
+            }
+            response = requests.post(url, json=payload, timeout=30)
+
+            if response.status_code == 200:
+                data = response.json()
+                if 'candidates' in data and len(data['candidates']) > 0:
+                    generated_text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+                    word_count = len(generated_text.split())
+                    summary = ' '.join(generated_text.split()[:200])
+                    print(f"✅ AI generated {word_count} words")
+                    return {
+                        'content': generated_text,
+                        'summary': summary,
+                        'word_count': word_count
+                    }
+                else:
+                    print("❌ No content in AI response")
+                    return None
+            else:
+                print(f"❌ Gemini API error: {response.status_code} - {response.text}")
+                return None
+
+        except Exception as e:
+            print(f"❌ Error calling AI API: {e}")
+            return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
-        # Keep your existing processing method (unchanged)
-        pass
+        """Process a single article: scrape content and rewrite with AI."""
+        try:
+            # Skip if URL is Google News (though they shouldn't be here)
+            if 'news.google.com' in article_dict.get('url', ''):
+                print("⛔ Skipping Google News article")
+                article_dict['content'] = f"<p>This article is from Google News. <a href='{article_dict['url']}' target='_blank'>Read original</a></p>"
+                article_dict['ai_processed'] = False
+                return article_dict
+
+            # Step 1: Scrape the full article content
+            scraped_content = EnhancedNewsFetcher.scrape_full_article_content(article_dict['url'])
+
+            if not scraped_content or len(scraped_content) < 100:
+                print("⚠️  Could not scrape enough content, using description")
+                article_dict['content'] = article_dict.get('description', '')
+                return article_dict
+
+            # Step 2: Rewrite with AI
+            ai_result = EnhancedNewsFetcher.summarize_and_rewrite_with_ai(
+                article_title=article_dict['title'],
+                article_content=scraped_content,
+                source=article_dict.get('source', 'Unknown'),
+                category=article_dict.get('category', 'NEWS'),
+                min_words=500
+            )
+
+            if ai_result:
+                article_dict['content'] = ai_result['content']
+                article_dict['description'] = ai_result['summary']
+                article_dict['word_count'] = ai_result['word_count']
+                article_dict['ai_processed'] = True
+                print(f"✅ Article processed: {ai_result['word_count']} words")
+            else:
+                article_dict['content'] = scraped_content[:2000]
+                article_dict['description'] = scraped_content[:300]
+                article_dict['ai_processed'] = False
+                print("⚠️  Using scraped content (AI failed)")
+
+            return article_dict
+
+        except Exception as e:
+            print(f"❌ Error processing article: {e}")
+            return article_dict
 
     # ===== FETCH METHODS =====
 
@@ -156,12 +357,15 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Fetch from Punch, Vanguard, Channels."""
+        """Fetch from Nigerian news sources (Punch, Vanguard, Channels)."""
         if source not in ['punch', 'vanguard', 'channels']:
             return []
+
         feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(category)
         if not feed_url:
             return []
+
+        print(f"📡 {source}/{category} RSS: {feed_url}")
         feed = feedparser.parse(feed_url)
         items = []
         for entry in feed.entries[:limit]:
@@ -183,6 +387,7 @@ class EnhancedNewsFetcher:
         url = f'https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}'
         headers = {'User-agent': 'newsbot/1.0'}
         try:
+            print(f"📡 Reddit r/{subreddit}...")
             resp = requests.get(url, headers=headers, timeout=10)
             if resp.status_code == 200:
                 data = resp.json()
@@ -200,15 +405,17 @@ class EnhancedNewsFetcher:
                     })
                 return items
             else:
+                print(f"❌ Reddit error: {resp.status_code}")
                 return []
         except Exception as e:
-            print(f"❌ Reddit error: {e}")
+            print(f"❌ Reddit exception: {e}")
             return []
 
     @staticmethod
     def fetch_bbc_rss(category='news', limit=10):
-        """Fetch from BBC."""
+        """Fetch from BBC RSS."""
         feed_url = EnhancedNewsFetcher.SOURCES['bbc']['category_urls'].get(category, 'http://feeds.bbci.co.uk/news/rss.xml')
+        print(f"📡 BBC/{category} RSS: {feed_url}")
         feed = feedparser.parse(feed_url)
         items = []
         for entry in feed.entries[:limit]:
@@ -225,16 +432,17 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        """Fetch from multiple sources (NO GOOGLE)."""
+        """Fetch from multiple sources. Nigerian sources are prioritized by default."""
         if categories is None:
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
         if sources is None:
-            sources = ['newsapi', 'bbc', 'punch', 'vanguard', 'channels', 'reddit']
+            # Nigerian sources first, then NewsAPI, then international
+            sources = ['punch', 'vanguard', 'channels', 'newsapi', 'bbc', 'reddit']
 
         all_articles = []
         for source in sources:
             for cat in categories:
-                print(f"📡 {source}/{cat}...")
+                print(f"📡 Fetching {source}/{cat}...")
                 if source == 'newsapi':
                     newsapi_cat = EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(cat, 'general')
                     arts = EnhancedNewsFetcher.fetch_news_api(newsapi_cat, 'ng', limit_per_source)
@@ -249,20 +457,64 @@ class EnhancedNewsFetcher:
 
                 if arts:
                     all_articles.extend(arts)
-                    print(f"✅ {len(arts)} articles from {source}/{cat}")
+                    print(f"✅ Found {len(arts)} articles from {source}/{cat}")
                 else:
                     print(f"⚠️  No articles from {source}/{cat}")
+
+                # Avoid rate limiting
                 time.sleep(1)
+
         print(f"🎉 Total articles fetched: {len(all_articles)}")
         return all_articles
 
     @staticmethod
     def generate_blog_post_from_article(article):
         """Generate a blog post from a news article."""
-        # Keep your existing method (unchanged)
-        pass
+        from django.utils.text import slugify
+        from django.contrib.auth.models import User
+        from blog.models import Category, Post
+        from django.utils import timezone
+
+        try:
+            category_name = article.get('category', 'NEWS')
+            category_obj, created = Category.objects.get_or_create(name=category_name)
+
+            try:
+                author = User.objects.get(username='admin')
+            except User.DoesNotExist:
+                author = User.objects.first()
+
+            base_slug = slugify(article['title'][:50])
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            content = article.get('content', '')
+
+            post = Post.objects.create(
+                title=article['title'][:200],
+                slug=slug,
+                content=content,
+                excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
+                author=author,
+                category=category_obj,
+                published_date=timezone.now(),
+            )
+
+            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+            if article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
+
+            print(f"✅ Created blog post: {post.title}")
+            return post
+
+        except Exception as e:
+            print(f"❌ Error generating blog post: {e}")
+            return None
 
 
-# SimpleNewsFetcher for backward compatibility – now inherits from Enhanced
+# Keep SimpleNewsFetcher for backward compatibility (now just inherits)
 class SimpleNewsFetcher(EnhancedNewsFetcher):
     pass
