@@ -137,40 +137,71 @@ def enhanced_news_dashboard(request):
 @login_required
 @user_passes_test(is_staff)
 def fetch_news_now(request):
+    """Fetch news, generate full AI articles, and optionally save."""
     if request.method == 'POST':
         try:
             categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment'])
             sources = request.POST.getlist('sources', ['google', 'reddit'])
             limit_per_source = int(request.POST.get('limit_per_source', 3))
+            auto_save = request.POST.get('auto_save') == 'true'
+
             from blog.ai_service import EnhancedNewsFetcher
             fetcher = EnhancedNewsFetcher()
-            articles = fetcher.fetch_multiple_sources(
+
+            # Step 1: Fetch raw articles (fast)
+            raw_articles = fetcher.fetch_multiple_sources(
                 categories=categories,
                 sources=sources,
                 limit_per_source=limit_per_source
             )
+
+            # Step 2: For each article, generate full AI content if auto_save
+            processed_articles = []
             saved_count = 0
-            auto_save = request.POST.get('auto_save') == 'true'
-            if auto_save:
-                for article in articles:
-                    if not NewsArticle.objects.filter(url=article['url']).exists():
-                        NewsArticle.objects.create(
-                            title=article['title'][:499],
-                            content=article.get('content', '')[:15000],  # increased
-                            summary=article.get('description', '')[:500],
-                            url=article['url'],
-                            source=article.get('source', 'Unknown'),
-                            category=article.get('category', 'NEWS'),
-                            image_url=article.get('image_url', ''),
-                            published_at=timezone.now(),
-                        )
-                        saved_count += 1
+
+            for article in raw_articles:
+                # Scrape full text if needed
+                content_text = article.get('content', '')
+                if len(content_text) < 500 and article.get('url'):
+                    content_text = EnhancedNewsFetcher.extract_content_from_url(article['url']) or ''
+
+                # Generate AI rewrite
+                if auto_save and content_text and len(content_text) > 200:
+                    rewritten = EnhancedNewsFetcher.rewrite_with_gemini(content_text)
+                    if rewritten and rewritten != content_text:
+                        article['content'] = rewritten
+                        article['ai_generated'] = True
+                        print(f"✅ Generated AI article for {article['title'][:50]}")
+                    else:
+                        article['content'] = content_text
+                else:
+                    article['content'] = content_text
+
+                # Save to database if auto_save
+                if auto_save and not NewsArticle.objects.filter(url=article['url']).exists():
+                    NewsArticle.objects.create(
+                        title=article['title'][:499],
+                        content=article['content'][:15000],
+                        summary=article.get('description', '')[:500],
+                        url=article['url'],
+                        source=article.get('source', 'Unknown'),
+                        category=article.get('category', 'NEWS'),
+                        image_url=article.get('image_url', ''),
+                        published_at=timezone.now(),
+                        created_as_post=False  # not yet posted
+                    )
+                    saved_count += 1
+
+                # Add to list for frontend (without the original URL if you want)
+                processed_articles.append(article)
+
             return JsonResponse({
                 'success': True,
-                'message': f'Fetched {len(articles)} articles' + (f' and saved {saved_count}' if auto_save else ''),
-                'articles': articles,
+                'message': f'Fetched {len(processed_articles)} articles' + (f' and saved {saved_count}' if auto_save else ''),
+                'articles': processed_articles,
                 'saved_count': saved_count
             })
+
         except Exception as e:
             return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
