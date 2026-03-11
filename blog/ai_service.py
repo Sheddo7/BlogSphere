@@ -1,4 +1,4 @@
-# blog/ai_service.py - PROFESSIONAL VERSION WITH NIGERIAN RSS DEBUGGING
+# blog/ai_service.py - FINAL VERSION WITH NIGERIAN RSS DEBUGGING
 import os
 import requests
 import json
@@ -357,7 +357,7 @@ Content:
             return []
 
         # Step 2: Parse with feedparser
-        feed = feedparser.parse(feed_url)
+        feed = feedparser.parse(resp.text if resp else '')
         print(f"   feedparser entries count: {len(feed.entries)}")
 
         # If no entries, try main feed again as last resort
@@ -365,8 +365,13 @@ Content:
             main_feed = EnhancedNewsFetcher.SOURCES[source].get('main_feed')
             if main_feed and main_feed != feed_url:
                 print(f"   ⚠️  No entries, falling back to main feed: {main_feed}")
-                feed = feedparser.parse(main_feed)
-                print(f"   Main feed entries: {len(feed.entries)}")
+                try:
+                    resp2 = requests.get(main_feed, headers=headers, timeout=10)
+                    if resp2.status_code == 200:
+                        feed = feedparser.parse(resp2.text)
+                        print(f"   Main feed entries: {len(feed.entries)}")
+                except Exception as e:
+                    print(f"   ❌ Main feed fetch failed: {e}")
 
         items = []
         for idx, entry in enumerate(feed.entries[:limit]):
