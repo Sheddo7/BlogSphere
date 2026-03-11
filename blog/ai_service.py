@@ -1,4 +1,4 @@
-# blog/ai_service.py - PROFESSIONAL VERSION WITH GUARANTEED NIGERIAN NEWS
+# blog/ai_service.py - PROFESSIONAL VERSION WITH NIGERIAN RSS DEBUGGING
 import os
 import requests
 import json
@@ -327,31 +327,51 @@ Content:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Robust RSS fetching with fallback to main feed."""
+        """Robust RSS fetching with detailed logging and fallback to main feed."""
         if source not in ['punch', 'vanguard', 'channels']:
             return []
 
+        # Determine feed URL
         feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(category)
         if not feed_url:
             feed_url = EnhancedNewsFetcher.SOURCES[source].get('main_feed')
 
         print(f"📡 {source}/{category} RSS: {feed_url}")
 
-        # Attempt to get feed with timeout and custom headers
+        # Step 1: Fetch with requests to check accessibility
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
         try:
-            feed = feedparser.parse(feed_url)
-            if not feed.entries:
-                print(f"⚠️  No entries, trying main feed...")
+            resp = requests.get(feed_url, headers=headers, timeout=10)
+            print(f"   HTTP status: {resp.status_code}, content length: {len(resp.text)}")
+            if resp.status_code != 200:
+                print(f"   ⚠️  Non-200 status, trying main feed...")
                 main_feed = EnhancedNewsFetcher.SOURCES[source].get('main_feed')
                 if main_feed and main_feed != feed_url:
-                    feed = feedparser.parse(main_feed)
+                    resp = requests.get(main_feed, headers=headers, timeout=10)
+                    feed_url = main_feed
+                    print(f"   Main feed status: {resp.status_code}, length: {len(resp.text)}")
+                else:
+                    return []
         except Exception as e:
-            print(f"❌ RSS parse error: {e}")
+            print(f"   ❌ Request failed: {e}")
             return []
 
+        # Step 2: Parse with feedparser
+        feed = feedparser.parse(feed_url)
+        print(f"   feedparser entries count: {len(feed.entries)}")
+
+        # If no entries, try main feed again as last resort
+        if not feed.entries:
+            main_feed = EnhancedNewsFetcher.SOURCES[source].get('main_feed')
+            if main_feed and main_feed != feed_url:
+                print(f"   ⚠️  No entries, falling back to main feed: {main_feed}")
+                feed = feedparser.parse(main_feed)
+                print(f"   Main feed entries: {len(feed.entries)}")
+
         items = []
-        for entry in feed.entries[:limit]:
+        for idx, entry in enumerate(feed.entries[:limit]):
             if not entry.get('title') or not entry.get('link'):
+                print(f"   Skipping entry {idx}: missing title or link")
                 continue
             items.append({
                 'title': entry.title,
@@ -362,7 +382,7 @@ Content:
                 'source': source.capitalize(),
                 'category': category.upper(),
             })
-        print(f"   Found {len(items)} articles")
+        print(f"   Returning {len(items)} articles")
         return items
 
     @staticmethod
@@ -424,7 +444,7 @@ Content:
         all_articles = []
         for source in sources:
             for cat in categories:
-                print(f"📡 {source}/{cat}...")
+                print(f"📡 Fetching {source}/{cat}...")
                 if source == 'newsapi':
                     newsapi_cat = EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(cat, 'general')
                     arts = EnhancedNewsFetcher.fetch_news_api(newsapi_cat, 'ng', limit_per_source)
