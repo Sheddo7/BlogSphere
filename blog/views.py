@@ -12,6 +12,7 @@ import json
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
 
+
 # ===== BASIC VIEWS =====
 
 def home(request):
@@ -24,6 +25,7 @@ def home(request):
         'latest_posts': latest_posts,
     }
     return render(request, 'blog/home.html', context)
+
 
 def post_detail(request, slug):
     """Individual post detail view"""
@@ -43,6 +45,7 @@ def post_detail(request, slug):
     }
     return render(request, 'blog/post_detail.html', context)
 
+
 def category_posts(request, slug):
     """Category posts listing view"""
     category = get_object_or_404(Category, slug=slug)
@@ -56,6 +59,7 @@ def category_posts(request, slug):
         'category': category,
     }
     return render(request, 'blog/category.html', context)
+
 
 def search(request):
     """Search results view"""
@@ -74,6 +78,7 @@ def search(request):
         'query': query,
     }
     return render(request, 'blog/search.html', context)
+
 
 def news_dashboard(request):
     """Simple dashboard to view fetched news"""
@@ -98,11 +103,13 @@ def news_dashboard(request):
 
     return render(request, 'blog/news_dashboard.html', context)
 
+
 # ===== ENHANCED NEWS DASHBOARD VIEWS =====
 
 def is_staff(user):
     """Check if user is staff"""
     return user.is_staff
+
 
 @login_required
 @user_passes_test(is_staff)
@@ -162,6 +169,7 @@ def enhanced_news_dashboard(request):
 
     return render(request, 'blog/enhanced-news-dashboard.html', context)
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -217,6 +225,7 @@ def fetch_news_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -268,6 +277,7 @@ def generate_posts_now(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def dashboard_stats(request):
@@ -285,6 +295,7 @@ def dashboard_stats(request):
         'auto_posts': auto_posts,
         'to_process': to_process,
     })
+
 
 # ===== HELPER VIEWS =====
 
@@ -332,6 +343,7 @@ def convert_to_post(request, article_id):
             'success': False,
             'message': f'Error: {str(e)}'
         })
+
 
 # ===== NEW API ENDPOINTS =====
 
@@ -445,6 +457,7 @@ def post_article(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -519,6 +532,7 @@ def post_multiple_articles(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -542,6 +556,7 @@ def get_post(request, post_id):
         return JsonResponse({'success': False, 'message': 'Post not found'})
     except Exception as e:
         return JsonResponse({'success': False, 'message': str(e)})
+
 
 @csrf_exempt
 @login_required
@@ -608,6 +623,7 @@ def update_post_image(request):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -629,6 +645,7 @@ def remove_post_image(request, post_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def delete_news_article(request, article_id):
@@ -648,6 +665,7 @@ def delete_news_article(request, article_id):
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
 @login_required
 @user_passes_test(is_staff)
 def delete_post(request, post_id):
@@ -666,6 +684,7 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
