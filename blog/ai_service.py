@@ -655,3 +655,336 @@ class SimpleNewsFetcher:
     @staticmethod
     def extract_content_from_url(url):
         return EnhancedNewsFetcher.extract_content_from_url(url)
+
+    # PROPER GOOGLE NEWS WORKAROUND - Extract Real Article URLs
+    # Add these methods to your ai_service.py
+
+    import re
+    from urllib.parse import urlparse, parse_qs
+
+    @staticmethod
+    def extract_real_url_from_google_news(google_news_url):
+        """
+        Extract the actual article URL from a Google News redirect URL
+
+        Google News URLs look like:
+        https://news.google.com/rss/articles/CBMi...
+
+        We need to extract the real source URL (CNN, BBC, Punch, etc.)
+        """
+        try:
+            print(f"🔍 Extracting real URL from Google News link...")
+
+            # Method 1: Follow the redirect chain
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+
+            response = requests.get(google_news_url, headers=headers, allow_redirects=True, timeout=10)
+            final_url = response.url
+
+            # Check if we landed on consent page
+            if 'consent.google.com' in final_url or 'consent.' in final_url:
+                print("⚠️  Hit consent page, trying alternative method...")
+
+                # Method 2: Try to extract URL from the Google News article page
+                try:
+                    # Sometimes the real URL is in the HTML
+                    soup = BeautifulSoup(response.content, 'html.parser')
+
+                    # Look for canonical link
+                    canonical = soup.find('link', {'rel': 'canonical'})
+                    if canonical and canonical.get('href'):
+                        candidate_url = canonical.get('href')
+                        if 'google.com' not in candidate_url:
+                            print(f"✅ Found real URL via canonical: {candidate_url[:60]}...")
+                            return candidate_url
+
+                    # Look for article links
+                    article_links = soup.find_all('a', href=True)
+                    for link in article_links:
+                        href = link.get('href')
+                        # Skip Google internal links
+                        if href and not any(x in href for x in ['google.com', 'consent', 'policies']):
+                            if href.startswith('http'):
+                                print(f"✅ Found real URL via link: {href[:60]}...")
+                                return href
+                except:
+                    pass
+
+                # Method 3: Parse the Google News URL structure
+                # Google News URLs sometimes encode the source in base64
+                try:
+                    # The article ID in Google News URL sometimes contains encoded info
+                    if '/articles/' in google_news_url:
+                        # This is complex and may not always work
+                        # For now, return None to trigger search fallback
+                        pass
+                except:
+                    pass
+
+                print("❌ Could not extract real URL from Google News")
+                return None
+            else:
+                # Successfully redirected to real article
+                print(f"✅ Redirected to: {final_url[:80]}...")
+                return final_url
+
+        except Exception as e:
+            print(f"❌ Error extracting real URL: {e}")
+            return None
+
+    @staticmethod
+    def search_for_article_url(article_title, source_hint=None):
+        """
+        Fallback: Search for the article by title to find the real URL
+
+        If we can't extract the URL from Google News, we search for the article
+        and try to find it on the original source website.
+        """
+        try:
+            print(f"🔍 Searching for article: {article_title[:60]}...")
+
+            # Build search query
+            search_query = f'"{article_title}"'
+            if source_hint:
+                search_query += f' site:{source_hint}'
+
+            # Use DuckDuckGo (no API key needed, less blocking than Google)
+            search_url = f"https://html.duckduckgo.com/html/?q={requests.utils.quote(search_query)}"
+
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+
+            response = requests.get(search_url, headers=headers, timeout=10)
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Extract search result links
+            result_links = soup.find_all('a', {'class': 'result__a'})
+
+            for link in result_links[:3]:  # Check first 3 results
+                href = link.get('href')
+                if href and href.startswith('http'):
+                    # Skip google.com results
+                    if 'google.com' not in href:
+                        print(f"✅ Found via search: {href[:80]}...")
+                        return href
+
+            print("❌ Could not find article via search")
+            return None
+
+        except Exception as e:
+            print(f"❌ Error searching for article: {e}")
+            return None
+
+    @staticmethod
+    def scrape_full_article_content(url):
+        """
+        UPDATED: Scrape article with Google News workaround
+        """
+        try:
+            original_url = url
+            print(f"🔍 Starting scrape for: {url[:60]}...")
+
+            # WORKAROUND FOR GOOGLE NEWS
+            if 'news.google.com' in url:
+                print("🔧 Google News URL detected - extracting real article URL...")
+                real_url = EnhancedNewsFetcher.extract_real_url_from_google_news(url)
+
+                if real_url:
+                    url = real_url
+                    print(f"✅ Using real URL: {url[:80]}...")
+                else:
+                    print("⚠️  Could not extract real URL - will try search fallback later")
+                    return None  # This will trigger search fallback in process_article_with_ai
+
+            # Now scrape from the real URL
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.9',
+            }
+
+            response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
+            response.raise_for_status()
+
+            # Double-check we didn't land on a consent page
+            consent_markers = [
+                'Before you continue',
+                'Accept all',
+                'Reject all',
+                'consent.google.com',
+                'cookies and data',
+                'privacy settings'
+            ]
+
+            if any(marker.lower() in response.text.lower() for marker in consent_markers):
+                print("❌ Landed on consent/privacy page - rejecting")
+                return None
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Remove unwanted elements
+            for element in soup(['script', 'style', 'nav', 'footer', 'header', 'aside',
+                                 'iframe', 'noscript', 'form', 'button', 'advertisement']):
+                element.decompose()
+
+            # Try to find main content area
+            content_areas = []
+
+            # Look for common article containers
+            article_selectors = [
+                'article',
+                '[class*="article-content"]',
+                '[class*="article-body"]',
+                '[class*="post-content"]',
+                '[class*="entry-content"]',
+                '[class*="story-body"]',
+                '[class*="content-body"]',
+                '[itemprop="articleBody"]',
+                'main article',
+                '[role="article"]',
+            ]
+
+            for selector in article_selectors:
+                elements = soup.select(selector)
+                if elements:
+                    content_areas.extend(elements)
+                    break
+
+            # If no specific content area found, use body
+            if not content_areas:
+                content_areas = [soup.body] if soup.body else [soup]
+
+            # Extract text from content areas
+            article_text = []
+            for area in content_areas:
+                # Get paragraphs and headings
+                elements = area.find_all(['p', 'h1', 'h2', 'h3', 'h4', 'li'])
+                for elem in elements:
+                    text = elem.get_text(strip=True)
+                    # Only include substantial paragraphs
+                    if len(text) > 40:
+                        article_text.append(text)
+
+            # Join and clean the text
+            full_text = '\n\n'.join(article_text)
+
+            # Clean up whitespace
+            full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+            full_text = re.sub(r' +', ' ', full_text)
+
+            # Validate we got actual article content
+            if len(full_text) < 300:
+                print(f"⚠️  Content too short ({len(full_text)} chars) - may not be the article")
+                return None
+
+            # Check for consent page text one more time
+            if any(marker.lower() in full_text.lower() for marker in consent_markers):
+                print("❌ Content contains consent page markers - rejecting")
+                return None
+
+            print(f"✅ Successfully scraped {len(full_text)} characters")
+            return full_text[:12000]  # Limit to 12k characters
+
+        except Exception as e:
+            print(f"❌ Error scraping article: {e}")
+            return None
+
+    @staticmethod
+    def process_article_with_ai(article_dict):
+        """
+        UPDATED: Process article with Google News workaround + search fallback
+
+        1. Try to scrape from URL
+        2. If Google News → extract real URL → scrape from source
+        3. If that fails → search for article by title → scrape from search result
+        4. Use AI to rewrite scraped content into 500+ words
+        """
+        try:
+            article_url = article_dict.get('url', '')
+            article_title = article_dict.get('title', '')
+
+            # Step 1: Try to scrape content
+            print(f"\n{'=' * 60}")
+            print(f"📰 Processing: {article_title[:60]}...")
+            print(f"{'=' * 60}")
+
+            scraped_content = EnhancedNewsFetcher.scrape_full_article_content(article_url)
+
+            # Step 2: If scraping failed and it was Google News, try searching for the article
+            if not scraped_content and 'news.google.com' in article_url:
+                print("🔍 Scraping failed for Google News - trying search fallback...")
+
+                # Try to guess the source domain from the article title or source field
+                source_hint = None
+                source_name = article_dict.get('source', '').lower()
+
+                # Map source names to domains
+                source_domains = {
+                    'punch': 'punchng.com',
+                    'vanguard': 'vanguardngr.com',
+                    'channels': 'channelstv.com',
+                    'bbc': 'bbc.com',
+                    'cnn': 'cnn.com',
+                    'guardian': 'theguardian.com',
+                }
+
+                for key, domain in source_domains.items():
+                    if key in source_name:
+                        source_hint = domain
+                        break
+
+                # Search for the article
+                found_url = EnhancedNewsFetcher.search_for_article_url(article_title, source_hint)
+
+                if found_url:
+                    print(f"✅ Found article via search, trying to scrape...")
+                    scraped_content = EnhancedNewsFetcher.scrape_full_article_content(found_url)
+
+            # Step 3: If we still don't have content, fail gracefully
+            if not scraped_content or len(scraped_content) < 200:
+                print("❌ Could not scrape article content")
+                article_dict[
+                    'content'] = f"<p>{article_dict.get('description', '')}</p><p><a href='{article_url}' target='_blank'>Read full article at source</a></p>"
+                article_dict['description'] = article_dict.get('description', '')[:300]
+                article_dict['ai_processed'] = False
+                article_dict['word_count'] = 0
+                return article_dict
+
+            # Step 4: We have content! Now use AI to rewrite it
+            print(f"📝 Scraped content ready ({len(scraped_content)} chars)")
+            print(f"🤖 Sending to AI for rewriting (target: 500+ words)...")
+
+            ai_result = EnhancedNewsFetcher.summarize_and_rewrite_with_ai(
+                article_title=article_title,
+                article_content=scraped_content,
+                source=article_dict.get('source', 'Unknown'),
+                category=article_dict.get('category', 'NEWS'),
+                min_words=500
+            )
+
+            if ai_result:
+                article_dict['content'] = ai_result['content']
+                article_dict['description'] = ai_result['summary']
+                article_dict['word_count'] = ai_result['word_count']
+                article_dict['ai_processed'] = True
+                print(f"✅ AI rewrite complete: {ai_result['word_count']} words")
+                print(f"{'=' * 60}\n")
+            else:
+                # AI failed, use scraped content as-is
+                article_dict['content'] = scraped_content[:3000]
+                article_dict['description'] = scraped_content[:300]
+                article_dict['ai_processed'] = False
+                article_dict['word_count'] = len(scraped_content.split())
+                print("⚠️  AI rewrite failed - using scraped content")
+
+            return article_dict
+
+        except Exception as e:
+            print(f"❌ Error processing article: {e}")
+            import traceback
+            traceback.print_exc()
+            return article_dict
+
