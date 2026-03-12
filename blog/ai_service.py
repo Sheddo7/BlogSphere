@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH FIXED MODEL NAME
+# blog/ai_service.py - COMPLETE WITH OLD GEMINI SDK (WORKING) AND ALL FETCH METHODS
 import os
 import requests
 import json
@@ -12,31 +12,30 @@ from bs4 import BeautifulSoup
 import time
 import re
 import random
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 
 class GeminiService:
-    """Service for interacting with the new Google Gen AI SDK."""
+    """Service for interacting with Google Gemini AI (old SDK)."""
 
     def __init__(self):
         self.api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
         if not self.api_key:
             print("⚠️  No GEMINI_API_KEY found")
-            self.client = None
+            self.model = None
         else:
-            self.client = genai.Client(api_key=self.api_key)
+            genai.configure(api_key=self.api_key)
+            self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
     def generate_content(self, prompt, temperature=0.4, max_output_tokens=4096):
         """Send a prompt to Gemini and return response."""
-        if not self.client:
+        if not self.model:
             return {'success': False, 'error': 'API key missing'}
 
         try:
-            response = self.client.models.generate_content(
-                model='models/gemini-1.5-flash',  # <-- FIXED: added 'models/' prefix
-                contents=prompt,
-                config=types.GenerateContentConfig(
+            response = self.model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
                     temperature=temperature,
                     max_output_tokens=max_output_tokens,
                     top_p=0.95,
@@ -268,8 +267,7 @@ class EnhancedNewsFetcher:
     def rewrite_with_ai(title, content, source, category, min_words=500):
         """Use Gemini to paraphrase content."""
         gemini = GeminiService()
-        # Check if client exists (i.e., API key is set)
-        if gemini.client is None:
+        if gemini.model is None:
             print("⚠️  Gemini not configured, cannot rewrite.")
             return None
 
@@ -350,7 +348,7 @@ class EnhancedNewsFetcher:
             article_dict['ai_processed'] = False
             return article_dict
 
-    # === NEWS FETCHING METHODS (unchanged) ===
+    # === NEWS FETCHING METHODS ===
 
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
