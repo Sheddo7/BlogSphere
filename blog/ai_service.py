@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH TOGETHER.AI (FREE CREDITS) + GENERIC ENDPOINT SUPPORT
+# blog/ai_service.py - COMPLETE WITH OPENROUTER (FREE TIER) + ROBUST FETCHING
 import os
 import requests
 import json
@@ -14,55 +14,21 @@ import re
 import random
 
 
-class TogetherService:
-    """Service for interacting with Together.ai API (free credits)"""
+class OpenRouterService:
+    """Service for interacting with OpenRouter API (free tier, 50-1000 requests/day)"""
 
     def __init__(self):
-        self.api_key = getattr(settings, 'TOGETHER_API_KEY', os.environ.get('TOGETHER_API_KEY', ''))
+        self.api_key = getattr(settings, 'OPENROUTER_API_KEY', os.environ.get('OPENROUTER_API_KEY', ''))
         if not self.api_key:
-            print("⚠️  No TOGETHER_API_KEY found")
+            print("⚠️  No OPENROUTER_API_KEY found")
             self.api_key = None
         else:
-            self.base_url = "https://api.together.xyz/v1/chat/completions"
-
-    def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
-        """
-        Send a generic prompt to Together.ai and return the response.
-        Useful for chatbots or direct AI interactions.
-        """
-        if not self.api_key:
-            return {'success': False, 'error': 'API key missing'}
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-
-        try:
-            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
-            if response.status_code == 200:
-                data = response.json()
-                text = data['choices'][0]['message']['content'].strip()
-                word_count = len(text.split())
-                return {
-                    'success': True,
-                    'content': text,
-                    'word_count': word_count
-                }
-            else:
-                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
+            self.base_url = "https://openrouter.ai/api/v1/chat/completions"
+            # Use the free router – automatically picks the best available free model
+            self.model = "openrouter/free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Paraphrase article using Together.ai"""
+        """Paraphrase article using OpenRouter's free models."""
         if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
@@ -86,11 +52,14 @@ Now write your professional version:"""
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            # Required headers to avoid 402 errors
+            "HTTP-Referer": "https://yourdomain.com",  # Replace with your actual domain
+            "X-Title": "BlogSphere News"
         }
 
         payload = {
-            "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.4,
             "max_tokens": 4096
@@ -124,9 +93,44 @@ Now write your professional version:"""
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
+        """Generic method for direct chat interactions (optional)."""
+        if not self.api_key:
+            return {'success': False, 'error': 'API key missing'}
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://yourdomain.com",
+            "X-Title": "BlogSphere News"
+        }
+
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+
+        try:
+            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                text = data['choices'][0]['message']['content'].strip()
+                word_count = len(text.split())
+                return {
+                    'success': True,
+                    'content': text,
+                    'word_count': word_count
+                }
+            else:
+                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with robust scraping + Together.ai AI."""
+    """Enhanced news fetcher with robust scraping + OpenRouter AI."""
 
     SOURCES = {
         'google': {
@@ -203,7 +207,7 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === SCRAPING & TOGETHER.AI PROCESSING ===
+    # === SCRAPING & OPENROUTER PROCESSING ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -293,30 +297,30 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """Use Together.ai to paraphrase content."""
-        together = TogetherService()
-        if not together.api_key:
-            print("⚠️  Together.ai not configured, cannot rewrite.")
+        """Use OpenRouter to paraphrase content."""
+        openrouter = OpenRouterService()
+        if not openrouter.api_key:
+            print("⚠️  OpenRouter not configured, cannot rewrite.")
             return None
 
-        print(f"📝 Sending to Together.ai for paraphrasing ({len(content)} chars)...")
-        result = together.paraphrase_article(title, content, category, min_words)
+        print(f"📝 Sending to OpenRouter for paraphrasing ({len(content)} chars)...")
+        result = openrouter.paraphrase_article(title, content, category, min_words)
 
         if result['success']:
-            print(f"✅ Together.ai generated {result['word_count']} words")
+            print(f"✅ OpenRouter generated {result['word_count']} words")
             return {
                 'content': result['content'],
                 'summary': result['summary'],
                 'word_count': result['word_count']
             }
         else:
-            print(f"❌ Together.ai error: {result.get('error')}")
+            print(f"❌ OpenRouter error: {result.get('error')}")
             return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content → Together.ai rewrite.
+        Process article: scrape content → OpenRouter rewrite.
         If scraping fails, fall back to the article's description.
         """
         try:
@@ -352,7 +356,7 @@ class EnhancedNewsFetcher:
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                print("⚠️  Together.ai failed – using fallback content")
+                print("⚠️  OpenRouter failed – using fallback content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())

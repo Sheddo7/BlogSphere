@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-TOGETHER_API_KEY = os.environ.get('TOGETHER_API_KEY', '')
+OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 
 # --- Security ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
