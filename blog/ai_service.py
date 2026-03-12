@@ -2,17 +2,19 @@
 import os
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import feedparser
 from django.conf import settings
 from django.utils import timezone
+import hashlib
+from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with forced 500+ word AI content generation"""
+    """Enhanced news fetcher with AI content generation (fixed for 500+ words)"""
 
     SOURCES = {
         'google': {
@@ -89,26 +91,36 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === AI PROCESSING METHODS (FIXED) ===
+    # === AI PROCESSING METHODS (FORCED 500+ WORDS) ===
 
     @staticmethod
     def scrape_article_content(url):
         """Scrape full article content from URL"""
         try:
             print(f"🔍 Scraping: {url[:70]}...")
+
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             }
+
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
-            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
+
+            # Check for Google consent page
+            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data',
+                               'privacy settings']
             if any(marker in response.text for marker in consent_markers):
                 print("❌ Consent page detected")
                 return None
+
             soup = BeautifulSoup(response.content, 'html.parser')
+
+            # Remove unwanted elements
             for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'form', 'button']):
                 tag.decompose()
+
+            # Try to find article content
             content_selectors = [
                 'article',
                 '[class*="article-content"]',
@@ -117,30 +129,40 @@ class EnhancedNewsFetcher:
                 '[class*="entry-content"]',
                 '[itemprop="articleBody"]',
             ]
+
             content_areas = []
             for selector in content_selectors:
                 elements = soup.select(selector)
                 if elements:
                     content_areas.extend(elements)
                     break
+
             if not content_areas:
                 content_areas = [soup.body] if soup.body else [soup]
+
+            # Extract text
             article_text = []
             for area in content_areas:
                 for elem in area.find_all(['p', 'h2', 'h3', 'h4']):
                     text = elem.get_text(strip=True)
                     if len(text) > 40:
                         article_text.append(text)
+
             full_text = '\n\n'.join(article_text)
             full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
+
             if len(full_text) < 200:
                 print(f"⚠️  Content too short")
                 return None
+
+            # Double check no consent text
             if any(marker in full_text for marker in consent_markers):
                 print("❌ Consent text in content")
                 return None
+
             print(f"✅ Scraped {len(full_text)} characters")
             return full_text[:10000]
+
         except Exception as e:
             print(f"❌ Scraping error: {e}")
             return None
@@ -303,48 +325,321 @@ Write your article now (minimum {min_words} words):"""
             article_dict['ai_processed'] = False
             return article_dict
 
-    # === NEWS FETCHING METHODS (keep your existing implementations) ===
+    # === NEWS FETCHING METHODS (UNCHANGED FROM YOUR ORIGINAL) ===
+
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
-        # ... unchanged ...
-        pass  # replace with your actual code
+        """Fetch news from NewsAPI"""
+        api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
+
+        if not api_key:
+            print("⚠️  NewsAPI key not found")
+            return []
+
+        try:
+            url = f"https://newsapi.org/v2/top-headlines"
+            params = {
+                'apiKey': api_key,
+                'category': category,
+                'country': country,
+                'pageSize': limit,
+                'language': 'en'
+            }
+
+            response = requests.get(url, params=params, timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                articles = []
+
+                for article in data.get('articles', []):
+                    articles.append({
+                        'title': article.get('title', 'Untitled'),
+                        'description': article.get('description', ''),
+                        'content': article.get('content', ''),
+                        'url': article.get('url', ''),
+                        'image_url': article.get('urlToImage', ''),
+                        'published_at': article.get('publishedAt', ''),
+                        'source': article.get('source', {}).get('name', 'NewsAPI'),
+                        'category': category.upper(),
+                    })
+                return articles
+            return []
+        except Exception as e:
+            print(f"❌ NewsAPI error: {e}")
+            return []
 
     @staticmethod
     def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
-        # ... unchanged ...
-        pass
+        """Fetch news from Google News"""
+        try:
+            source_key = 'google'
+            category_url = EnhancedNewsFetcher.SOURCES[source_key]['category_urls'].get(
+                category,
+                EnhancedNewsFetcher.SOURCES[source_key]['base_url']
+            )
+
+            feed = feedparser.parse(category_url)
+            news_items = []
+
+            for entry in feed.entries[:limit]:
+                source_name = entry.get('source', {}).get('title', 'Google News')
+                if country == 'nigeria':
+                    source_name = f"{source_name} (Nigeria)"
+
+                news_items.append({
+                    'title': entry.title,
+                    'description': entry.get('summary', ''),
+                    'content': entry.get('summary', ''),
+                    'url': entry.link,
+                    'published_at': entry.get('published', ''),
+                    'source': source_name,
+                    'category': category.upper(),
+                })
+            return news_items
+        except Exception as e:
+            print(f"❌ Google News error: {e}")
+            return []
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        # ... unchanged ...
-        pass
+        """Fetch from Punch, Vanguard, Channels"""
+        try:
+            if source not in ['punch', 'vanguard', 'channels']:
+                return []
+
+            feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
+                category,
+                EnhancedNewsFetcher.SOURCES[source].get('base_url', '')
+            )
+
+            if not feed_url:
+                return []
+
+            feed = feedparser.parse(feed_url)
+            news_items = []
+
+            for entry in feed.entries[:limit]:
+                news_items.append({
+                    'title': entry.title,
+                    'description': entry.get('summary', ''),
+                    'content': entry.get('summary', ''),
+                    'url': entry.link,
+                    'published_at': entry.get('published', ''),
+                    'source': source.capitalize(),
+                    'category': category.upper(),
+                })
+            return news_items
+        except Exception as e:
+            print(f"❌ {source} error: {e}")
+            return []
 
     @staticmethod
     def fetch_reddit_by_category(category='news', limit=10):
-        # ... unchanged ...
-        pass
+        """Fetch from Reddit"""
+        try:
+            subreddit = EnhancedNewsFetcher.SOURCES['reddit']['subreddits'].get(category, 'news')
+            url = f'https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}'
+            headers = {'User-agent': 'newsbot/1.0'}
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                news_items = []
+
+                for post in data['data']['children']:
+                    post_data = post['data']
+                    news_items.append({
+                        'title': post_data['title'],
+                        'description': post_data.get('selftext', '')[:200],
+                        'content': post_data.get('selftext', ''),
+                        'url': f"https://reddit.com{post_data['permalink']}",
+                        'published_at': datetime.fromtimestamp(post_data['created_utc']).isoformat(),
+                        'source': f'Reddit r/{subreddit}',
+                        'category': category.upper(),
+                        'score': post_data['score'],
+                        'comments': post_data['num_comments'],
+                    })
+                return news_items
+            return []
+        except Exception as e:
+            print(f"❌ Reddit error: {e}")
+            return []
 
     @staticmethod
     def fetch_bbc_rss(category='news', limit=10):
-        # ... unchanged ...
-        pass
+        """Fetch from BBC"""
+        try:
+            feed_url = EnhancedNewsFetcher.SOURCES['bbc']['category_urls'].get(
+                category, 'http://feeds.bbci.co.uk/news/rss.xml'
+            )
+
+            feed = feedparser.parse(feed_url)
+            news_items = []
+
+            for entry in feed.entries[:limit]:
+                news_items.append({
+                    'title': entry.title,
+                    'description': entry.get('summary', ''),
+                    'content': entry.get('summary', ''),
+                    'url': entry.link,
+                    'published_at': entry.get('published', ''),
+                    'source': 'BBC',
+                    'category': category.upper(),
+                })
+            return news_items
+        except Exception as e:
+            print(f"❌ BBC error: {e}")
+            return []
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        # ... unchanged ...
-        pass
+        """Fetch from multiple sources"""
+        if categories is None:
+            categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
+
+        if sources is None:
+            sources = ['google', 'reddit', 'bbc']
+
+        all_articles = []
+
+        for source in sources:
+            for category in categories:
+                print(f"📡 Fetching {category} from {source}...")
+
+                if source == 'google':
+                    articles = EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source)
+                elif source == 'reddit':
+                    articles = EnhancedNewsFetcher.fetch_reddit_by_category(category, limit_per_source)
+                elif source == 'newsapi':
+                    articles = EnhancedNewsFetcher.fetch_news_api(
+                        EnhancedNewsFetcher.SOURCES['newsapi']['categories'].get(category, 'general'),
+                        limit=limit_per_source
+                    )
+                elif source == 'bbc':
+                    articles = EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source)
+                elif source in ['punch', 'vanguard', 'channels']:
+                    articles = EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source)
+                else:
+                    continue
+
+                if articles:
+                    all_articles.extend(articles)
+                    print(f"✅ Found {len(articles)} articles from {source}/{category}")
+
+                time.sleep(1)
+
+        print(f"🎉 Total: {len(all_articles)} articles")
+        return all_articles
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        # ... unchanged ...
-        pass
+        """Generate blog post from article"""
+        from django.utils.text import slugify
+        from django.contrib.auth.models import User
+        from blog.models import Category, Post
+
+        try:
+            category_name = article.get('category', 'NEWS')
+            category_obj, created = Category.objects.get_or_create(name=category_name)
+
+            try:
+                author = User.objects.get(username='admin')
+            except User.DoesNotExist:
+                author = User.objects.first()
+
+            base_slug = slugify(article['title'][:50])
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            content = article.get('content', '')
+
+            post = Post.objects.create(
+                title=article['title'][:200],
+                slug=slug,
+                content=content,
+                excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
+                author=author,
+                category=category_obj,
+                published_date=timezone.now(),
+            )
+
+            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+
+            if article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
+
+            print(f"✅ Created blog post: {post.title}")
+            return post
+
+        except Exception as e:
+            print(f"❌ Error creating post: {e}")
+            return None
 
     @staticmethod
     def extract_content_from_url(url):
+        """Legacy method"""
         return EnhancedNewsFetcher.scrape_article_content(url)
 
 
-# Backward compatibility (keep as is)
+# Backward compatibility
 class SimpleNewsFetcher:
-    # ... unchanged ...
-    pass
+    @staticmethod
+    def fetch_google_news_rss():
+        return EnhancedNewsFetcher.fetch_google_news_by_category('news', 15)
+
+    @staticmethod
+    def fetch_reddit_news(subreddit='news', limit=10):
+        return EnhancedNewsFetcher.fetch_reddit_by_category('news', limit)
+
+    @staticmethod
+    def categorize_article(title, description):
+        text = (title + ' ' + description).lower()
+
+        categories = {
+            'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'tv', 'hollywood'],
+            'SPORT': ['sport', 'football', 'basketball', 'soccer', 'game', 'team', 'player', 'score', 'win'],
+            'POLITICS': ['government', 'president', 'minister', 'election', 'vote', 'party', 'congress', 'senate'],
+            'ECONOMY': ['economy', 'market', 'stock', 'price', 'bank', 'money', 'business', 'company', 'dollar'],
+            'NEWS': ['news', 'report', 'announce', 'official', 'statement', 'update', 'latest'],
+            'VIRAL GIST': ['viral', 'trending', 'social media', 'tiktok', 'instagram', 'twitter', 'facebook'],
+        }
+
+        scores = {}
+        for category, keywords in categories.items():
+            score = sum(1 for keyword in keywords if keyword in text)
+            scores[category] = score
+
+        best_category = max(scores, key=scores.get)
+
+        if scores[best_category] < 2:
+            return 'NEWS'
+
+        return best_category
+
+    @staticmethod
+    def generate_summary(text, max_length=150):
+        if not text:
+            return ""
+
+        if len(text) <= max_length:
+            return text
+
+        sentences = text.split('. ')
+        if len(sentences) <= 3:
+            return text[:max_length] + '...'
+
+        summary = sentences[0]
+        if len(sentences) > 1:
+            summary += '. ' + sentences[-1]
+
+        if len(summary) > max_length:
+            summary = summary[:max_length] + '...'
+
+        return summary
+
+    @staticmethod
+    def extract_content_from_url(url):
+        return EnhancedNewsFetcher.extract_content_from_url(url)
