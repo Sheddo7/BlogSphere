@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH AI SUMMARIZATION
+# blog/ai_service.py - COMPLETE WITH FIXED AI SUMMARIZATION (500+ WORDS)
 import os
 import requests
 import json
@@ -14,7 +14,7 @@ import re
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with AI content generation"""
+    """Enhanced news fetcher with AI content generation (fixed for 500+ words)"""
 
     SOURCES = {
         'google': {
@@ -91,7 +91,7 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === AI PROCESSING METHODS ===
+    # === AI PROCESSING METHODS (FIXED FOR 500+ WORDS) ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -169,7 +169,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """Use Gemini AI to rewrite content professionally"""
+        """Use Gemini AI to professionally rewrite content to at least min_words."""
         try:
             gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
 
@@ -179,49 +179,64 @@ class EnhancedNewsFetcher:
 
             print(f"🤖 AI rewriting to {min_words}+ words...")
 
-            prompt = f"""You are a professional journalist. Rewrite this article in your own words.
+            # Enhanced prompt: explicitly require minimum words and encourage expansion
+            prompt = f"""You are a professional journalist. Your task is to create a high-quality, in-depth article based on the source material below.
 
 REQUIREMENTS:
-- Write at least {min_words} words
-- Use completely original phrasing (DO NOT copy)
-- Keep all facts and important details
-- Professional journalistic style
-- Clear paragraphs
+- Write at least {min_words} words. Your response MUST contain at least {min_words} words.
+- Use completely original phrasing – DO NOT copy sentences from the source.
+- Keep all key facts, quotes, and important details.
+- If the source article is brief, expand on the topic by adding background context, relevant statistics, expert opinions (if any), and analysis.
+- Write in a clear, engaging journalistic style with well-structured paragraphs.
+- The article should read like a standalone piece, not a summary.
 - Category: {category}
+- Source attribution: Based on reporting from {source}
 
-ARTICLE:
+SOURCE ARTICLE:
 Title: {title}
-Source: {source}
 
 Content:
 {content[:5000]}
 
-WRITE YOUR REWRITTEN VERSION NOW ({min_words}+ words):"""
+WRITE YOUR PROFESSIONAL ARTICLE NOW (minimum {min_words} words):"""
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={gemini_api_key}"
+            # Use latest Gemini model with increased token limit
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key={gemini_api_key}"
 
             payload = {
                 "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {"temperature": 0.7, "maxOutputTokens": 2048}
+                "generationConfig": {
+                    "temperature": 0.7,
+                    "maxOutputTokens": 4096,          # Allows up to ~3000+ words
+                    "topP": 0.95,
+                    "topK": 40
+                }
             }
 
-            response = requests.post(url, json=payload, timeout=30)
+            response = requests.post(url, json=payload, timeout=60)  # increased timeout
 
             if response.status_code == 200:
                 data = response.json()
                 if 'candidates' in data and len(data['candidates']) > 0:
                     text = data['candidates'][0]['content']['parts'][0]['text'].strip()
                     word_count = len(text.split())
-                    summary = ' '.join(text.split()[:200])
+                    summary = ' '.join(text.split()[:200])  # first ~200 words as summary
 
                     print(f"✅ AI generated {word_count} words")
+                    if word_count < min_words:
+                        print(f"⚠️  Warning: Only {word_count} words (below target {min_words})")
                     return {'content': text, 'summary': summary, 'word_count': word_count}
+                else:
+                    print("❌ No candidates in AI response")
+            else:
+                print(f"❌ AI API error: {response.status_code} - {response.text[:200]}")
 
-            print(f"❌ AI API error: {response.status_code}")
             return None
 
         except Exception as e:
             print(f"❌ AI error: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     @staticmethod
@@ -240,16 +255,15 @@ WRITE YOUR REWRITTEN VERSION NOW ({min_words}+ words):"""
             # Step 1: Try to scrape
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
+            # Fallback to description if scraping fails
             if not scraped_content or len(scraped_content) < 200:
-                print("❌ Could not scrape content")
-                # Fallback to description
-                article_dict['content'] = article_dict.get('description', title)
-                article_dict['ai_processed'] = False
-                article_dict['word_count'] = 0
-                return article_dict
+                print("❌ Could not scrape enough content, using description as fallback")
+                scraped_content = article_dict.get('description', article_dict.get('title', ''))
+                if len(scraped_content) < 100:
+                    scraped_content = article_dict.get('title', '') + " " + article_dict.get('description', '')
 
             # Step 2: AI rewrite
-            print(f"📝 Scraped {len(scraped_content)} chars, sending to AI...")
+            print(f"📝 Sending to AI (scraped {len(scraped_content)} chars)...")
 
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
@@ -266,12 +280,13 @@ WRITE YOUR REWRITTEN VERSION NOW ({min_words}+ words):"""
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                # AI failed, use scraped content
-                article_dict['content'] = scraped_content[:2000]
+                # AI failed, use scraped content (but try to make it longer)
+                print("⚠️  AI failed, using scraped content")
+                article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['ai_processed'] = False
                 article_dict['word_count'] = len(scraped_content.split())
-                print("⚠️  Using scraped content (AI failed)")
+                print(f"⚠️  Using scraped content ({article_dict['word_count']} words)")
 
             print(f"{'=' * 60}\n")
             return article_dict
@@ -283,8 +298,7 @@ WRITE YOUR REWRITTEN VERSION NOW ({min_words}+ words):"""
             article_dict['ai_processed'] = False
             return article_dict
 
-    # === NEWS FETCHING METHODS (KEEP EXISTING) ===
-
+    # === NEWS FETCHING METHODS (unchanged) ===
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
         """Fetch news from NewsAPI"""
