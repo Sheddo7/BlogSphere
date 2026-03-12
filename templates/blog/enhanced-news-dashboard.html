@@ -1,4 +1,4 @@
-<!-- templates/blog/enhanced-news-dashboard.html - WITH DELETE AND POST IMAGE EDITING -->
+<!-- templates/blog/enhanced-news-dashboard.html - WITH EDITABLE PREVIEW -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -8,7 +8,7 @@
 <div class="container mt-4">
     <h1 class="mb-4">Enhanced News Dashboard</h1>
 
-    <!-- Stats Cards -->
+    <!-- Stats Cards (unchanged) -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card bg-primary text-white">
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- Fetch News Form -->
+    <!-- Fetch News Form (unchanged) -->
     <div class="card mb-4">
         <div class="card-header">
             <h4>Fetch News</h4>
@@ -316,7 +316,7 @@
     </div>
 </div>
 
-<!-- Article Editor Modal -->
+<!-- Article Editor Modal (unchanged) -->
 <div class="modal fade" id="articleEditorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -327,37 +327,28 @@
             <div class="modal-body">
                 <form id="articleEditorForm">
                     <input type="hidden" id="editArticleIndex" name="article_index">
-
                     <div class="row">
                         <div class="col-md-8">
-                            <!-- Title -->
                             <div class="mb-3">
                                 <label for="editTitle" class="form-label fw-bold">Title</label>
                                 <input type="text" class="form-control" id="editTitle" name="title" required>
                             </div>
-
-                            <!-- Content -->
                             <div class="mb-3">
                                 <label for="editContent" class="form-label fw-bold">Content</label>
                                 <textarea class="form-control" id="editContent" name="content" rows="10" required></textarea>
                             </div>
-
-                            <!-- Description -->
                             <div class="mb-3">
                                 <label for="editDescription" class="form-label fw-bold">Description/Summary</label>
                                 <textarea class="form-control" id="editDescription" name="description" rows="4"></textarea>
                             </div>
-
-                            <!-- Tags (without auto-generated) -->
                             <div class="mb-3">
                                 <label for="editTags" class="form-label fw-bold">Tags (comma separated)</label>
                                 <input type="text" class="form-control" id="editTags" name="tags" value="news">
                                 <small class="text-muted">Default: news. Add more separated by commas</small>
                             </div>
                         </div>
-
                         <div class="col-md-4">
-                            <!-- Image Upload -->
+                            <!-- Image Upload and options unchanged -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Article Image</label>
                                 <div class="border rounded p-3 text-center">
@@ -372,13 +363,10 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Metadata -->
                             <div class="mb-3">
                                 <label for="editSource" class="form-label fw-bold">Source</label>
                                 <input type="text" class="form-control" id="editSource" name="source">
                             </div>
-
                             <div class="mb-3">
                                 <label for="editCategory" class="form-label fw-bold">Category</label>
                                 <select class="form-select" id="editCategory" name="category">
@@ -390,13 +378,10 @@
                                     <option value="TECHNOLOGY">TECHNOLOGY</option>
                                 </select>
                             </div>
-
                             <div class="mb-3">
                                 <label for="editUrl" class="form-label fw-bold">Original URL</label>
                                 <input type="url" class="form-control" id="editUrl" name="url">
                             </div>
-
-                            <!-- Post Options -->
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">Post Options</h6>
@@ -432,7 +417,7 @@
     </div>
 </div>
 
-<!-- Post Image Editor Modal -->
+<!-- Post Image Editor Modal (unchanged) -->
 <div class="modal fade" id="postImageEditorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -443,15 +428,12 @@
             <div class="modal-body">
                 <form id="postImageForm">
                     <input type="hidden" id="editPostId" name="post_id">
-
                     <div class="text-center mb-4">
                         <h6 id="postTitle"></h6>
                         <small class="text-muted" id="postCategory"></small>
                     </div>
-
                     <div class="row">
                         <div class="col-md-6">
-                            <!-- Current Image -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Current Image</label>
                                 <div id="currentImageContainer" class="border rounded p-3 text-center">
@@ -461,9 +443,7 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-6">
-                            <!-- New Image Upload -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Upload New Image</label>
                                 <div class="border rounded p-3 text-center">
@@ -483,8 +463,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Image Options -->
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">Image Options</h6>
@@ -512,11 +490,40 @@
     </div>
 </div>
 
+<!-- Editable Preview Modal (UPDATED) -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Preview & Edit Article</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h4 id="previewTitle"></h4>
+                <div class="mb-3">
+                    <label for="previewSummary" class="form-label fw-bold">Summary / Excerpt</label>
+                    <textarea class="form-control" id="previewSummary" rows="2" placeholder="Short summary (will appear in blog listings)"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="previewContent" class="form-label fw-bold">Content (editable)</label>
+                    <textarea class="form-control" id="previewContent" rows="15" style="font-family: 'Georgia', serif; line-height: 1.6;"></textarea>
+                </div>
+                <p class="text-muted">Word count: <span id="previewWordCount">0</span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="publishPreview()">Publish</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let fetchedArticles = [];
 let currentEditIndex = -1;
+let currentPreviewData = null; // For preview modal
 
-// Fetch news with AJAX
+// Fetch news with AJAX (unchanged)
 document.getElementById('fetchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const form = this;
@@ -526,15 +533,10 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
     button.disabled = true;
 
-    // Get selected sources
     const sources = Array.from(form.querySelectorAll('input[name="sources"]:checked'))
         .map(cb => cb.value);
-
-    // Get selected categories
     const categories = Array.from(form.querySelectorAll('input[name="categories"]:checked'))
         .map(cb => cb.value);
-
-    // Get limit
     const limit = form.querySelector('#limit').value;
     const autoSave = form.querySelector('#autoSave').checked;
 
@@ -548,15 +550,12 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     fetch(form.action, {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showToast(`Fetched ${data.articles?.length || 0} articles`, 'success');
-
             if (data.articles && data.articles.length > 0) {
                 fetchedArticles = data.articles;
                 displayFetchedArticles();
@@ -577,7 +576,7 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     });
 });
 
-// Display fetched articles in a clean format
+// Display fetched articles with Preview button
 function displayFetchedArticles() {
     const container = document.getElementById('articlesContainer');
     container.innerHTML = '';
@@ -620,8 +619,8 @@ function displayFetchedArticles() {
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="openArticleEditor(${index})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="postSingleArticle(${index})">
-                        <i class="fas fa-paper-plane"></i> Post
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="previewArticle(${index})">
+                        <i class="fas fa-eye"></i> Preview & Post
                     </button>
                     <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteFetchedArticle(${index})">
                         <i class="fas fa-trash"></i>
@@ -636,15 +635,107 @@ function displayFetchedArticles() {
     });
 }
 
-// Delete fetched article
+// Preview function – fetches generated content and populates editable fields
+function previewArticle(index) {
+    const article = fetchedArticles[index];
+    currentPreviewData = { article: article, index: index };
+
+    // Show loading in modal
+    document.getElementById('previewTitle').innerText = article.title;
+    document.getElementById('previewSummary').value = ''; // clear
+    document.getElementById('previewContent').value = 'Generating preview...';
+    document.getElementById('previewWordCount').innerText = '0';
+    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+    previewModal.show();
+
+    // Call preview endpoint
+    fetch('/api/preview-article/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({ article: article })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('previewContent').value = data.content;
+            document.getElementById('previewSummary').value = data.summary || '';
+            document.getElementById('previewWordCount').innerText = data.word_count;
+            currentPreviewData.generated = {
+                content: data.content,
+                summary: data.summary,
+                word_count: data.word_count
+            };
+        } else {
+            document.getElementById('previewContent').value = 'Error: ' + data.message;
+            currentPreviewData.generated = null;
+        }
+    })
+    .catch(error => {
+        document.getElementById('previewContent').value = 'Error: ' + error;
+        currentPreviewData.generated = null;
+    });
+}
+
+// Publish from preview – sends edited content
+function publishPreview() {
+    if (!currentPreviewData || !currentPreviewData.generated) {
+        showToast('No preview data available', 'warning');
+        return;
+    }
+
+    const article = currentPreviewData.article;
+    const index = currentPreviewData.index;
+    const editedContent = document.getElementById('previewContent').value;
+    const editedSummary = document.getElementById('previewSummary').value;
+    const wordCount = editedContent.split(/\s+/).length;
+
+    fetch('/api/post-article/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify({
+            article: article,
+            content: editedContent,
+            summary: editedSummary,
+            word_count: wordCount,
+            tags: article.tags || ['news'],
+            is_featured: article.is_featured || false,
+            save_article: article.save_article !== false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(`Posted: ${data.post_title}`, 'success');
+            // Remove from fetched articles
+            fetchedArticles.splice(index, 1);
+            displayFetchedArticles();
+            document.getElementById('resultsCount').textContent = fetchedArticles.length;
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
+            // Reload after a short delay
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('Error: ' + data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        showToast('Error posting article', 'danger');
+    });
+}
+
+// Delete fetched article (unchanged)
 function deleteFetchedArticle(index) {
     if (confirm('Are you sure you want to delete this article?')) {
         fetchedArticles.splice(index, 1);
         displayFetchedArticles();
         document.getElementById('resultsCount').textContent = fetchedArticles.length;
         showToast('Article deleted', 'info');
-
-        // Close modal if it's open
         if (currentEditIndex === index) {
             const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
             if (modal) modal.hide();
@@ -653,38 +744,33 @@ function deleteFetchedArticle(index) {
     }
 }
 
-// Delete selected articles
+// Delete selected articles (unchanged)
 function deleteSelectedArticles() {
     const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
         .map(cb => parseInt(cb.value));
-
     if (selectedIndices.length === 0) {
         showToast('No articles selected', 'warning');
         return;
     }
-
     if (confirm(`Are you sure you want to delete ${selectedIndices.length} selected articles?`)) {
-        // Remove in reverse order to maintain indices
         selectedIndices.sort((a, b) => b - a).forEach(index => {
             fetchedArticles.splice(index, 1);
         });
-
         displayFetchedArticles();
         document.getElementById('resultsCount').textContent = fetchedArticles.length;
         showToast(`Deleted ${selectedIndices.length} articles`, 'info');
     }
 }
 
-// Open article editor
+// Open article editor (unchanged)
 function openArticleEditor(index) {
     currentEditIndex = index;
     const article = fetchedArticles[index];
-
     document.getElementById('editArticleIndex').value = index;
     document.getElementById('editTitle').value = article.title || '';
     document.getElementById('editContent').value = article.content || '';
     document.getElementById('editDescription').value = article.description || article.summary || '';
-    document.getElementById('editTags').value = article.tags || 'news'; // Default tag without auto-generated
+    document.getElementById('editTags').value = article.tags || 'news';
     document.getElementById('editSource').value = article.source || '';
     document.getElementById('editCategory').value = article.category || 'NEWS';
     document.getElementById('editUrl').value = article.url || '';
@@ -697,7 +783,6 @@ function openArticleEditor(index) {
         document.getElementById('imageUrl').value = '';
     }
 
-    // Set up image upload preview
     document.getElementById('imageUpload').onchange = function(e) {
         if (e.target.files[0]) {
             const reader = new FileReader();
@@ -712,13 +797,10 @@ function openArticleEditor(index) {
     modal.show();
 }
 
-// Save article edits
+// Save article edits (unchanged)
 function saveArticleEdits() {
     if (currentEditIndex === -1) return;
-
     const article = fetchedArticles[currentEditIndex];
-
-    // Update article with form values
     article.title = document.getElementById('editTitle').value;
     article.content = document.getElementById('editContent').value;
     article.description = document.getElementById('editDescription').value;
@@ -726,37 +808,22 @@ function saveArticleEdits() {
     article.category = document.getElementById('editCategory').value;
     article.url = document.getElementById('editUrl').value;
     article.tags = document.getElementById('editTags').value.split(',').map(tag => tag.trim());
-
-    // Update image
     const imageUrl = document.getElementById('imageUrl').value;
-    if (imageUrl) {
-        article.image_url = imageUrl;
-    }
-
-    // Handle file upload
+    if (imageUrl) article.image_url = imageUrl;
     const fileInput = document.getElementById('imageUpload');
-    if (fileInput.files[0]) {
-        // In a real implementation, you would upload the file here
-        // For now, we'll just update with a placeholder
-        article.image_url = `/media/uploads/${fileInput.files[0].name}`;
-    }
-
-    // Update post options
+    if (fileInput.files[0]) article.image_url = `/media/uploads/${fileInput.files[0].name}`;
     article.is_featured = document.getElementById('makeFeatured').checked;
     article.save_article = document.getElementById('saveArticle').checked;
-
     showToast('Article updated successfully', 'success');
-    displayFetchedArticles(); // Refresh display
-
+    displayFetchedArticles();
     const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
     modal.hide();
 }
 
-// Post single article (without auto-generated tag)
+// Keep original postSingleArticle for Post All (unchanged)
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
-
     const article = fetchedArticles[articleIndex];
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
@@ -773,24 +840,20 @@ function postSingleArticle(index = null) {
             format: 'fetch_news',
             is_featured: isFeatured,
             save_article: saveArticle,
-            tags: article.tags || ['news'] // No auto-generated tag
+            tags: article.tags || ['news']
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showToast(`Posted: ${data.post_title}`, 'success');
-            // Remove from fetched articles
             fetchedArticles.splice(articleIndex, 1);
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-
             if (articleIndex === currentEditIndex) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
                 if (modal) modal.hide();
             }
-
-            // Reload the page to show new post
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -801,18 +864,15 @@ function postSingleArticle(index = null) {
     });
 }
 
-// Post all selected articles
+// Post all selected articles (unchanged)
 function postAllArticles() {
     const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
         .map(cb => parseInt(cb.value));
-
     if (selectedIndices.length === 0) {
         showToast('No articles selected', 'warning');
         return;
     }
-
     const articlesToPost = selectedIndices.map(i => fetchedArticles[i]);
-
     fetch('/api/post-multiple-articles/', {
         method: 'POST',
         headers: {
@@ -823,19 +883,16 @@ function postAllArticles() {
         body: JSON.stringify({
             articles: articlesToPost,
             format: 'fetch_news',
-            tags: ['news'] // No auto-generated tag
+            tags: ['news']
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showToast(`Posted ${data.posted_count} articles successfully`, 'success');
-            // Remove posted articles
             fetchedArticles = fetchedArticles.filter((_, index) => !selectedIndices.includes(index));
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-
-            // Reload the page to show new posts
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -846,10 +903,9 @@ function postAllArticles() {
     });
 }
 
-// Clear results
+// Clear results (unchanged)
 function clearResults() {
     if (fetchedArticles.length === 0) return;
-
     if (confirm('Are you sure you want to clear all fetched articles?')) {
         fetchedArticles = [];
         document.getElementById('articlesContainer').innerHTML = '';
@@ -858,7 +914,7 @@ function clearResults() {
     }
 }
 
-// Delete NewsArticle
+// Delete NewsArticle (unchanged)
 function deleteNewsArticle(articleId) {
     if (confirm('Are you sure you want to delete this news article?')) {
         fetch('/api/delete-news-article/' + articleId + '/', {
@@ -872,7 +928,6 @@ function deleteNewsArticle(articleId) {
         .then(data => {
             if (data.success) {
                 showToast('Article deleted successfully', 'success');
-                // Remove the row
                 document.getElementById(`article-row-${articleId}`).remove();
             } else {
                 showToast('Error: ' + data.message, 'danger');
@@ -884,7 +939,7 @@ function deleteNewsArticle(articleId) {
     }
 }
 
-// Delete Post
+// Delete Post (unchanged)
 function deletePost(postId) {
     if (confirm('Are you sure you want to delete this blog post?')) {
         fetch('/api/delete-post/' + postId + '/', {
@@ -898,7 +953,6 @@ function deletePost(postId) {
         .then(data => {
             if (data.success) {
                 showToast('Post deleted successfully', 'success');
-                // Remove the row
                 document.getElementById(`post-row-${postId}`).remove();
             } else {
                 showToast('Error: ' + data.message, 'danger');
@@ -910,9 +964,8 @@ function deletePost(postId) {
     }
 }
 
-// Edit Post Image
+// Edit Post Image (unchanged)
 function editPostImage(postId) {
-    // First, get post details
     fetch('/api/get-post/' + postId + '/')
     .then(response => response.json())
     .then(data => {
@@ -920,7 +973,6 @@ function editPostImage(postId) {
             document.getElementById('editPostId').value = postId;
             document.getElementById('postTitle').textContent = data.post.title;
             document.getElementById('postCategory').textContent = `Category: ${data.post.category}`;
-
             if (data.post.featured_image) {
                 document.getElementById('currentPostImage').src = data.post.featured_image;
                 document.getElementById('currentPostImage').style.display = 'block';
@@ -929,8 +981,6 @@ function editPostImage(postId) {
                 document.getElementById('currentPostImage').style.display = 'none';
                 document.getElementById('noImageText').style.display = 'block';
             }
-
-            // Set up image upload preview
             document.getElementById('postImageUpload').onchange = function(e) {
                 if (e.target.files[0]) {
                     const reader = new FileReader();
@@ -940,7 +990,6 @@ function editPostImage(postId) {
                     reader.readAsDataURL(e.target.files[0]);
                 }
             };
-
             const modal = new bootstrap.Modal(document.getElementById('postImageEditorModal'));
             modal.show();
         } else {
@@ -952,53 +1001,33 @@ function editPostImage(postId) {
     });
 }
 
-// Update Post Image
+// Update Post Image (unchanged)
 function updatePostImage() {
     const postId = document.getElementById('editPostId').value;
     const formData = new FormData();
-
     formData.append('post_id', postId);
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-
-    // Check if using default image
     if (document.getElementById('useDefaultImage').checked) {
         formData.append('use_default', 'true');
     } else {
-        // Check for uploaded file
         const fileInput = document.getElementById('postImageUpload');
-        if (fileInput.files[0]) {
-            formData.append('image', fileInput.files[0]);
-        }
-
-        // Check for URL
+        if (fileInput.files[0]) formData.append('image', fileInput.files[0]);
         const imageUrl = document.getElementById('postImageUrl').value;
-        if (imageUrl) {
-            formData.append('image_url', imageUrl);
-        }
+        if (imageUrl) formData.append('image_url', imageUrl);
     }
-
     fetch('/api/update-post-image/', {
         method: 'POST',
         body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             showToast('Post image updated successfully', 'success');
-
-            // Update the image in the table
             const imgElement = document.querySelector(`#post-row-${postId} .post-thumbnail`);
-            if (imgElement && data.image_url) {
-                imgElement.src = data.image_url;
-            }
-
+            if (imgElement && data.image_url) imgElement.src = data.image_url;
             const modal = bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal'));
             modal.hide();
-
-            // Reload to show updated image
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -1009,10 +1038,9 @@ function updatePostImage() {
     });
 }
 
-// Remove Post Image
+// Remove Post Image (unchanged)
 function removePostImage() {
     const postId = document.getElementById('editPostId').value;
-
     if (confirm('Are you sure you want to remove the image from this post?')) {
         fetch('/api/remove-post-image/' + postId + '/', {
             method: 'POST',
@@ -1037,7 +1065,7 @@ function removePostImage() {
     }
 }
 
-// Convert existing article to post (without auto-generated tag)
+// Convert to post (unchanged)
 function convertToPost(articleId) {
     fetch('/api/convert-to-post/' + articleId + '/', {
         method: 'POST',
@@ -1046,9 +1074,7 @@ function convertToPost(articleId) {
             'X-Requested-With': 'XMLHttpRequest',
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-            tags: ['news'] // No auto-generated tag
-        })
+        body: JSON.stringify({ tags: ['news'] })
     })
     .then(response => response.json())
     .then(data => {
@@ -1082,51 +1108,42 @@ function showToast(message, type) {
 </script>
 
 <style>
+/* ... (same styles as before) ... */
 .article-item:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
-
 .article-item .form-check-input {
     transform: scale(1.2);
 }
-
 #articlesContainer {
     max-height: 600px;
     overflow-y: auto;
 }
-
 #editContent, #editDescription {
     font-family: 'Courier New', monospace;
     font-size: 0.9rem;
 }
-
 #articleImagePreview, #currentPostImage, #newImagePreview {
     border: 2px dashed #dee2e6;
     padding: 5px;
 }
-
 .modal-xl {
     max-width: 1200px;
 }
-
 .badge {
     font-size: 0.75em;
 }
-
 .post-thumbnail {
     border-radius: 4px;
     transition: transform 0.2s;
 }
-
 .post-thumbnail:hover {
     transform: scale(1.1);
 }
-
 .btn-outline-danger:hover {
     background-color: #dc3545;
     color: white;
 }
-
 .btn-outline-info:hover {
     background-color: #0dcaf0;
     color: white;

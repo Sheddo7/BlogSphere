@@ -15,6 +15,7 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
     path('api/openrouter-chat/', views.openrouter_chat, name='openrouter_chat'),
+    path('api/preview-article/', views.preview_article, name='preview_article'),
 
     # Enhanced news dashboard URLs
     path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),

@@ -746,6 +746,148 @@ def openrouter_chat(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+# blog/views.py - add this new view and modify post_article
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def preview_article(request):
+    """Generate AI content for preview without saving."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            article = data.get('article')
+            if not article:
+                return JsonResponse({'success': False, 'message': 'No article data provided'})
+
+            from blog.ai_service import EnhancedNewsFetcher
+            processed = EnhancedNewsFetcher.process_article_with_ai(article)
+            if processed is None:
+                return JsonResponse({'success': False, 'message': 'Could not generate preview (scraping failed)'})
+
+            return JsonResponse({
+                'success': True,
+                'content': processed.get('content', ''),
+                'summary': processed.get('description', '')[:200],
+                'word_count': processed.get('word_count', 0)
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+    return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+# Modify your existing post_article to accept pre-generated content
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def post_article(request):
+    """Post article with AI content generation – accepts pre-generated content."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            article = data.get('article')
+            if not article:
+                return JsonResponse({'success': False, 'message': 'No article data provided'})
+
+            # Get or create category
+            category_name = article.get('category', 'NEWS')
+            from django.utils.text import slugify
+            from django.contrib.auth.models import User
+            from blog.models import Category, Post
+
+            category_obj, created = Category.objects.get_or_create(name=category_name)
+
+            try:
+                author = User.objects.get(username='admin')
+            except User.DoesNotExist:
+                author = User.objects.first()
+
+            # Generate slug
+            base_slug = slugify(article['title'][:50])
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            # Use pre-generated content if provided
+            provided_content = data.get('content')
+            provided_summary = data.get('summary')
+            provided_word_count = data.get('word_count')
+
+            if provided_content:
+                article_content = provided_content
+                article_description = provided_summary or article.get('description', '')[:200]
+                word_count = provided_word_count or len(article_content.split())
+                ai_processed = True
+            else:
+                # Fallback to on-the-fly generation (e.g., for "Post All" button)
+                from blog.ai_service import EnhancedNewsFetcher
+                processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
+                if processed_article is None:
+                    return JsonResponse({'success': False, 'message': 'Could not generate content (scraping failed)'})
+                article_content = processed_article.get('content', '')
+                article_description = processed_article.get('description', '')[:200]
+                word_count = processed_article.get('word_count', 0)
+                ai_processed = processed_article.get('ai_processed', False)
+
+            # Create blog post
+            post = Post.objects.create(
+                title=article['title'][:200],
+                slug=slug,
+                content=article_content,
+                excerpt=article_description,
+                author=author,
+                category=category_obj,
+                featured_image=article.get('image_url', ''),
+                published_date=timezone.now(),
+                is_featured=data.get('is_featured', False)
+            )
+
+            # Add tags
+            tags = data.get('tags', ['news'])
+            if isinstance(tags, str):
+                tags = [tag.strip() for tag in tags.split(',')]
+            for tag in tags:
+                post.tags.add(tag.strip())
+
+            if ai_processed:
+                post.tags.add('ai-rewritten')
+
+            # Save as NewsArticle if requested
+            if data.get('save_article', True):
+                from blog.models import NewsArticle
+                if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
+                    NewsArticle.objects.create(
+                        title=article['title'][:499],
+                        content=article_content[:5000],
+                        summary=article_description[:500],
+                        url=article.get('url', ''),
+                        source=article.get('source', 'Unknown'),
+                        category=category_name,
+                        image_url=article.get('image_url', ''),
+                        published_at=timezone.now(),
+                        created_as_post=True
+                    )
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Article posted successfully',
+                'post_title': post.title,
+                'post_slug': post.slug,
+                'word_count': word_count,
+                'ai_processed': ai_processed,
+            })
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            })
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
