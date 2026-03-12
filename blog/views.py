@@ -11,6 +11,10 @@ import json
 
 from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from blog.services.deepseek_service import DeepSeekService
+
 
 
 # ===== BASIC VIEWS =====
@@ -692,6 +696,40 @@ def delete_post(request, post_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+
+@csrf_exempt
+def deepseek_chat(request):
+    """API endpoint for direct DeepSeek interactions"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            message = data.get('message', '')
+            temperature = float(data.get('temperature', 0.7))
+
+            service = DeepSeekService()
+            result = service.generate_content(message, temperature=temperature)
+
+            if result['success']:
+                return JsonResponse({
+                    'success': True,
+                    'reply': result['content'],
+                    'word_count': result['word_count']
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': result['error']
+                }, status=500)
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    return JsonResponse({'error': 'POST only'}, status=405)
+
 
 
 # Backward compatibility alias

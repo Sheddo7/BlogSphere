@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH SCRAPING + PARAPHRASING (BBC STYLE)
+# blog/ai_service.py - COMPLETE WITH DEEPSEEK AI INTEGRATION (BBC STYLE)
 import os
 import requests
 import json
@@ -13,8 +13,67 @@ import time
 import re
 
 
+class DeepSeekService:
+    """Service for interacting with DeepSeek AI API"""
+
+    BASE_URL = "https://api.deepseek.com/v1/chat/completions"
+
+    def __init__(self):
+        self.api_key = getattr(settings, 'DEEPSEEK_API_KEY', os.environ.get('DEEPSEEK_API_KEY', ''))
+        if not self.api_key:
+            print("⚠️  No DEEPSEEK_API_KEY found")
+            self.api_key = None
+
+    def generate_content(self, prompt, temperature=0.7, max_tokens=4096):
+        """
+        Send a prompt to DeepSeek and get response
+        """
+        if not self.api_key:
+            return {'success': False, 'error': 'API key missing'}
+
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "deepseek-chat",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+
+        try:
+            response = requests.post(
+                self.BASE_URL,
+                headers=headers,
+                json=payload,
+                timeout=60
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                content = data['choices'][0]['message']['content'].strip()
+                return {
+                    'success': True,
+                    'content': content,
+                    'word_count': len(content.split())
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': f"API error: {response.status_code}",
+                    'details': response.text
+                }
+
+        except requests.exceptions.Timeout:
+            return {'success': False, 'error': 'Request timeout'}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+
+
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with scraping + professional paraphrasing (BBC style)."""
+    """Enhanced news fetcher with DeepSeek AI content generation"""
 
     SOURCES = {
         'google': {
@@ -91,11 +150,11 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === SCRAPING & PARAPHRASING ===
+    # === DEEPSEEK AI PROCESSING METHODS ===
 
     @staticmethod
     def scrape_article_content(url):
-        """Scrape full article content from URL – improved to get all paragraphs."""
+        """Scrape full article content from URL"""
         try:
             print(f"🔍 Scraping: {url[:70]}...")
             headers = {
@@ -104,18 +163,16 @@ class EnhancedNewsFetcher:
             }
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
-            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
+            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data',
+                               'privacy settings']
             if any(marker in response.text for marker in consent_markers):
                 print("❌ Consent page detected")
                 return None
 
             soup = BeautifulSoup(response.content, 'html.parser')
-
-            # Remove unwanted elements
             for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'form', 'button']):
                 tag.decompose()
 
-            # Expanded list of selectors for article content
             content_selectors = [
                 'article',
                 '[class*="article-content"]',
@@ -143,7 +200,6 @@ class EnhancedNewsFetcher:
             if not content_area:
                 return None
 
-            # Extract all paragraphs from the content area
             paragraphs = content_area.find_all(['p', 'h2', 'h3', 'h4'])
             article_text = []
             for p in paragraphs:
@@ -170,28 +226,17 @@ class EnhancedNewsFetcher:
             return None
 
     @staticmethod
-    def paraphrase_with_ai(title, original_content, category, min_words=500):
+    def rewrite_with_ai(title, content, source, category, min_words=500):
         """
-        Use Gemini AI to paraphrase the original article content in a professional BBC style.
-        No new facts are added.
+        Use DeepSeek AI to rewrite content professionally.
         """
-        gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
-        if not gemini_api_key:
-            print("⚠️  No GEMINI_API_KEY found")
+        deepseek = DeepSeekService()
+        if not deepseek.api_key:
+            print("⚠️  DeepSeek API key missing, cannot rewrite.")
             return None
 
-        if not original_content or len(original_content) < 200:
-            print("❌ Original content too short to paraphrase")
-            return None
-
-        models = [
-            'gemini-1.5-flash-latest',
-            'gemini-1.5-pro-latest',
-            'gemini-pro'
-        ]
-
-        # Professional BBC‑style paraphrasing prompt
-        prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
+        # Professional prompt (same as before but adapted)
+        prompt = f"""You are a senior journalist writing for a reputable news organisation. Your task is to rewrite the following article in a clear, factual, and engaging style.
 
 **RULES**:
 - Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
@@ -205,56 +250,35 @@ class EnhancedNewsFetcher:
 
 ORIGINAL TITLE: {title}
 ORIGINAL CONTENT:
-{original_content[:8000]}
+{content[:8000]}
 
 Now write your professional version:"""
 
-        for model in models:
-            try:
-                print(f"🤖 Paraphrasing with {model}...")
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={gemini_api_key}"
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}],
-                    "generationConfig": {
-                        "temperature": 0.3,
-                        "maxOutputTokens": 4096,
-                        "topP": 0.95,
-                        "topK": 40
-                    }
-                }
-                response = requests.post(url, json=payload, timeout=60)
-                if response.status_code == 200:
-                    data = response.json()
-                    if 'candidates' in data and len(data['candidates']) > 0:
-                        text = data['candidates'][0]['content']['parts'][0]['text'].strip()
-                        # Simple duplicate sentence removal
-                        sentences = re.split(r'(?<=[.!?])\s+', text)
-                        seen = set()
-                        unique = []
-                        for s in sentences:
-                            norm = s.strip().lower()
-                            if norm and norm not in seen:
-                                seen.add(norm)
-                                unique.append(s)
-                        text = ' '.join(unique)
-                        word_count = len(text.split())
-                        print(f"✅ Generated {word_count} words")
-                        summary = ' '.join(text.split()[:200])
-                        return {'content': text, 'summary': summary, 'word_count': word_count}
-                else:
-                    print(f"❌ API error {response.status_code}")
-            except Exception as e:
-                print(f"❌ Exception with {model}: {e}")
-                continue
-
-        print("❌ All paraphrasing attempts failed")
-        return None
+        result = deepseek.generate_content(prompt, temperature=0.3, max_tokens=4096)
+        if result['success']:
+            # Optional: remove duplicate sentences
+            text = result['content']
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            seen = set()
+            unique = []
+            for s in sentences:
+                norm = s.strip().lower()
+                if norm and norm not in seen:
+                    seen.add(norm)
+                    unique.append(s)
+            text = ' '.join(unique)
+            word_count = len(text.split())
+            summary = ' '.join(text.split()[:200])
+            return {'content': text, 'summary': summary, 'word_count': word_count}
+        else:
+            print(f"❌ DeepSeek error: {result.get('error')}")
+            return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape original content -> paraphrase with AI.
-        Returns None if scraping fails or content is insufficient.
+        Process article: scrape content + AI rewrite to 500+ words.
+        Returns None if scraping fails.
         """
         try:
             url = article_dict.get('url', '')
@@ -270,10 +294,11 @@ Now write your professional version:"""
                 print("❌ Failed to scrape enough original content. Aborting.")
                 return None
 
-            print(f"📝 Sending to AI for paraphrasing ({len(scraped_content)} chars)...")
-            ai_result = EnhancedNewsFetcher.paraphrase_with_ai(
+            print(f"📝 Sending to DeepSeek for paraphrasing ({len(scraped_content)} chars)...")
+            ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
-                original_content=scraped_content,
+                content=scraped_content,
+                source=article_dict.get('source', 'Unknown'),
                 category=article_dict.get('category', 'NEWS'),
                 min_words=500
             )
@@ -283,10 +308,10 @@ Now write your professional version:"""
                 article_dict['description'] = ai_result['summary']
                 article_dict['word_count'] = ai_result['word_count']
                 article_dict['ai_processed'] = True
-                print(f"✅ SUCCESS: {ai_result['word_count']} words paraphrased")
+                print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                # If paraphrasing fails, use scraped content as fallback
-                print("⚠️  Paraphrasing failed, using scraped content")
+                # Fallback to scraped content
+                print("⚠️  DeepSeek failed, using scraped content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())
