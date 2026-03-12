@@ -352,7 +352,7 @@ def convert_to_post(request, article_id):
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
-    """Post article with AI content generation"""
+    """Post article with AI content generation – now handles None safely."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -366,9 +366,7 @@ def post_article(request):
             from django.utils.text import slugify
             from django.contrib.auth.models import User
 
-            category_obj, created = Category.objects.get_or_create(
-                name=category_name
-            )
+            category_obj, created = Category.objects.get_or_create(name=category_name)
 
             # Get admin user
             try:
@@ -391,10 +389,17 @@ def post_article(request):
 
             from blog.ai_service import EnhancedNewsFetcher
 
-            # Process with AI (scrape + rewrite to 500+ words)
+            # Process with AI (scrape + paraphrase)
             processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
 
-            # Use AI-generated content
+            # CRITICAL: If processing failed, return error
+            if processed_article is None:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Could not scrape original article content. Cannot post.'
+                })
+
+            # Use AI-generated content (safe because we checked for None)
             article_content = processed_article.get('content', article.get('description', ''))
             article_description = processed_article.get('description', article.get('description', ''))[:200]
             word_count = processed_article.get('word_count', 0)
@@ -407,7 +412,7 @@ def post_article(request):
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article_content,  # AI-generated content
+                content=article_content,
                 excerpt=article_description,
                 author=author,
                 category=category_obj,
@@ -423,12 +428,12 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
-            # Add AI tag if processed
             if ai_processed:
                 post.tags.add('ai-rewritten')
 
             # Save as NewsArticle if requested
             if data.get('save_article', True):
+                from blog.models import NewsArticle
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
@@ -460,7 +465,6 @@ def post_article(request):
             })
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
-
 
 @csrf_exempt
 @login_required

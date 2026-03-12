@@ -1,4 +1,4 @@
-# blog/ai_service.py - SCRAPE + PARAPHRASE (LEGITIMATE NEWS, NO HALLUCINATIONS)
+# blog/ai_service.py - COMPLETE WITH SCRAPING + PARAPHRASING (BBC STYLE)
 import os
 import requests
 import json
@@ -14,7 +14,7 @@ import re
 
 
 class EnhancedNewsFetcher:
-    """News fetcher that scrapes original article and paraphrases it with AI (no fabrication)."""
+    """Enhanced news fetcher with scraping + professional paraphrasing (BBC style)."""
 
     SOURCES = {
         'google': {
@@ -134,12 +134,10 @@ class EnhancedNewsFetcher:
             for selector in content_selectors:
                 elements = soup.select(selector)
                 if elements:
-                    # Use the first matching element as the main content area
                     content_area = elements[0]
                     break
 
             if not content_area:
-                # Fallback: use body
                 content_area = soup.body
 
             if not content_area:
@@ -150,7 +148,7 @@ class EnhancedNewsFetcher:
             article_text = []
             for p in paragraphs:
                 text = p.get_text(strip=True)
-                if len(text) > 40:  # filter out very short lines
+                if len(text) > 40:
                     article_text.append(text)
 
             full_text = '\n\n'.join(article_text)
@@ -160,13 +158,12 @@ class EnhancedNewsFetcher:
                 print(f"⚠️  Content too short ({len(full_text)} chars)")
                 return None
 
-            # Double-check for consent text
             if any(marker in full_text for marker in consent_markers):
                 print("❌ Consent text in content")
                 return None
 
             print(f"✅ Scraped {len(full_text)} characters")
-            return full_text[:15000]  # increased limit
+            return full_text[:15000]
 
         except Exception as e:
             print(f"❌ Scraping error: {e}")
@@ -175,8 +172,8 @@ class EnhancedNewsFetcher:
     @staticmethod
     def paraphrase_with_ai(title, original_content, category, min_words=500):
         """
-        Use Gemini AI to paraphrase the original article content.
-        No new facts are added; the output is a unique rewrite preserving all details.
+        Use Gemini AI to paraphrase the original article content in a professional BBC style.
+        No new facts are added.
         """
         gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
         if not gemini_api_key:
@@ -187,32 +184,30 @@ class EnhancedNewsFetcher:
             print("❌ Original content too short to paraphrase")
             return None
 
-        # Models to try
         models = [
             'gemini-1.5-flash-latest',
             'gemini-1.5-pro-latest',
             'gemini-pro'
         ]
 
-        # Paraphrasing prompt – strict about not adding external info
-        prompt = f"""You are a professional journalist. Your task is to **paraphrase** the following article content.
+        # Professional BBC‑style paraphrasing prompt
+        prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
 
 **RULES**:
-- Do NOT add any new facts, quotes, names, dates, or locations that are not present in the original content.
-- Do NOT change the meaning of any fact.
-- Use completely original wording – rewrite every sentence in your own style.
-- Preserve all key details, including names, numbers, quotes, and contextual information.
-- If the original is short, you may elaborate by explaining terms or adding background that is **directly implied** by the text (e.g., defining an acronym, explaining a local reference), but do not invent.
-- The output must be at least {min_words} words.
-- Write in a neutral, professional journalistic tone.
+- Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
+- Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
+- Use completely original wording; rewrite every sentence in your own words.
+- Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
+- Maintain a neutral, authoritative tone – no sensationalism, no opinion.
+- If the original article contains quotes, keep them but rephrase the attribution.
+- The final article must be at least {min_words} words.
 - Category: {category}
-- Do not mention the original source by name.
 
-ORIGINAL ARTICLE TITLE: {title}
-ORIGINAL ARTICLE CONTENT:
+ORIGINAL TITLE: {title}
+ORIGINAL CONTENT:
 {original_content[:8000]}
 
-Now write your paraphrased version:"""
+Now write your professional version:"""
 
         for model in models:
             try:
@@ -221,7 +216,7 @@ Now write your paraphrased version:"""
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
-                        "temperature": 0.4,
+                        "temperature": 0.3,
                         "maxOutputTokens": 4096,
                         "topP": 0.95,
                         "topK": 40
@@ -232,7 +227,7 @@ Now write your paraphrased version:"""
                     data = response.json()
                     if 'candidates' in data and len(data['candidates']) > 0:
                         text = data['candidates'][0]['content']['parts'][0]['text'].strip()
-                        # Basic cleanup of potential duplicates
+                        # Simple duplicate sentence removal
                         sentences = re.split(r'(?<=[.!?])\s+', text)
                         seen = set()
                         unique = []
@@ -269,14 +264,12 @@ Now write your paraphrased version:"""
             print(f"📰 Processing: {title[:50]}...")
             print(f"URL: {url[:60]}...")
 
-            # Step 1: Scrape the original article
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
             if not scraped_content or len(scraped_content) < 300:
                 print("❌ Failed to scrape enough original content. Aborting.")
                 return None
 
-            # Step 2: Paraphrase with AI
             print(f"📝 Sending to AI for paraphrasing ({len(scraped_content)} chars)...")
             ai_result = EnhancedNewsFetcher.paraphrase_with_ai(
                 title=title,
@@ -292,8 +285,8 @@ Now write your paraphrased version:"""
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words paraphrased")
             else:
-                # If paraphrasing fails, fall back to scraped content (truncated)
-                print("⚠️  Paraphrasing failed, using scraped content as fallback")
+                # If paraphrasing fails, use scraped content as fallback
+                print("⚠️  Paraphrasing failed, using scraped content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())
@@ -308,14 +301,17 @@ Now write your paraphrased version:"""
             traceback.print_exc()
             return None
 
-    # === NEWS FETCHING METHODS (unchanged, keep your existing implementations) ===
+    # === NEWS FETCHING METHODS (unchanged from original) ===
+
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
-        # ... (your existing code) ...
+        """Fetch news from NewsAPI"""
         api_key = getattr(settings, 'NEWS_API_KEY', os.environ.get('NEWS_API_KEY', ''))
+
         if not api_key:
             print("⚠️  NewsAPI key not found")
             return []
+
         try:
             url = f"https://newsapi.org/v2/top-headlines"
             params = {
@@ -325,10 +321,12 @@ Now write your paraphrased version:"""
                 'pageSize': limit,
                 'language': 'en'
             }
+
             response = requests.get(url, params=params, timeout=10)
             if response.status_code == 200:
                 data = response.json()
                 articles = []
+
                 for article in data.get('articles', []):
                     articles.append({
                         'title': article.get('title', 'Untitled'),
@@ -348,19 +346,22 @@ Now write your paraphrased version:"""
 
     @staticmethod
     def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
-        # ... (your existing code) ...
+        """Fetch news from Google News"""
         try:
             source_key = 'google'
             category_url = EnhancedNewsFetcher.SOURCES[source_key]['category_urls'].get(
                 category,
                 EnhancedNewsFetcher.SOURCES[source_key]['base_url']
             )
+
             feed = feedparser.parse(category_url)
             news_items = []
+
             for entry in feed.entries[:limit]:
                 source_name = entry.get('source', {}).get('title', 'Google News')
                 if country == 'nigeria':
                     source_name = f"{source_name} (Nigeria)"
+
                 news_items.append({
                     'title': entry.title,
                     'description': entry.get('summary', ''),
@@ -377,18 +378,22 @@ Now write your paraphrased version:"""
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        # ... (your existing code) ...
+        """Fetch from Punch, Vanguard, Channels"""
         try:
             if source not in ['punch', 'vanguard', 'channels']:
                 return []
+
             feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
                 category,
                 EnhancedNewsFetcher.SOURCES[source].get('base_url', '')
             )
+
             if not feed_url:
                 return []
+
             feed = feedparser.parse(feed_url)
             news_items = []
+
             for entry in feed.entries[:limit]:
                 news_items.append({
                     'title': entry.title,
@@ -406,15 +411,17 @@ Now write your paraphrased version:"""
 
     @staticmethod
     def fetch_reddit_by_category(category='news', limit=10):
-        # ... (your existing code) ...
+        """Fetch from Reddit"""
         try:
             subreddit = EnhancedNewsFetcher.SOURCES['reddit']['subreddits'].get(category, 'news')
             url = f'https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}'
             headers = {'User-agent': 'newsbot/1.0'}
             response = requests.get(url, headers=headers, timeout=10)
+
             if response.status_code == 200:
                 data = response.json()
                 news_items = []
+
                 for post in data['data']['children']:
                     post_data = post['data']
                     news_items.append({
@@ -436,13 +443,15 @@ Now write your paraphrased version:"""
 
     @staticmethod
     def fetch_bbc_rss(category='news', limit=10):
-        # ... (your existing code) ...
+        """Fetch from BBC"""
         try:
             feed_url = EnhancedNewsFetcher.SOURCES['bbc']['category_urls'].get(
                 category, 'http://feeds.bbci.co.uk/news/rss.xml'
             )
+
             feed = feedparser.parse(feed_url)
             news_items = []
+
             for entry in feed.entries[:limit]:
                 news_items.append({
                     'title': entry.title,
@@ -460,15 +469,19 @@ Now write your paraphrased version:"""
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        # ... (your existing code) ...
+        """Fetch from multiple sources"""
         if categories is None:
             categories = ['news', 'sport', 'entertainment', 'economy', 'politics', 'technology']
+
         if sources is None:
             sources = ['google', 'reddit', 'bbc']
+
         all_articles = []
+
         for source in sources:
             for category in categories:
                 print(f"📡 Fetching {category} from {source}...")
+
                 if source == 'google':
                     articles = EnhancedNewsFetcher.fetch_google_news_by_category(category, limit_per_source)
                 elif source == 'reddit':
@@ -484,33 +497,41 @@ Now write your paraphrased version:"""
                     articles = EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source)
                 else:
                     continue
+
                 if articles:
                     all_articles.extend(articles)
                     print(f"✅ Found {len(articles)} articles from {source}/{category}")
+
                 time.sleep(1)
+
         print(f"🎉 Total: {len(all_articles)} articles")
         return all_articles
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        """Generate blog post from article (used by other endpoints)"""
+        """Generate blog post from article"""
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
+
         try:
             category_name = article.get('category', 'NEWS')
             category_obj, created = Category.objects.get_or_create(name=category_name)
+
             try:
                 author = User.objects.get(username='admin')
             except User.DoesNotExist:
                 author = User.objects.first()
+
             base_slug = slugify(article['title'][:50])
             slug = base_slug
             counter = 1
             while Post.objects.filter(slug=slug).exists():
                 slug = f"{base_slug}-{counter}"
                 counter += 1
+
             content = article.get('content', '')
+
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
@@ -520,17 +541,22 @@ Now write your paraphrased version:"""
                 category=category_obj,
                 published_date=timezone.now(),
             )
+
             post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+
             if article.get('ai_processed'):
                 post.tags.add('ai-rewritten')
+
             print(f"✅ Created blog post: {post.title}")
             return post
+
         except Exception as e:
             print(f"❌ Error creating post: {e}")
             return None
 
     @staticmethod
     def extract_content_from_url(url):
+        """Legacy method"""
         return EnhancedNewsFetcher.scrape_article_content(url)
 
 
@@ -546,8 +572,8 @@ class SimpleNewsFetcher:
 
     @staticmethod
     def categorize_article(title, description):
-        # ... unchanged ...
         text = (title + ' ' + description).lower()
+
         categories = {
             'ENTERTAINMENT': ['movie', 'film', 'actor', 'actress', 'celebrity', 'music', 'show', 'tv', 'hollywood'],
             'SPORT': ['sport', 'football', 'basketball', 'soccer', 'game', 'team', 'player', 'score', 'win'],
@@ -556,29 +582,38 @@ class SimpleNewsFetcher:
             'NEWS': ['news', 'report', 'announce', 'official', 'statement', 'update', 'latest'],
             'VIRAL GIST': ['viral', 'trending', 'social media', 'tiktok', 'instagram', 'twitter', 'facebook'],
         }
+
         scores = {}
         for category, keywords in categories.items():
             score = sum(1 for keyword in keywords if keyword in text)
             scores[category] = score
+
         best_category = max(scores, key=scores.get)
+
         if scores[best_category] < 2:
             return 'NEWS'
+
         return best_category
 
     @staticmethod
     def generate_summary(text, max_length=150):
         if not text:
             return ""
+
         if len(text) <= max_length:
             return text
+
         sentences = text.split('. ')
         if len(sentences) <= 3:
             return text[:max_length] + '...'
+
         summary = sentences[0]
         if len(sentences) > 1:
             summary += '. ' + sentences[-1]
+
         if len(summary) > max_length:
             summary = summary[:max_length] + '...'
+
         return summary
 
     @staticmethod
