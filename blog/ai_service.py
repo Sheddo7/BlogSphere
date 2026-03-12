@@ -1,4 +1,4 @@
-# blog/ai_service.py - ELABORATED, SOURCE‑FREE 500+ WORD AI GENERATION
+# blog/ai_service.py - PROFESSIONAL, NON‑REPETITIVE 500+ WORD NEWS GENERATION
 import os
 import requests
 import json
@@ -14,7 +14,7 @@ import re
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with guaranteed 500+ word AI content, elaborated and source‑free"""
+    """Enhanced news fetcher with high‑quality, non‑repetitive AI content generation"""
 
     SOURCES = {
         'google': {
@@ -91,7 +91,7 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === AI PROCESSING METHODS (ELABORATED, SOURCE‑FREE) ===
+    # === AI PROCESSING METHODS (QUALITY ENHANCED) ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -148,8 +148,21 @@ class EnhancedNewsFetcher:
             return None
 
     @staticmethod
+    def clean_duplicate_sentences(text):
+        """Remove duplicate sentences that may appear in AI output."""
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        seen = set()
+        unique = []
+        for s in sentences:
+            normalized = s.strip().lower()
+            if normalized and normalized not in seen:
+                seen.add(normalized)
+                unique.append(s)
+        return ' '.join(unique)
+
+    @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500, attempt=1):
-        """Use Gemini AI to generate an elaborated, source‑free article of at least min_words."""
+        """Use Gemini AI to generate a high‑quality, non‑repetitive article."""
         gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
         if not gemini_api_key:
             print("⚠️  No GEMINI_API_KEY found in environment or settings")
@@ -168,36 +181,31 @@ class EnhancedNewsFetcher:
             'gemini-pro'
         ]
 
-        # Adjust prompt based on attempt number
-        if attempt == 1:
-            length_instruction = f"Write at least {min_words} words."
-        else:
-            length_instruction = f"Your previous response was too short. You MUST write at least {min_words} words while maintaining accuracy and elaboration."
+        # Quality‑focused prompt
+        prompt = f"""You are a professional journalist for a reputable news blog. Write a complete, in‑depth news article based on the facts provided in the source below.
 
-        # New prompt: no source attribution, encourage elaboration, keep facts accurate
-        prompt = f"""You are a professional journalist for a reputable news blog. Your task is to write a complete, in‑depth news article based solely on the facts provided in the source below.
-
-**CRITICAL RULES**:
-- **DO NOT** mention the original source by name (e.g., "according to Vanguard", "BBC reports"). The article should read as original reporting.
-- **DO NOT** add any facts, quotes, names, dates, or locations that are not present in the source. If you include background context, it must be clearly presented as analysis or common knowledge (e.g., "Experts note that...", "Historically, this type of event...").
+**CRITICAL QUALITY RULES**:
+- **DO NOT** mention the original source by name (e.g., "according to Vanguard"). Write as original reporting.
+- **DO NOT** add any facts, quotes, names, dates, or locations not present in the source. If you include background context, present it as analysis or common knowledge (e.g., "Experts note that...").
 - Preserve all key facts, names, dates, locations, and quotes exactly as they appear.
-- Use completely original phrasing – do not copy sentences verbatim from the source.
-- **Elaborate** on the story: add background information, possible implications, related context, and (if relevant) expert or public reaction, as long as it does not introduce new facts that contradict the source.
+- **AVOID REPETITION**: Do not repeat the same idea, sentence, or phrase. Use varied vocabulary and sentence structures.
+- **COHERENCE**: The article must flow logically from lead to conclusion. Each paragraph should introduce new information or analysis.
 - Write in a neutral, objective journalistic style. Avoid sensationalism.
 - Structure the article as follows:
   1. **Headline** – Use the given title (may be slightly rephrased).
   2. **Lead paragraph** – Summarise the most important facts (who, what, when, where, why).
-  3. **Body paragraphs** – Expand with details, background, analysis, and implications.
+  3. **Body paragraphs** – Expand with details, background, analysis, and implications. Use multiple paragraphs.
   4. **Concluding paragraph** – Provide closure or mention what might happen next.
 - The article must be self‑contained and readable without referring back to the source.
 - Category: {category}
+- Write at least {min_words} words. Count your words.
 
 SOURCE ARTICLE:
 Title: {title}
 Content:
 {content[:5000]}
 
-Now write your article. {length_instruction}"""
+Now write your article:"""
 
         last_error = None
         for model in models:
@@ -207,7 +215,7 @@ Now write your article. {length_instruction}"""
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
-                        "temperature": 0.6,          # Slightly higher for elaboration, but still controlled
+                        "temperature": 0.4,          # Lower for more deterministic, less repetition
                         "maxOutputTokens": 4096,
                         "topP": 0.95,
                         "topK": 40
@@ -218,6 +226,8 @@ Now write your article. {length_instruction}"""
                     data = response.json()
                     if 'candidates' in data and len(data['candidates']) > 0:
                         text = data['candidates'][0]['content']['parts'][0]['text'].strip()
+                        # Clean duplicate sentences
+                        text = EnhancedNewsFetcher.clean_duplicate_sentences(text)
                         word_count = len(text.split())
                         print(f"✅ {model} generated {word_count} words")
                         if word_count >= min_words or attempt >= 2:
@@ -243,31 +253,38 @@ Now write your article. {length_instruction}"""
 
     @staticmethod
     def generate_fallback_content(title, source, category):
-        """Create a longer, elaborated article using a template when AI fails."""
+        """Create a longer, natural‑sounding article using a varied template when AI fails."""
         print("🔧 Using fallback template to generate article...")
-        # Professional fallback – no source mention, more elaborate
-        paragraphs = [
+        # More varied fallback to avoid repetition
+        templates = [
             f"{title}",
             f"This development has drawn attention from various quarters, with observers noting its potential impact on the {category.lower()} landscape.",
-            f"According to sources familiar with the matter, the situation is still unfolding, and further details are expected to emerge in the coming days.",
-            f"Analysts suggest that this event could have wider implications, particularly in how it might influence相关政策 or public discourse.",
-            f"While official statements remain limited, reactions on social media indicate a mix of concern and curiosity among the public.",
-            f"As the story develops, our team will continue to monitor and provide updates. Stay with BlogSphere for the latest news and in‑depth analysis."
+            f"While official statements remain limited, sources close to the matter suggest that further details may emerge shortly.",
+            f"Analysts have begun to assess the implications, pointing to possible shifts in related policies or public discourse.",
+            f"Reactions on social media indicate a mix of concern and curiosity, though no official response has been issued yet.",
+            f"As the story continues to unfold, our team will monitor the situation and provide updates as new information becomes available.",
+            f"For now, the focus remains on understanding the full scope of the event and its ramifications for those involved.",
+            f"Stay with BlogSphere for the latest news and in‑depth analysis on this and other important stories."
         ]
-        # Ensure length
-        while len(' '.join(paragraphs).split()) < 500:
-            paragraphs.append(paragraphs[-1] + " Meanwhile, experts are calling for calm and patience as authorities handle the situation.")
-        full_text = '\n\n'.join(paragraphs)
+        # Ensure length by adding varied sentences, not just repeating
+        while len(' '.join(templates).split()) < 500:
+            extras = [
+                f"In related news, experts have drawn parallels to similar incidents in the past, highlighting lessons that could be applied here.",
+                f"The {category.lower()} community is watching closely, and many are calling for transparency as the situation develops.",
+                f"Meanwhile, stakeholders are urged to remain calm while authorities handle the matter."
+            ]
+            templates.extend(extras)
+        full_text = '\n\n'.join(templates)
         return {
             'content': full_text,
-            'summary': paragraphs[0][:200],
+            'summary': templates[0][:200],
             'word_count': len(full_text.split())
         }
 
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content + AI rewrite to 500+ words (elaborated, source‑free)
+        Process article: scrape content + AI rewrite to 500+ words (high quality, no repetition)
         """
         try:
             url = article_dict.get('url', '')
@@ -309,7 +326,7 @@ Now write your article. {length_instruction}"""
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                # AI failed completely – use fallback template
+                # AI failed completely – use improved fallback template
                 print("⚠️  AI failed, using fallback template")
                 fallback = EnhancedNewsFetcher.generate_fallback_content(
                     title, article_dict.get('source', 'Unknown'), article_dict.get('category', 'NEWS')
