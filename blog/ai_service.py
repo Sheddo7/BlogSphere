@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH DEEPSEEK AI INTEGRATION (BBC STYLE)
+# blog/ai_service.py - COMPLETE WITH GOOGLE GEMINI (500+ WORDS, BBC STYLE)
 import os
 import requests
 import json
@@ -11,69 +11,97 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
+import google.generativeai as genai
 
 
-class DeepSeekService:
-    """Service for interacting with DeepSeek AI API"""
-
-    BASE_URL = "https://api.deepseek.com/v1/chat/completions"
+class GeminiService:
+    """Service for interacting with Google Gemini AI"""
 
     def __init__(self):
-        self.api_key = getattr(settings, 'DEEPSEEK_API_KEY', os.environ.get('DEEPSEEK_API_KEY', ''))
+        self.api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
         if not self.api_key:
-            print("⚠️  No DEEPSEEK_API_KEY found")
-            self.api_key = None
+            print("⚠️  No GEMINI_API_KEY found")
+            self.configured = False
+        else:
+            genai.configure(api_key=self.api_key)
+            self.configured = True
+            # Use flash model for speed, fallback to pro if needed
+            self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
-    def generate_content(self, prompt, temperature=0.7, max_tokens=4096):
+    def generate_content(self, prompt, temperature=0.4, max_output_tokens=4096):
         """
-        Send a prompt to DeepSeek and get response
+        Send a prompt to Gemini and get response.
+        Returns dict with 'success', 'content', 'word_count'.
         """
-        if not self.api_key:
+        if not self.configured:
             return {'success': False, 'error': 'API key missing'}
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-
-        payload = {
-            "model": "deepseek-chat",
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-
         try:
-            response = requests.post(
-                self.BASE_URL,
-                headers=headers,
-                json=payload,
-                timeout=60
+            response = self.model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=temperature,
+                    max_output_tokens=max_output_tokens,
+                    top_p=0.95,
+                    top_k=40
+                )
             )
-
-            if response.status_code == 200:
-                data = response.json()
-                content = data['choices'][0]['message']['content'].strip()
-                return {
-                    'success': True,
-                    'content': content,
-                    'word_count': len(content.split())
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': f"API error: {response.status_code}",
-                    'details': response.text
-                }
-
-        except requests.exceptions.Timeout:
-            return {'success': False, 'error': 'Request timeout'}
+            text = response.text.strip()
+            # Clean duplicate sentences
+            sentences = re.split(r'(?<=[.!?])\s+', text)
+            seen = set()
+            unique = []
+            for s in sentences:
+                norm = s.strip().lower()
+                if norm and norm not in seen:
+                    seen.add(norm)
+                    unique.append(s)
+            text = ' '.join(unique)
+            word_count = len(text.split())
+            return {'success': True, 'content': text, 'word_count': word_count}
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
+    def paraphrase_article(self, title, content, category, min_words=500):
+        """
+        Specialized method for news paraphrasing.
+        """
+        prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
+
+**RULES**:
+- Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
+- Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
+- Use completely original wording; rewrite every sentence in your own words.
+- Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
+- Maintain a neutral, authoritative tone – no sensationalism, no opinion.
+- If the original article contains quotes, keep them but rephrase the attribution.
+- The final article must be at least {min_words} words.
+- Category: {category}
+
+ORIGINAL TITLE: {title}
+ORIGINAL CONTENT:
+{content[:8000]}
+
+Now write your professional version:"""
+
+        result = self.generate_content(prompt, temperature=0.3, max_output_tokens=4096)
+        if result['success']:
+            if result['word_count'] < min_words:
+                print(f"⚠️  Only {result['word_count']} words (below {min_words}) – retrying with stronger prompt")
+                # Retry with a more forceful instruction
+                prompt = f"""Your previous version was too short. You MUST write at least {min_words} words. 
+Expand with more background, analysis, or details implied by the source, but do not invent facts.
+
+Original title: {title}
+Original content: {content[:8000]}
+
+Write your expanded version now:"""
+                result = self.generate_content(prompt, temperature=0.4, max_output_tokens=4096)
+        return result
+
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with DeepSeek AI content generation"""
+    """Enhanced news fetcher with Google Gemini AI content generation"""
 
     SOURCES = {
         'google': {
@@ -150,21 +178,29 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === DEEPSEEK AI PROCESSING METHODS ===
+    # === SCRAPING & GEMINI PROCESSING ===
 
     @staticmethod
     def scrape_article_content(url):
-        """Scrape full article content from URL"""
+        """Scrape full article content from URL with improved error handling."""
         try:
             print(f"🔍 Scraping: {url[:70]}...")
+            # Rotate user agents
+            user_agents = [
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+            ]
+            import random
             headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'User-Agent': random.choice(user_agents),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             }
+            # Add small delay to avoid rate limits
+            time.sleep(random.uniform(1, 2))
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
-            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data',
-                               'privacy settings']
+            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
             if any(marker in response.text for marker in consent_markers):
                 print("❌ Consent page detected")
                 return None
@@ -228,56 +264,32 @@ class EnhancedNewsFetcher:
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
         """
-        Use DeepSeek AI to rewrite content professionally.
+        Use Google Gemini to rewrite content professionally.
         """
-        deepseek = DeepSeekService()
-        if not deepseek.api_key:
-            print("⚠️  DeepSeek API key missing, cannot rewrite.")
+        gemini = GeminiService()
+        if not gemini.configured:
+            print("⚠️  Gemini not configured, cannot rewrite.")
             return None
 
-        # Professional prompt (same as before but adapted)
-        prompt = f"""You are a senior journalist writing for a reputable news organisation. Your task is to rewrite the following article in a clear, factual, and engaging style.
+        print(f"📝 Sending to Gemini for paraphrasing ({len(content)} chars)...")
+        result = gemini.paraphrase_article(title, content, category, min_words)
 
-**RULES**:
-- Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
-- Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
-- Use completely original wording; rewrite every sentence in your own words.
-- Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
-- Maintain a neutral, authoritative tone – no sensationalism, no opinion.
-- If the original article contains quotes, keep them but rephrase the attribution.
-- The final article must be at least {min_words} words.
-- Category: {category}
-
-ORIGINAL TITLE: {title}
-ORIGINAL CONTENT:
-{content[:8000]}
-
-Now write your professional version:"""
-
-        result = deepseek.generate_content(prompt, temperature=0.3, max_tokens=4096)
         if result['success']:
-            # Optional: remove duplicate sentences
-            text = result['content']
-            sentences = re.split(r'(?<=[.!?])\s+', text)
-            seen = set()
-            unique = []
-            for s in sentences:
-                norm = s.strip().lower()
-                if norm and norm not in seen:
-                    seen.add(norm)
-                    unique.append(s)
-            text = ' '.join(unique)
-            word_count = len(text.split())
-            summary = ' '.join(text.split()[:200])
-            return {'content': text, 'summary': summary, 'word_count': word_count}
+            print(f"✅ Gemini generated {result['word_count']} words")
+            summary = ' '.join(result['content'].split()[:200])
+            return {
+                'content': result['content'],
+                'summary': summary,
+                'word_count': result['word_count']
+            }
         else:
-            print(f"❌ DeepSeek error: {result.get('error')}")
+            print(f"❌ Gemini error: {result.get('error')}")
             return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content + AI rewrite to 500+ words.
+        Process article: scrape content + Gemini rewrite to 500+ words.
         Returns None if scraping fails.
         """
         try:
@@ -294,7 +306,6 @@ Now write your professional version:"""
                 print("❌ Failed to scrape enough original content. Aborting.")
                 return None
 
-            print(f"📝 Sending to DeepSeek for paraphrasing ({len(scraped_content)} chars)...")
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
                 content=scraped_content,
@@ -311,7 +322,7 @@ Now write your professional version:"""
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
                 # Fallback to scraped content
-                print("⚠️  DeepSeek failed, using scraped content")
+                print("⚠️  Gemini failed, using scraped content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())

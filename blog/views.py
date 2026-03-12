@@ -13,8 +13,11 @@ from .models import Post, Category, Comment, NewsArticle
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from blog.services.deepseek_service import DeepSeekService
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from blog.ai_service import GeminiService  # GeminiService is now inside ai_service.py
+import json
 
 
 # ===== BASIC VIEWS =====
@@ -699,36 +702,43 @@ def delete_post(request, post_id):
 
 
 @csrf_exempt
-def deepseek_chat(request):
-    """API endpoint for direct DeepSeek interactions"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            message = data.get('message', '')
-            temperature = float(data.get('temperature', 0.7))
+def gemini_chat(request):
+    """
+    API endpoint to interact directly with Google Gemini.
+    POST with JSON: {"message": "your prompt", "temperature": 0.7 (optional)}
+    Returns: {"success": true, "content": "response text", "word_count": 123}
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST method required'}, status=405)
 
-            service = DeepSeekService()
-            result = service.generate_content(message, temperature=temperature)
+    try:
+        data = json.loads(request.body)
+        message = data.get('message', '')
+        temperature = float(data.get('temperature', 0.7))
 
-            if result['success']:
-                return JsonResponse({
-                    'success': True,
-                    'reply': result['content'],
-                    'word_count': result['word_count']
-                })
-            else:
-                return JsonResponse({
-                    'success': False,
-                    'error': result['error']
-                }, status=500)
+        if not message:
+            return JsonResponse({'error': 'Message is required'}, status=400)
 
-        except Exception as e:
+        service = GeminiService()
+        # Use the generate_content method from GeminiService
+        result = service.generate_content(message, temperature=temperature)
+
+        if result['success']:
+            return JsonResponse({
+                'success': True,
+                'content': result['content'],
+                'word_count': result['word_count']
+            })
+        else:
             return JsonResponse({
                 'success': False,
-                'error': str(e)
+                'error': result.get('error', 'Unknown error')
             }, status=500)
 
-    return JsonResponse({'error': 'POST only'}, status=405)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 # --- Security ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')

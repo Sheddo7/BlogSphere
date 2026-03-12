@@ -12,7 +12,7 @@ urlpatterns = [
     path('category/<slug:slug>/', views.category_posts, name='category_posts'),
     path('search/', views.search, name='search'),
     path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
-    path('api/deepseek-chat/', views.deepseek_chat, name='deepseek_chat'),
+    path('api/gemini-chat/', views.gemini_chat, name='gemini_chat'),
 
     # Enhanced news dashboard URLs
     path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),
