@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH GOOGLE GEMINI (500+ WORDS, BBC STYLE)
+# blog/ai_service.py - COMPLETE WITH FIXED GEMINI INTEGRATION & ROBUST SCRAPING
 import os
 import requests
 import json
@@ -11,6 +11,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
+import random
 from google import genai
 from google.genai import types
 
@@ -27,16 +28,13 @@ class GeminiService:
             self.client = genai.Client(api_key=self.api_key)
 
     def generate_content(self, prompt, temperature=0.4, max_output_tokens=4096):
-        """
-        Send a prompt to Gemini (new SDK) and get response.
-        Returns dict with 'success', 'content', 'word_count'.
-        """
+        """Send a prompt to Gemini and return response."""
         if not self.client:
             return {'success': False, 'error': 'API key missing'}
 
         try:
             response = self.client.models.generate_content(
-                model='gemini-1.5-flash',  # Note: no '-latest' suffix
+                model='gemini-1.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=temperature,
@@ -46,7 +44,7 @@ class GeminiService:
                 )
             )
             text = response.text.strip()
-            # Clean duplicate sentences (same as before)
+            # Remove duplicate sentences
             sentences = re.split(r'(?<=[.!?])\s+', text)
             seen = set()
             unique = []
@@ -62,8 +60,25 @@ class GeminiService:
             return {'success': False, 'error': str(e)}
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Same as before, uses generate_content above."""
-        prompt = f"""You are a senior journalist... (same prompt as before)"""
+        """Paraphrase article content with strict rules."""
+        prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
+
+**RULES**:
+- Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
+- Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
+- Use completely original wording; rewrite every sentence in your own words.
+- Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
+- Maintain a neutral, authoritative tone – no sensationalism, no opinion.
+- If the original article contains quotes, keep them but rephrase the attribution.
+- The final article must be at least {min_words} words.
+- Category: {category}
+
+ORIGINAL TITLE: {title}
+ORIGINAL CONTENT:
+{content[:8000]}
+
+Now write your professional version:"""
+
         result = self.generate_content(prompt, temperature=0.3, max_output_tokens=4096)
         if result['success'] and result['word_count'] < min_words:
             # Retry with stronger instruction
@@ -78,9 +93,8 @@ Write your expanded version now:"""
         return result
 
 
-
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with Google Gemini AI content generation"""
+    """Enhanced news fetcher with robust scraping + Gemini AI."""
 
     SOURCES = {
         'google': {
@@ -161,33 +175,38 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def scrape_article_content(url):
-        """Scrape full article content from URL with improved error handling."""
+        """Robust scraping with fallback to article description if available."""
         try:
             print(f"🔍 Scraping: {url[:70]}...")
-            # Rotate user agents
             user_agents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
                 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
             ]
-            import random
             headers = {
                 'User-Agent': random.choice(user_agents),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5',
+                'Referer': 'https://www.google.com/',
+                'DNT': '1',
             }
-            # Add small delay to avoid rate limits
-            time.sleep(random.uniform(1, 2))
+            # Small random delay to avoid rate limits
+            time.sleep(random.uniform(1, 3))
+
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
+
+            # Check for consent pages
             consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
             if any(marker in response.text for marker in consent_markers):
-                print("❌ Consent page detected")
+                print("❌ Consent page detected – cannot scrape")
                 return None
 
             soup = BeautifulSoup(response.content, 'html.parser')
             for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'form', 'button']):
                 tag.decompose()
 
+            # Expanded content selectors
             content_selectors = [
                 'article',
                 '[class*="article-content"]',
@@ -200,6 +219,10 @@ class EnhancedNewsFetcher:
                 'div.post',
                 '.story-body',
                 '.story-content',
+                '.post-content',
+                '.entry-content',
+                '.article-detail',
+                '.article-text',
             ]
 
             content_area = None
@@ -210,11 +233,13 @@ class EnhancedNewsFetcher:
                     break
 
             if not content_area:
+                # Fallback to body
                 content_area = soup.body
 
             if not content_area:
                 return None
 
+            # Extract paragraphs
             paragraphs = content_area.find_all(['p', 'h2', 'h3', 'h4'])
             article_text = []
             for p in paragraphs:
@@ -226,27 +251,25 @@ class EnhancedNewsFetcher:
             full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
 
             if len(full_text) < 200:
-                print(f"⚠️  Content too short ({len(full_text)} chars)")
-                return None
-
-            if any(marker in full_text for marker in consent_markers):
-                print("❌ Consent text in content")
+                print(f"⚠️  Scraped content too short ({len(full_text)} chars)")
                 return None
 
             print(f"✅ Scraped {len(full_text)} characters")
             return full_text[:15000]
 
-        except Exception as e:
+        except requests.exceptions.RequestException as e:
             print(f"❌ Scraping error: {e}")
+            return None
+        except Exception as e:
+            print(f"❌ Unexpected scraping error: {e}")
             return None
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """
-        Use Google Gemini to rewrite content professionally.
-        """
+        """Use Gemini to paraphrase content."""
         gemini = GeminiService()
-        if not gemini.configured:
+        # Check if client exists (i.e., API key is set)
+        if gemini.client is None:
             print("⚠️  Gemini not configured, cannot rewrite.")
             return None
 
@@ -268,8 +291,8 @@ class EnhancedNewsFetcher:
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content + Gemini rewrite to 500+ words.
-        Returns None if scraping fails.
+        Process article: scrape content → Gemini rewrite.
+        If scraping fails, fall back to the article's description.
         """
         try:
             url = article_dict.get('url', '')
@@ -279,12 +302,19 @@ class EnhancedNewsFetcher:
             print(f"📰 Processing: {title[:50]}...")
             print(f"URL: {url[:60]}...")
 
+            # Try to scrape
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
-            if not scraped_content or len(scraped_content) < 300:
-                print("❌ Failed to scrape enough original content. Aborting.")
-                return None
+            # If scraping fails or content is too short, fallback to description
+            if not scraped_content or len(scraped_content) < 200:
+                print("⚠️  Scraping failed – falling back to RSS description")
+                description = article_dict.get('description', '') or article_dict.get('title', '')
+                if len(description) < 100:
+                    description = title  # use title as last resort
+                scraped_content = description
+                print(f"📄 Using description ({len(scraped_content)} chars)")
 
+            # Try Gemini paraphrase
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
                 content=scraped_content,
@@ -300,8 +330,8 @@ class EnhancedNewsFetcher:
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                # Fallback to scraped content
-                print("⚠️  Gemini failed, using scraped content")
+                # If Gemini fails, just use the fallback content (scraped or description)
+                print("⚠️  Gemini failed – using fallback content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())
@@ -314,9 +344,13 @@ class EnhancedNewsFetcher:
             print(f"❌ Processing error: {e}")
             import traceback
             traceback.print_exc()
-            return None
+            # Return a minimal article using description
+            article_dict['content'] = article_dict.get('description', article_dict.get('title', 'No content'))
+            article_dict['word_count'] = len(article_dict['content'].split())
+            article_dict['ai_processed'] = False
+            return article_dict
 
-    # === NEWS FETCHING METHODS (unchanged from original) ===
+    # === NEWS FETCHING METHODS (unchanged) ===
 
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
