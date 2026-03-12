@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH TIMEOUT FIXES FOR RSS FETCHING
+# blog/ai_service.py - COMPLETE WITH TOGETHER.AI (FREE CREDITS) + GENERIC ENDPOINT SUPPORT
 import os
 import requests
 import json
@@ -12,54 +12,60 @@ from bs4 import BeautifulSoup
 import time
 import re
 import random
-import google.generativeai as genai
 
 
-class GeminiService:
-    """Service for interacting with Google Gemini AI (old SDK)."""
+class TogetherService:
+    """Service for interacting with Together.ai API (free credits)"""
 
     def __init__(self):
-        self.api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
+        self.api_key = getattr(settings, 'TOGETHER_API_KEY', os.environ.get('TOGETHER_API_KEY', ''))
         if not self.api_key:
-            print("⚠️  No GEMINI_API_KEY found")
-            self.model = None
+            print("⚠️  No TOGETHER_API_KEY found")
+            self.api_key = None
         else:
-            genai.configure(api_key=self.api_key)
-            self.model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            self.base_url = "https://api.together.xyz/v1/chat/completions"
 
-    def generate_content(self, prompt, temperature=0.4, max_output_tokens=4096):
-        """Send a prompt to Gemini and return response."""
-        if not self.model:
+    def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
+        """
+        Send a generic prompt to Together.ai and return the response.
+        Useful for chatbots or direct AI interactions.
+        """
+        if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+
+        payload = {
+            "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens
+        }
+
         try:
-            response = self.model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_output_tokens,
-                    top_p=0.95,
-                    top_k=40
-                )
-            )
-            text = response.text.strip()
-            # Remove duplicate sentences
-            sentences = re.split(r'(?<=[.!?])\s+', text)
-            seen = set()
-            unique = []
-            for s in sentences:
-                norm = s.strip().lower()
-                if norm and norm not in seen:
-                    seen.add(norm)
-                    unique.append(s)
-            text = ' '.join(unique)
-            word_count = len(text.split())
-            return {'success': True, 'content': text, 'word_count': word_count}
+            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                text = data['choices'][0]['message']['content'].strip()
+                word_count = len(text.split())
+                return {
+                    'success': True,
+                    'content': text,
+                    'word_count': word_count
+                }
+            else:
+                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
         except Exception as e:
             return {'success': False, 'error': str(e)}
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Paraphrase article content with strict rules."""
+        """Paraphrase article using Together.ai"""
+        if not self.api_key:
+            return {'success': False, 'error': 'API key missing'}
+
         prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
 
 **RULES**:
@@ -78,22 +84,49 @@ ORIGINAL CONTENT:
 
 Now write your professional version:"""
 
-        result = self.generate_content(prompt, temperature=0.3, max_output_tokens=4096)
-        if result['success'] and result['word_count'] < min_words:
-            # Retry with stronger instruction
-            prompt = f"""Your previous version was too short. You MUST write at least {min_words} words. 
-Expand with more background, analysis, or details implied by the source, but do not invent facts.
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
 
-Original title: {title}
-Original content: {content[:8000]}
+        payload = {
+            "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.4,
+            "max_tokens": 4096
+        }
 
-Write your expanded version now:"""
-            result = self.generate_content(prompt, temperature=0.4, max_output_tokens=4096)
-        return result
+        try:
+            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
+            if response.status_code == 200:
+                data = response.json()
+                text = data['choices'][0]['message']['content'].strip()
+                # Remove duplicate sentences
+                sentences = re.split(r'(?<=[.!?])\s+', text)
+                seen = set()
+                unique = []
+                for s in sentences:
+                    norm = s.strip().lower()
+                    if norm and norm not in seen:
+                        seen.add(norm)
+                        unique.append(s)
+                text = ' '.join(unique)
+                word_count = len(text.split())
+                summary = ' '.join(text.split()[:200])
+                return {
+                    'success': True,
+                    'content': text,
+                    'summary': summary,
+                    'word_count': word_count
+                }
+            else:
+                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with robust scraping + Gemini AI."""
+    """Enhanced news fetcher with robust scraping + Together.ai AI."""
 
     SOURCES = {
         'google': {
@@ -170,7 +203,7 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === SCRAPING & GEMINI PROCESSING ===
+    # === SCRAPING & TOGETHER.AI PROCESSING ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -260,31 +293,30 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """Use Gemini to paraphrase content."""
-        gemini = GeminiService()
-        if gemini.model is None:
-            print("⚠️  Gemini not configured, cannot rewrite.")
+        """Use Together.ai to paraphrase content."""
+        together = TogetherService()
+        if not together.api_key:
+            print("⚠️  Together.ai not configured, cannot rewrite.")
             return None
 
-        print(f"📝 Sending to Gemini for paraphrasing ({len(content)} chars)...")
-        result = gemini.paraphrase_article(title, content, category, min_words)
+        print(f"📝 Sending to Together.ai for paraphrasing ({len(content)} chars)...")
+        result = together.paraphrase_article(title, content, category, min_words)
 
         if result['success']:
-            print(f"✅ Gemini generated {result['word_count']} words")
-            summary = ' '.join(result['content'].split()[:200])
+            print(f"✅ Together.ai generated {result['word_count']} words")
             return {
                 'content': result['content'],
-                'summary': summary,
+                'summary': result['summary'],
                 'word_count': result['word_count']
             }
         else:
-            print(f"❌ Gemini error: {result.get('error')}")
+            print(f"❌ Together.ai error: {result.get('error')}")
             return None
 
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content → Gemini rewrite.
+        Process article: scrape content → Together.ai rewrite.
         If scraping fails, fall back to the article's description.
         """
         try:
@@ -320,7 +352,7 @@ class EnhancedNewsFetcher:
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                print("⚠️  Gemini failed – using fallback content")
+                print("⚠️  Together.ai failed – using fallback content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())
@@ -391,7 +423,6 @@ class EnhancedNewsFetcher:
                 EnhancedNewsFetcher.SOURCES[source_key]['base_url']
             )
 
-            # Use requests to fetch the feed with timeout
             response = requests.get(category_url, timeout=10)
             response.raise_for_status()
             feed = feedparser.parse(response.content)
@@ -431,7 +462,6 @@ class EnhancedNewsFetcher:
             if not feed_url:
                 return []
 
-            # Use requests to fetch the feed with timeout
             response = requests.get(feed_url, timeout=10)
             response.raise_for_status()
             feed = feedparser.parse(response.content)

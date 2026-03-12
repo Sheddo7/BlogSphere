@@ -16,8 +16,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from blog.ai_service import GeminiService  # GeminiService is now inside ai_service.py
 import json
+from blog.ai_service import TogetherService
 
 
 # ===== BASIC VIEWS =====
@@ -701,10 +701,14 @@ def delete_post(request, post_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
+
+
 @csrf_exempt
-def gemini_chat(request):
+@login_required
+@user_passes_test(is_staff)
+def together_chat(request):
     """
-    API endpoint to interact directly with Google Gemini.
+    API endpoint for direct Together.ai interactions.
     POST with JSON: {"message": "your prompt", "temperature": 0.7 (optional)}
     Returns: {"success": true, "content": "response text", "word_count": 123}
     """
@@ -719,9 +723,8 @@ def gemini_chat(request):
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
 
-        service = GeminiService()
-        # Use the generate_content method from GeminiService
-        result = service.generate_content(message, temperature=temperature)
+        service = TogetherService()
+        result = service.generate_response(message, temperature=temperature)
 
         if result['success']:
             return JsonResponse({
