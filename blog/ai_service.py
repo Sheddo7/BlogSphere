@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH OLD GEMINI SDK (WORKING) AND ALL FETCH METHODS
+# blog/ai_service.py - COMPLETE WITH TIMEOUT FIXES FOR RSS FETCHING
 import os
 import requests
 import json
@@ -189,13 +189,11 @@ class EnhancedNewsFetcher:
                 'Referer': 'https://www.google.com/',
                 'DNT': '1',
             }
-            # Small random delay to avoid rate limits
             time.sleep(random.uniform(1, 3))
 
             response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
 
-            # Check for consent pages
             consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
             if any(marker in response.text for marker in consent_markers):
                 print("❌ Consent page detected – cannot scrape")
@@ -205,7 +203,6 @@ class EnhancedNewsFetcher:
             for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'form', 'button']):
                 tag.decompose()
 
-            # Expanded content selectors
             content_selectors = [
                 'article',
                 '[class*="article-content"]',
@@ -232,13 +229,11 @@ class EnhancedNewsFetcher:
                     break
 
             if not content_area:
-                # Fallback to body
                 content_area = soup.body
 
             if not content_area:
                 return None
 
-            # Extract paragraphs
             paragraphs = content_area.find_all(['p', 'h2', 'h3', 'h4'])
             article_text = []
             for p in paragraphs:
@@ -300,19 +295,16 @@ class EnhancedNewsFetcher:
             print(f"📰 Processing: {title[:50]}...")
             print(f"URL: {url[:60]}...")
 
-            # Try to scrape
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
-            # If scraping fails or content is too short, fallback to description
             if not scraped_content or len(scraped_content) < 200:
                 print("⚠️  Scraping failed – falling back to RSS description")
                 description = article_dict.get('description', '') or article_dict.get('title', '')
                 if len(description) < 100:
-                    description = title  # use title as last resort
+                    description = title
                 scraped_content = description
                 print(f"📄 Using description ({len(scraped_content)} chars)")
 
-            # Try Gemini paraphrase
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
                 content=scraped_content,
@@ -328,7 +320,6 @@ class EnhancedNewsFetcher:
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                # If Gemini fails, just use the fallback content (scraped or description)
                 print("⚠️  Gemini failed – using fallback content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
@@ -342,13 +333,12 @@ class EnhancedNewsFetcher:
             print(f"❌ Processing error: {e}")
             import traceback
             traceback.print_exc()
-            # Return a minimal article using description
             article_dict['content'] = article_dict.get('description', article_dict.get('title', 'No content'))
             article_dict['word_count'] = len(article_dict['content'].split())
             article_dict['ai_processed'] = False
             return article_dict
 
-    # === NEWS FETCHING METHODS ===
+    # === NEWS FETCHING METHODS (with timeout fixes) ===
 
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
@@ -393,7 +383,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
-        """Fetch news from Google News"""
+        """Fetch news from Google News using requests to avoid hanging."""
         try:
             source_key = 'google'
             category_url = EnhancedNewsFetcher.SOURCES[source_key]['category_urls'].get(
@@ -401,9 +391,12 @@ class EnhancedNewsFetcher:
                 EnhancedNewsFetcher.SOURCES[source_key]['base_url']
             )
 
-            feed = feedparser.parse(category_url)
-            news_items = []
+            # Use requests to fetch the feed with timeout
+            response = requests.get(category_url, timeout=10)
+            response.raise_for_status()
+            feed = feedparser.parse(response.content)
 
+            news_items = []
             for entry in feed.entries[:limit]:
                 source_name = entry.get('source', {}).get('title', 'Google News')
                 if country == 'nigeria':
@@ -425,7 +418,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Fetch from Punch, Vanguard, Channels"""
+        """Fetch from Punch, Vanguard, Channels using requests with timeout."""
         try:
             if source not in ['punch', 'vanguard', 'channels']:
                 return []
@@ -438,9 +431,12 @@ class EnhancedNewsFetcher:
             if not feed_url:
                 return []
 
-            feed = feedparser.parse(feed_url)
-            news_items = []
+            # Use requests to fetch the feed with timeout
+            response = requests.get(feed_url, timeout=10)
+            response.raise_for_status()
+            feed = feedparser.parse(response.content)
 
+            news_items = []
             for entry in feed.entries[:limit]:
                 news_items.append({
                     'title': entry.title,
@@ -458,7 +454,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_reddit_by_category(category='news', limit=10):
-        """Fetch from Reddit"""
+        """Fetch from Reddit (already uses requests)."""
         try:
             subreddit = EnhancedNewsFetcher.SOURCES['reddit']['subreddits'].get(category, 'news')
             url = f'https://www.reddit.com/r/{subreddit}/hot.json?limit={limit}'
@@ -490,15 +486,17 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_bbc_rss(category='news', limit=10):
-        """Fetch from BBC"""
+        """Fetch from BBC using requests with timeout."""
         try:
             feed_url = EnhancedNewsFetcher.SOURCES['bbc']['category_urls'].get(
                 category, 'http://feeds.bbci.co.uk/news/rss.xml'
             )
 
-            feed = feedparser.parse(feed_url)
-            news_items = []
+            response = requests.get(feed_url, timeout=10)
+            response.raise_for_status()
+            feed = feedparser.parse(response.content)
 
+            news_items = []
             for entry in feed.entries[:limit]:
                 news_items.append({
                     'title': entry.title,
