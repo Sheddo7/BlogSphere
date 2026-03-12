@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH OPENROUTER (FREE TIER) + ROBUST FETCHING
+# blog/ai_service.py - COMPLETE WITH OPENROUTER (NO SOURCE ATTRIBUTION)
 import os
 import requests
 import json
@@ -28,19 +28,21 @@ class OpenRouterService:
             self.model = "openrouter/free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Paraphrase article using OpenRouter's free models."""
+        """Paraphrase article using OpenRouter's free models – no source attribution."""
         if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
+        # Updated prompt: removed source reference, added instruction to avoid attribution
         prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
 
 **RULES**:
 - Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
 - Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
 - Use completely original wording; rewrite every sentence in your own words.
+- **Do NOT mention the original source** (e.g., avoid phrases like "according to Vanguard" or "the report said"). Write as if this is original reporting.
 - Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
 - Maintain a neutral, authoritative tone – no sensationalism, no opinion.
-- If the original article contains quotes, keep them but rephrase the attribution.
+- If the original article contains quotes, keep them but rephrase the attribution (e.g., "he said" instead of "he told Vanguard").
 - The final article must be at least {min_words} words.
 - Category: {category}
 
@@ -53,8 +55,8 @@ Now write your professional version:"""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            # Required headers to avoid 402 errors
-            "HTTP-Referer": "https://blogsphere.up.railway.app/",  # Replace with your actual domain
+            # Required headers to avoid 402 errors – replace with your actual domain
+            "HTTP-Referer": "https://yourdomain.com",  # Change this!
             "X-Title": "BlogSphere News"
         }
 
@@ -101,7 +103,7 @@ Now write your professional version:"""
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://yourdomain.com",
+            "HTTP-Referer": "https://yourdomain.com",  # Change this!
             "X-Title": "BlogSphere News"
         }
 
@@ -297,13 +299,14 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """Use OpenRouter to paraphrase content."""
+        """Use OpenRouter to paraphrase content – source parameter is ignored."""
         openrouter = OpenRouterService()
         if not openrouter.api_key:
             print("⚠️  OpenRouter not configured, cannot rewrite.")
             return None
 
         print(f"📝 Sending to OpenRouter for paraphrasing ({len(content)} chars)...")
+        # We no longer pass the source to the paraphrasing method
         result = openrouter.paraphrase_article(title, content, category, min_words)
 
         if result['success']:
@@ -344,7 +347,7 @@ class EnhancedNewsFetcher:
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
                 content=scraped_content,
-                source=article_dict.get('source', 'Unknown'),
+                source=article_dict.get('source', 'Unknown'),  # still passed but ignored
                 category=article_dict.get('category', 'NEWS'),
                 min_words=500
             )
