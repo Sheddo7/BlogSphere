@@ -11,7 +11,6 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
-import google.generativeai as genai
 from google import genai
 from google.genai import types
 
