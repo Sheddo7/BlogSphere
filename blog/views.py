@@ -17,7 +17,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from blog.ai_service import TogetherService
+from blog.ai_service import OpenRouterService
 
 
 # ===== BASIC VIEWS =====
@@ -706,9 +706,11 @@ def delete_post(request, post_id):
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
-def together_chat(request):
+@csrf_exempt
+def openrouter_chat(request):
+    service = OpenRouterService()
     """
-    API endpoint for direct Together.ai interactions.
+    API endpoint for direct interactions.
     POST with JSON: {"message": "your prompt", "temperature": 0.7 (optional)}
     Returns: {"success": true, "content": "response text", "word_count": 123}
     """
@@ -723,7 +725,7 @@ def together_chat(request):
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
 
-        service = TogetherService()
+        service = OpenRouterService()
         result = service.generate_response(message, temperature=temperature)
 
         if result['success']:

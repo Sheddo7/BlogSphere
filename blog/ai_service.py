@@ -54,7 +54,7 @@ Now write your professional version:"""
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             # Required headers to avoid 402 errors
-            "HTTP-Referer": "https://yourdomain.com",  # Replace with your actual domain
+            "HTTP-Referer": "https://blogsphere.up.railway.app/",  # Replace with your actual domain
             "X-Title": "BlogSphere News"
         }
 

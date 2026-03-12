@@ -12,7 +12,7 @@ urlpatterns = [
     path('category/<slug:slug>/', views.category_posts, name='category_posts'),
     path('search/', views.search, name='search'),
     path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
-    path('api/together-chat/', views.together_chat, name='together_chat'),
+    path('api/openrouter-chat/', views.openrouter_chat, name='openrouter_chat'),
 
     # Enhanced news dashboard URLs
     path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),
