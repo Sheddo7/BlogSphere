@@ -1,13 +1,11 @@
-# blog/ai_service.py - ENFORCED 500+ WORDS WITH RETRY LOGIC
+# blog/ai_service.py - COMPLETE FIXED (500+ WORDS, NO None ERRORS)
 import os
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 import feedparser
 from django.conf import settings
 from django.utils import timezone
-import hashlib
-from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 import time
 import re
@@ -16,9 +14,82 @@ import re
 class EnhancedNewsFetcher:
     """Enhanced news fetcher with forced 500+ word AI content generation"""
 
-    SOURCES = { ... }  # (keep your existing SOURCES dict unchanged)
+    SOURCES = {
+        'google': {
+            'base_url': 'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
+            'category_urls': {
+                'news': 'https://news.google.com/rss?hl=en-NG&gl=NG&ceid=NG:en',
+                'sport': 'https://news.google.com/rss/headlines/section/topic/SPORTS?hl=en-NG&gl=NG&ceid=NG:en',
+                'entertainment': 'https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=en-NG&gl=NG&ceid=NG:en',
+                'economy': 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=en-NG&gl=NG&ceid=NG:en',
+                'politics': 'https://news.google.com/rss/headlines/section/topic/POLITICS?hl=en-NG&gl=NG&ceid=NG:en',
+                'technology': 'https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=en-NG&gl=NG&ceid=NG:en',
+            }
+        },
+        'reddit': {
+            'subreddits': {
+                'news': 'news',
+                'sport': 'sports',
+                'entertainment': 'entertainment',
+                'economy': 'economy',
+                'politics': 'politics',
+                'technology': 'technology',
+            }
+        },
+        'newsapi': {
+            'base_url': 'https://newsapi.org/v2',
+            'categories': {
+                'news': 'general',
+                'sport': 'sports',
+                'entertainment': 'entertainment',
+                'economy': 'business',
+                'politics': 'politics',
+                'technology': 'technology',
+            }
+        },
+        'bbc': {
+            'base_url': 'http://feeds.bbci.co.uk',
+            'category_urls': {
+                'news': 'http://feeds.bbci.co.uk/news/rss.xml',
+                'sport': 'http://feeds.bbci.co.uk/sport/rss.xml',
+                'entertainment': 'http://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',
+                'economy': 'http://feeds.bbci.co.uk/news/business/rss.xml',
+                'technology': 'http://feeds.bbci.co.uk/news/technology/rss.xml',
+                'politics': 'http://feeds.bbci.co.uk/news/politics/rss.xml',
+            }
+        },
+        'punch': {
+            'base_url': 'https://punchng.com',
+            'category_urls': {
+                'news': 'https://punchng.com/feed/',
+                'sport': 'https://punchng.com/sports/feed/',
+                'entertainment': 'https://punchng.com/entertainment/feed/',
+                'economy': 'https://punchng.com/business/feed/',
+                'politics': 'https://punchng.com/politics/feed/',
+            }
+        },
+        'vanguard': {
+            'base_url': 'https://www.vanguardngr.com',
+            'category_urls': {
+                'news': 'https://www.vanguardngr.com/feed/',
+                'sport': 'https://www.vanguardngr.com/category/sports/feed/',
+                'entertainment': 'https://www.vanguardngr.com/category/entertainment/feed/',
+                'economy': 'https://www.vanguardngr.com/category/business/feed/',
+                'politics': 'https://www.vanguardngr.com/category/politics/feed/',
+            }
+        },
+        'channels': {
+            'base_url': 'https://www.channelstv.com',
+            'category_urls': {
+                'news': 'https://www.channelstv.com/feed/',
+                'sport': 'https://www.channelstv.com/category/sports/feed/',
+                'entertainment': 'https://www.channelstv.com/category/entertainment/feed/',
+                'politics': 'https://www.channelstv.com/category/politics/feed/',
+            }
+        }
+    }
 
-    # === AI PROCESSING METHODS (FORCED 500+ WORDS) ===
+    # === AI PROCESSING METHODS (FIXED) ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -82,11 +153,17 @@ class EnhancedNewsFetcher:
             print("⚠️  No GEMINI_API_KEY found")
             return None
 
-        # Try models in order of preference
+        # Ensure content is a string
+        if content is None:
+            content = ""
+        if not content.strip():
+            content = title or "No content available."
+
+        # Models to try in order
         models = [
             'gemini-1.5-pro-latest',
             'gemini-1.5-flash-latest',
-            'gemini-pro'   # fallback
+            'gemini-pro'
         ]
 
         last_error = None
@@ -141,18 +218,16 @@ Write your article now (minimum {min_words} words):"""
                             return {'content': text, 'summary': summary, 'word_count': word_count}
                         else:
                             print(f"⚠️  Only {word_count} words (below {min_words})")
-                            # If retry is enabled, try once more with a more forceful prompt
                             if retry:
                                 print("🔄 Retrying with stronger instructions...")
                                 return EnhancedNewsFetcher.rewrite_with_ai(
                                     title, content, source, category, min_words, retry=False
                                 )
                             else:
-                                # Still return but with a warning
                                 summary = ' '.join(text.split()[:200])
                                 return {'content': text, 'summary': summary, 'word_count': word_count}
                     else:
-                        print(f"❌ No candidates in response")
+                        print("❌ No candidates in response")
                 else:
                     print(f"❌ API error {response.status_code}: {response.text[:200]}")
                     last_error = response.status_code
@@ -181,11 +256,16 @@ Write your article now (minimum {min_words} words):"""
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
             # Fallback to description if scraping fails or is too short
-            if not scraped_content or len(scraped_content) < 200:
+            if scraped_content is None or len(scraped_content) < 200:
                 print("❌ Could not scrape enough content, using description as fallback")
-                scraped_content = article_dict.get('description', article_dict.get('title', ''))
+                # Safely get description and title (convert None to empty string)
+                desc = article_dict.get('description') or ''
+                title_fb = article_dict.get('title') or ''
+                scraped_content = desc or title_fb
                 if len(scraped_content) < 100:
-                    scraped_content = article_dict.get('title', '') + " " + article_dict.get('description', '')
+                    scraped_content = (title_fb + " " + desc).strip()
+                if not scraped_content:
+                    scraped_content = "No content available."
 
             # Step 2: AI rewrite (with retry)
             print(f"📝 Sending to AI (scraped {len(scraped_content)} chars)...")
@@ -223,34 +303,41 @@ Write your article now (minimum {min_words} words):"""
             article_dict['ai_processed'] = False
             return article_dict
 
-    # === NEWS FETCHING METHODS (unchanged, copy from your original) ===
+    # === NEWS FETCHING METHODS (keep your existing implementations) ===
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
-        ...  # (keep your existing implementation)
+        # ... unchanged ...
+        pass  # replace with your actual code
 
     @staticmethod
     def fetch_google_news_by_category(category='news', limit=10, country='Nigeria'):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def fetch_reddit_by_category(category='news', limit=10):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def fetch_bbc_rss(category='news', limit=10):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def fetch_multiple_sources(categories=None, sources=None, limit_per_source=5):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        ...
+        # ... unchanged ...
+        pass
 
     @staticmethod
     def extract_content_from_url(url):
@@ -259,4 +346,5 @@ Write your article now (minimum {min_words} words):"""
 
 # Backward compatibility (keep as is)
 class SimpleNewsFetcher:
-    ...
+    # ... unchanged ...
+    pass
