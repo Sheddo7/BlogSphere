@@ -347,11 +347,12 @@ def convert_to_post(request, article_id):
 
 # ===== NEW API ENDPOINTS =====
 
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
-    """Post a single article to the blog with AI content generation"""
+    """Post article with AI content generation"""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -383,28 +384,31 @@ def post_article(request):
                 slug = f"{base_slug}-{counter}"
                 counter += 1
 
-            # === NEW: Process article with AI before posting ===
-            print(f"🤖 Processing article with AI: {article['title'][:60]}...")
+            # === AI PROCESSING ===
+            print(f"\n🤖 AI PROCESSING START")
+            print(f"Title: {article['title'][:60]}")
+            print(f"URL: {article.get('url', '')[:60]}")
 
-            # Import the AI fetcher
             from blog.ai_service import EnhancedNewsFetcher
 
-            # Process article with AI (scrape + summarize + rewrite)
+            # Process with AI (scrape + rewrite to 500+ words)
             processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
 
-            # Use the AI-generated content (500+ words, original writing)
+            # Use AI-generated content
             article_content = processed_article.get('content', article.get('description', ''))
             article_description = processed_article.get('description', article.get('description', ''))[:200]
+            word_count = processed_article.get('word_count', 0)
+            ai_processed = processed_article.get('ai_processed', False)
 
-            print(f"✅ Content processed: {processed_article.get('word_count', 0)} words")
-            # === END NEW CODE ===
+            print(f"✅ AI Processing complete: {word_count} words, AI={ai_processed}")
+            # === END AI PROCESSING ===
 
-            # Create blog post with AI-generated content
+            # Create blog post
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article_content,  # ← AI-rewritten 500+ words
-                excerpt=article_description,  # ← AI-generated summary
+                content=article_content,  # AI-generated content
+                excerpt=article_description,
                 author=author,
                 category=category_obj,
                 featured_image=article.get('image_url', ''),
@@ -412,7 +416,7 @@ def post_article(request):
                 is_featured=data.get('is_featured', False)
             )
 
-            # Add tags (without auto-generated)
+            # Add tags
             tags = data.get('tags', ['news'])
             if isinstance(tags, str):
                 tags = [tag.strip() for tag in tags.split(',')]
@@ -420,15 +424,15 @@ def post_article(request):
                 post.tags.add(tag.strip())
 
             # Add AI tag if processed
-            if processed_article.get('ai_processed'):
+            if ai_processed:
                 post.tags.add('ai-rewritten')
 
-            # Also save as NewsArticle if requested
+            # Save as NewsArticle if requested
             if data.get('save_article', True):
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
-                        content=processed_article.get('content', '')[:5000],
+                        content=article_content[:5000],
                         summary=article_description[:500],
                         url=article.get('url', ''),
                         source=article.get('source', 'Unknown'),
@@ -443,8 +447,8 @@ def post_article(request):
                 'message': 'Article posted successfully',
                 'post_title': post.title,
                 'post_slug': post.slug,
-                'word_count': processed_article.get('word_count', 0),  # ← NEW
-                'ai_processed': processed_article.get('ai_processed', False),  # ← NEW
+                'word_count': word_count,
+                'ai_processed': ai_processed,
             })
 
         except Exception as e:
