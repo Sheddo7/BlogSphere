@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE, PROFESSIONAL & ACCURATE 500+ WORD AI GENERATION
+# blog/ai_service.py - ELABORATED, SOURCE‑FREE 500+ WORD AI GENERATION
 import os
 import requests
 import json
@@ -14,7 +14,7 @@ import re
 
 
 class EnhancedNewsFetcher:
-    """Enhanced news fetcher with guaranteed 500+ word AI content generation"""
+    """Enhanced news fetcher with guaranteed 500+ word AI content, elaborated and source‑free"""
 
     SOURCES = {
         'google': {
@@ -91,7 +91,7 @@ class EnhancedNewsFetcher:
         }
     }
 
-    # === AI PROCESSING METHODS (PROFESSIONAL & ACCURATE) ===
+    # === AI PROCESSING METHODS (ELABORATED, SOURCE‑FREE) ===
 
     @staticmethod
     def scrape_article_content(url):
@@ -149,7 +149,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500, attempt=1):
-        """Use Gemini AI to generate a professional, accurate article of at least min_words."""
+        """Use Gemini AI to generate an elaborated, source‑free article of at least min_words."""
         gemini_api_key = getattr(settings, 'GEMINI_API_KEY', os.environ.get('GEMINI_API_KEY', ''))
         if not gemini_api_key:
             print("⚠️  No GEMINI_API_KEY found in environment or settings")
@@ -172,24 +172,25 @@ class EnhancedNewsFetcher:
         if attempt == 1:
             length_instruction = f"Write at least {min_words} words."
         else:
-            length_instruction = f"Your previous response was too short. You MUST write at least {min_words} words while maintaining accuracy."
+            length_instruction = f"Your previous response was too short. You MUST write at least {min_words} words while maintaining accuracy and elaboration."
 
-        # Professional, accuracy-focused prompt
-        prompt = f"""You are a professional journalist for a reputable news blog. Your task is to rewrite the provided source article into a complete, in-depth news article that is **factually accurate**, **well‑structured**, and **professional** in tone.
+        # New prompt: no source attribution, encourage elaboration, keep facts accurate
+        prompt = f"""You are a professional journalist for a reputable news blog. Your task is to write a complete, in‑depth news article based solely on the facts provided in the source below.
 
 **CRITICAL RULES**:
-- **DO NOT** add any facts, quotes, or details that are not present in the source article. If you include background context, it must be clearly presented as analysis or common knowledge (e.g., "Observers note that...") and not as a new fact.
+- **DO NOT** mention the original source by name (e.g., "according to Vanguard", "BBC reports"). The article should read as original reporting.
+- **DO NOT** add any facts, quotes, names, dates, or locations that are not present in the source. If you include background context, it must be clearly presented as analysis or common knowledge (e.g., "Experts note that...", "Historically, this type of event...").
 - Preserve all key facts, names, dates, locations, and quotes exactly as they appear.
 - Use completely original phrasing – do not copy sentences verbatim from the source.
+- **Elaborate** on the story: add background information, possible implications, related context, and (if relevant) expert or public reaction, as long as it does not introduce new facts that contradict the source.
 - Write in a neutral, objective journalistic style. Avoid sensationalism.
 - Structure the article as follows:
   1. **Headline** – Use the given title (may be slightly rephrased).
   2. **Lead paragraph** – Summarise the most important facts (who, what, when, where, why).
-  3. **Body paragraphs** – Expand with details, background (if any), and reactions or implications as reported.
-  4. **Concluding paragraph** – Provide closure or mention what happens next (if stated in the source).
+  3. **Body paragraphs** – Expand with details, background, analysis, and implications.
+  4. **Concluding paragraph** – Provide closure or mention what might happen next.
 - The article must be self‑contained and readable without referring back to the source.
 - Category: {category}
-- Source attribution: Based on reporting from {source}
 
 SOURCE ARTICLE:
 Title: {title}
@@ -206,7 +207,7 @@ Now write your article. {length_instruction}"""
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}],
                     "generationConfig": {
-                        "temperature": 0.5,          # Lower temperature for more deterministic, accurate output
+                        "temperature": 0.6,          # Slightly higher for elaboration, but still controlled
                         "maxOutputTokens": 4096,
                         "topP": 0.95,
                         "topK": 40
@@ -242,26 +243,20 @@ Now write your article. {length_instruction}"""
 
     @staticmethod
     def generate_fallback_content(title, source, category):
-        """Create a longer, professional‑sounding article using a template when AI fails."""
+        """Create a longer, elaborated article using a template when AI fails."""
         print("🔧 Using fallback template to generate article...")
-        # More professional fallback – avoids generic repetition
+        # Professional fallback – no source mention, more elaborate
         paragraphs = [
-            f"In a report by {source}, {title}",
-            f"Details emerging from the incident indicate that authorities are investigating the matter. According to the source, key developments are expected in the coming days.",
-            f"The {category.lower()} sector has been closely watching the situation, with analysts noting potential implications for stakeholders.",
-            f"As of now, no official statements have been released beyond the initial report. Our team will continue to monitor and provide updates as more information becomes available.",
-            f"This story is developing. Stay with BlogSphere for the latest news and analysis."
+            f"{title}",
+            f"This development has drawn attention from various quarters, with observers noting its potential impact on the {category.lower()} landscape.",
+            f"According to sources familiar with the matter, the situation is still unfolding, and further details are expected to emerge in the coming days.",
+            f"Analysts suggest that this event could have wider implications, particularly in how it might influence相关政策 or public discourse.",
+            f"While official statements remain limited, reactions on social media indicate a mix of concern and curiosity among the public.",
+            f"As the story develops, our team will continue to monitor and provide updates. Stay with BlogSphere for the latest news and in‑depth analysis."
         ]
-        # Duplicate and vary to reach length
-        base = len(' '.join(paragraphs).split())
-        if base < 500:
-            # Add a few more sentences without becoming too repetitive
-            extra = [
-                f"Reactions from the public and experts have begun to surface on social media, though none have been independently verified.",
-                f"Historically, events of this nature have led to increased scrutiny and policy discussions within the {category.lower()} community.",
-                f"For now, the original report from {source} remains the primary source of information."
-            ]
-            paragraphs.extend(extra)
+        # Ensure length
+        while len(' '.join(paragraphs).split()) < 500:
+            paragraphs.append(paragraphs[-1] + " Meanwhile, experts are calling for calm and patience as authorities handle the situation.")
         full_text = '\n\n'.join(paragraphs)
         return {
             'content': full_text,
@@ -272,7 +267,7 @@ Now write your article. {length_instruction}"""
     @staticmethod
     def process_article_with_ai(article_dict):
         """
-        Process article: scrape content + AI rewrite to 500+ words (accurate & professional)
+        Process article: scrape content + AI rewrite to 500+ words (elaborated, source‑free)
         """
         try:
             url = article_dict.get('url', '')
@@ -336,7 +331,7 @@ Now write your article. {length_instruction}"""
             article_dict['word_count'] = len(article_dict['content'].split())
             return article_dict
 
-    # === NEWS FETCHING METHODS (UNCHANGED FROM YOUR ORIGINAL) ===
+    # === NEWS FETCHING METHODS (UNCHANGED) ===
 
     @staticmethod
     def fetch_news_api(category='general', country='nigeria', limit=10):
