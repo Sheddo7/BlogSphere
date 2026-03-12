@@ -1,4 +1,4 @@
-# blog/ai_service.py - COMPLETE WITH FIXED GEMINI INTEGRATION & ROBUST SCRAPING
+# blog/ai_service.py - COMPLETE WITH FIXED MODEL NAME
 import os
 import requests
 import json
@@ -34,7 +34,7 @@ class GeminiService:
 
         try:
             response = self.client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='models/gemini-1.5-flash',  # <-- FIXED: added 'models/' prefix
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=temperature,
