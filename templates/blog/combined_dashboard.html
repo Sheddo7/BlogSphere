@@ -322,7 +322,7 @@
     </div>
     <div class="card-body">
       <div class="table-responsive">
-        <table class="dash-table">
+        <table class="dash-table" id="recentPostsTable">
           <thead>
             <tr><th>Image</th><th>Title</th><th>Category</th><th>Posted</th><th>Views</th><th>Actions</th></tr>
           </thead>
@@ -477,7 +477,7 @@
 </div>
 
 <script>
-// ========== ENHANCED DASHBOARD JAVASCRIPT (copied from enhanced-news-dashboard.html) ==========
+// ========== ENHANCED DASHBOARD JAVASCRIPT (NO PAGE RELOAD) ==========
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -660,7 +660,7 @@ function saveArticleEdits() {
     modal.hide();
 }
 
-// Post single article
+// Post single article – NO PAGE RELOAD
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
@@ -687,14 +687,16 @@ function postSingleArticle(index = null) {
     .then(data => {
         if (data.success) {
             showToast(`Posted: ${data.post_title}`, 'success');
+            // Remove the posted article from fetched list
             fetchedArticles.splice(articleIndex, 1);
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
             if (articleIndex === currentEditIndex) {
                 const modal = bootstrap.Modal.getInstance(document.getElementById('articleEditorModal'));
                 if (modal) modal.hide();
+                currentEditIndex = -1;
             }
-            setTimeout(() => location.reload(), 1000);
+            // Note: recent posts table not updated automatically – will appear on next page refresh
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
@@ -704,7 +706,7 @@ function postSingleArticle(index = null) {
     });
 }
 
-// Post all selected articles
+// Post all selected articles – NO PAGE RELOAD
 function postAllArticles() {
     const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => parseInt(cb.value));
     if (selectedIndices.length === 0) {
@@ -729,10 +731,10 @@ function postAllArticles() {
     .then(data => {
         if (data.success) {
             showToast(`Posted ${data.posted_count} articles successfully`, 'success');
+            // Remove posted articles from fetched list
             fetchedArticles = fetchedArticles.filter((_, index) => !selectedIndices.includes(index));
             displayFetchedArticles();
             document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
@@ -859,7 +861,6 @@ function updatePostImage() {
             if (imgElement && data.image_url) imgElement.src = data.image_url;
             const modal = bootstrap.Modal.getInstance(document.getElementById('postImageEditorModal'));
             modal.hide();
-            setTimeout(() => location.reload(), 1000);
         } else {
             showToast('Error: ' + data.message, 'danger');
         }
