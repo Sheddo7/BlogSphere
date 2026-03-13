@@ -31,6 +31,15 @@ urlpatterns = [
     path('api/remove-post-image/<int:post_id>/', views.remove_post_image, name='remove_post_image'),
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
+
+    # Draft Workflow URLs
+    path('api/save-as-draft/', views.save_as_draft, name='save_as_draft'),
+    path('api/get-drafts/', views.get_drafts, name='get_drafts'),
+    path('api/edit-draft/<int:draft_id>/', views.edit_draft, name='edit_draft'),
+    path('api/delete-draft/<int:draft_id>/', views.delete_draft, name='delete_draft'),
+    path('api/publish-draft/<int:draft_id>/', views.publish_draft, name='publish_draft'),
+    path('api/update-draft-image/<int:draft_id>/', views.update_draft_image, name='update_draft_image'),
+
     path('dashboard/', views.combined_dashboard, name='combined_dashboard'),
 ]
 

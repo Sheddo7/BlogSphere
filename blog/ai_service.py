@@ -28,34 +28,38 @@ class OpenRouterService:
             self.model = "openrouter/free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Paraphrase article using OpenRouter's free models – no source attribution."""
+        """Paraphrase article using OpenRouter's free models with enhanced 500+ word generation."""
         if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
-        # Updated prompt: removed source reference, added instruction to avoid attribution
-        prompt = f"""You are a senior journalist writing for a reputable news organisation like the BBC. Your task is to rewrite the following article in a clear, factual, and engaging style.
+        prompt = f"""You are a professional news writer for a major publication. Rewrite the article below into a comprehensive, well-structured news piece.
 
-**RULES**:
-- Do NOT add any new facts, quotes, names, dates, or locations not present in the original.
-- Preserve all key details – names, numbers, quotes, and context – exactly as they appear.
-- Use completely original wording; rewrite every sentence in your own words.
-- **Do NOT mention the original source** (e.g., avoid phrases like "according to Vanguard" or "the report said"). Write as if this is original reporting.
-- Structure the article with a strong lead paragraph, several body paragraphs, and a concluding sentence.
-- Maintain a neutral, authoritative tone – no sensationalism, no opinion.
-- If the original article contains quotes, keep them but rephrase the attribution (e.g., "he said" instead of "he told Vanguard").
-- The final article must be at least {min_words} words.
-- Category: {category}
+**CRITICAL REQUIREMENTS - FOLLOW EXACTLY**:
+1. MINIMUM {min_words} WORDS - This is NON-NEGOTIABLE. Your output MUST be at least {min_words} words.
+2. DO NOT add new facts, quotes, names, dates, or locations not in the original.
+3. Preserve ALL key details exactly as they appear.
+4. Use completely original wording - rewrite every sentence in your own words.
+5. DO NOT mention the original source - write as original reporting.
+6. Structure properly: strong lead, detailed body paragraphs, conclusion.
 
-ORIGINAL TITLE: {title}
-ORIGINAL CONTENT:
+**ARTICLE STRUCTURE (REQUIRED)**:
+- Opening Paragraph (100-150 words): Strong lead with who, what, when, where, why
+- Main Body (300-400 words): Detailed information, context, quotes, explanations
+- Additional Context (100+ words): Background, implications, related information
+
+**Category**: {category}
+
+**ORIGINAL TITLE**: {title}
+
+**ORIGINAL CONTENT**:
 {content[:8000]}
 
-Now write your professional version:"""
+**NOW WRITE YOUR COMPREHENSIVE {min_words}+ WORD ARTICLE**:
+(Remember: Structure it properly and ensure you write AT LEAST {min_words} words)"""
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
-            # Required headers to avoid 402 errors – replace with your actual domain
             "HTTP-Referer": "https://blogsphere.up.railway.app/",
             "X-Title": "BlogSphere News"
         }
@@ -63,7 +67,7 @@ Now write your professional version:"""
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.4,
+            "temperature": 0.7,
             "max_tokens": 4096
         }
 

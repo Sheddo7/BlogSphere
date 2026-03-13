@@ -28,6 +28,7 @@ from .models import Category
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
 
+
 # ===== BASIC VIEWS =====
 
 def home(request):
@@ -58,6 +59,7 @@ def post_detail(request, slug):
 
 
 logger = logging.getLogger(__name__)
+
 
 def category_posts(request, slug):
     try:
@@ -659,6 +661,7 @@ def preview_article(request):
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
+
 def custom_404(request, exception):
     """Custom 404 page with categories and search."""
     # Get categories with post counts, ordered by popularity
@@ -730,3 +733,232 @@ def combined_dashboard(request):
 
 # Backward compatibility alias
 auto_fetch_news = fetch_news_now
+
+
+# ==============================================================================
+# DRAFT WORKFLOW VIEWS
+# ==============================================================================
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def save_as_draft(request):
+    """Process article with AI and save as DRAFT (not published yet)"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            article = data.get('article')
+
+            if not article:
+                return JsonResponse({'success': False, 'message': 'No article data provided'})
+
+            print(f"\n🤖 PROCESSING ARTICLE AS DRAFT")
+            print(f"Title: {article['title'][:60]}")
+
+            # Process with AI
+            from blog.ai_service import EnhancedNewsFetcher
+            processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
+
+            # Save as NewsArticle with status='draft'
+            news_article, created = NewsArticle.objects.update_or_create(
+                url=article.get('url', ''),
+                defaults={
+                    'title': article['title'][:499],
+                    'content': processed_article.get('content', article.get('description', '')),
+                    'summary': processed_article.get('description', article.get('description', ''))[:500],
+                    'source': article.get('source', 'Unknown'),
+                    'category': article.get('category', 'NEWS'),
+                    'image_url': article.get('image_url', ''),
+                    'published_at': timezone.now(),
+                    'status': 'draft',
+                    'word_count': processed_article.get('word_count', 0),
+                    'ai_processed': processed_article.get('ai_processed', False),
+                    'tags': 'news',
+                }
+            )
+
+            print(f"✅ Saved as draft: {news_article.id}")
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Article saved as draft',
+                'draft_id': news_article.id,
+                'word_count': news_article.word_count,
+                'ai_processed': news_article.ai_processed,
+            })
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def get_drafts(request):
+    """Get all draft articles"""
+    try:
+        drafts = NewsArticle.objects.filter(status='draft').order_by('-imported_at')[:50]
+
+        drafts_data = [{
+            'id': draft.id,
+            'title': draft.title,
+            'summary': draft.summary,
+            'content': draft.content,
+            'source': draft.source,
+            'category': draft.category,
+            'image_url': draft.image_url,
+            'word_count': draft.word_count,
+            'ai_processed': draft.ai_processed,
+            'tags': draft.tags,
+            'is_featured': draft.is_featured,
+            'imported_at': draft.imported_at.strftime('%Y-%m-%d %H:%M'),
+        } for draft in drafts]
+
+        return JsonResponse({'success': True, 'drafts': drafts_data, 'count': len(drafts_data)})
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': str(e)})
+
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def edit_draft(request, draft_id):
+    """Edit a draft article"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            draft = NewsArticle.objects.get(id=draft_id, status='draft')
+
+            draft.title = data.get('title', draft.title)
+            draft.content = data.get('content', draft.content)
+            draft.summary = data.get('summary', draft.summary)
+            draft.category = data.get('category', draft.category)
+            draft.tags = data.get('tags', draft.tags)
+            draft.is_featured = data.get('is_featured', draft.is_featured)
+            draft.image_url = data.get('image_url', draft.image_url)
+            draft.word_count = len(draft.content.split())
+            draft.save()
+
+            return JsonResponse(
+                {'success': True, 'message': 'Draft updated successfully', 'word_count': draft.word_count})
+
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def delete_draft(request, draft_id):
+    """Delete a draft article"""
+    if request.method == 'POST':
+        try:
+            draft = NewsArticle.objects.get(id=draft_id, status='draft')
+            title = draft.title
+            draft.delete()
+            return JsonResponse({'success': True, 'message': f'Draft "{title}" deleted successfully'})
+
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def publish_draft(request, draft_id):
+    """Publish a draft to the blog as a Post"""
+    if request.method == 'POST':
+        try:
+            from django.contrib.auth.models import User
+            from django.utils.text import slugify
+
+            draft = NewsArticle.objects.get(id=draft_id, status='draft')
+
+            category_obj, created = Category.objects.get_or_create(
+                name=draft.category if draft.category else 'NEWS'
+            )
+
+            try:
+                author = User.objects.get(username='admin')
+            except User.DoesNotExist:
+                author = User.objects.first()
+
+            base_slug = slugify(draft.title[:50])
+            slug = base_slug
+            counter = 1
+            while Post.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+
+            post = Post.objects.create(
+                title=draft.title[:500],
+                slug=slug,
+                content=draft.content,
+                excerpt=draft.summary[:500] if draft.summary else draft.title[:500],
+                author=author,
+                category=category_obj,
+                featured_image=draft.image_url if draft.image_url else '',
+                published_date=timezone.now(),
+                is_featured=draft.is_featured
+            )
+
+            tags = [tag.strip() for tag in draft.tags.split(',') if tag.strip()]
+            for tag in tags:
+                post.tags.add(tag)
+
+            if draft.ai_processed:
+                post.tags.add('ai-rewritten')
+
+            draft.status = 'published'
+            draft.created_as_post = True
+            draft.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': f'Published: {post.title}',
+                'post_slug': post.slug,
+                'post_id': post.id
+            })
+
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+@csrf_exempt
+@login_required
+@user_passes_test(is_staff)
+def update_draft_image(request, draft_id):
+    """Update draft image URL"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            draft = NewsArticle.objects.get(id=draft_id, status='draft')
+            draft.image_url = data.get('image_url', '')
+            draft.save()
+            return JsonResponse({'success': True, 'message': 'Image updated successfully'})
+
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)})
+
+    return JsonResponse({'success': False, 'message': 'Invalid request'})
