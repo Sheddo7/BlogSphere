@@ -15,7 +15,6 @@ urlpatterns = [
     path('search/', views.search, name='search'),
     path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
     path('api/openrouter-chat/', views.openrouter_chat, name='openrouter_chat'),
-    path('api/preview-article/', views.preview_article, name='preview_article'),
 
     # Enhanced news dashboard URLs
     path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),
@@ -32,8 +31,6 @@ urlpatterns = [
     path('api/remove-post-image/<int:post_id>/', views.remove_post_image, name='remove_post_image'),
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
-
-
 ]
 
 if settings.DEBUG:

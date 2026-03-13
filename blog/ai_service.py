@@ -591,7 +591,7 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def generate_blog_post_from_article(article):
-        """Generate blog post from article – without ai-rewritten tag."""
+        """Generate blog post from article"""
         from django.utils.text import slugify
         from django.contrib.auth.models import User
         from blog.models import Category, Post
@@ -626,7 +626,8 @@ class EnhancedNewsFetcher:
 
             post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
 
-            # Removed: if article.get('ai_processed'): post.tags.add('ai-rewritten')
+            if article.get('ai_processed'):
+                post.tags.add('ai-rewritten')
 
             print(f"✅ Created blog post: {post.title}")
             return post

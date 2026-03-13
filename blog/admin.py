@@ -1,4 +1,4 @@
-# blog/admin.py - UPDATED VERSION (remove print statements)
+# blog/admin.py - UPDATED VERSION (remove print statements, no Comment)
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Category, Post, NewsArticle
@@ -49,8 +49,6 @@ class PostAdmin(admin.ModelAdmin):
         updated = queryset.update(is_featured=False)
         self.message_user(request, f"{updated} posts removed from featured.")
     remove_featured.short_description = "Remove from featured"
-
-
 
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
@@ -109,6 +107,3 @@ class NewsArticleAdmin(admin.ModelAdmin):
 
         self.message_user(request, f"Created {created_count} blog posts from selected articles.")
     create_posts_from_selected.short_description = "Create blog posts from selected articles"
-
-# REMOVED: print("✅ Admin panel ready!")
-# REMOVED: print("👉 Visit: http://localhost:8000/admin/")

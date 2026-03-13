@@ -58,6 +58,8 @@ class Post(models.Model):
         ordering = ['-published_date']
 
 
+# Comment model has been removed
+
 
 class NewsSource(models.Model):
     name             = models.CharField(max_length=100)
