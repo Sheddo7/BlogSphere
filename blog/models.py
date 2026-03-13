@@ -69,24 +69,16 @@ class NewsSource(models.Model):
 
 
 class NewsArticle(models.Model):
-    STATUS_CHOICES = (
-        ('draft', 'Draft'),
-        ('ready', 'Ready to Publish'),
-        ('published', 'Published'),
-    )
-    title            = models.CharField(max_length=500)
-    content          = models.TextField()                     # original scraped content
-    paraphrased_content = models.TextField(blank=True)        # AI‑generated version
-    summary          = models.TextField(blank=True)
-    url              = models.URLField(unique=True, max_length=1000)
-    source           = models.CharField(max_length=100)
-    category         = models.CharField(max_length=50, blank=True)
-    image_url        = models.URLField(blank=True, max_length=1000)
-    published_at     = models.DateTimeField(null=True, blank=True)
-    imported_at      = models.DateTimeField(auto_now_add=True)
-    created_as_post  = models.BooleanField(default=False)
-    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    edited_content   = models.TextField(blank=True)           # optional manual edits
+    title          = models.CharField(max_length=500)
+    content        = models.TextField()
+    summary        = models.TextField(blank=True)
+    url            = models.URLField(unique=True, max_length=1000)
+    source         = models.CharField(max_length=100)
+    category       = models.CharField(max_length=50, blank=True)
+    image_url      = models.URLField(blank=True, max_length=1000)
+    published_at   = models.DateTimeField(null=True, blank=True)
+    imported_at    = models.DateTimeField(auto_now_add=True)
+    created_as_post = models.BooleanField(default=False)
 
     class Meta:
         ordering = ['-imported_at']

@@ -1,27 +1,21 @@
 from django.urls import path
 from . import views
-
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 
 urlpatterns = [
-    # Basic URLs
     path(settings.ADMIN_URL, admin.site.urls),
     path('', views.home, name='home'),
     path('post/<slug:slug>/', views.post_detail, name='post_detail'),
     path('category/<slug:slug>/', views.category_posts, name='category_posts'),
     path('search/', views.search, name='search'),
-
-    # Dashboards
-    path('dashboard/', views.combined_dashboard, name='combined_dashboard'),
-
-    # API endpoints
+    path('news-dashboard/', views.news_dashboard, name='news_dashboard'),
+    path('enhanced-news-dashboard/', views.enhanced_news_dashboard, name='enhanced_news_dashboard'),
     path('api/fetch-news-now/', views.fetch_news_now, name='fetch_news_now'),
-    path('api/get-draft/<int:draft_id>/', views.get_draft, name='get_draft'),
-    path('api/update-draft/', views.update_draft, name='update_draft'),
-    path('api/publish-draft/', views.publish_draft, name='publish_draft'),
-    path('api/delete-draft/<int:draft_id>/', views.delete_draft, name='delete_draft'),
+    path('api/generate-posts-now/', views.generate_posts_now, name='generate_posts_now'),
+    path('api/dashboard-stats/', views.dashboard_stats, name='dashboard_stats'),
+    path('api/convert-to-post/<int:article_id>/', views.convert_to_post, name='convert_to_post'),
     path('api/post-article/', views.post_article, name='post_article'),
     path('api/post-multiple-articles/', views.post_multiple_articles, name='post_multiple_articles'),
     path('api/get-post/<int:post_id>/', views.get_post, name='get_post'),
@@ -34,5 +28,4 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
