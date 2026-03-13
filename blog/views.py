@@ -634,13 +634,21 @@ def preview_article(request):
             if processed is None:
                 return JsonResponse({'success': False, 'message': 'Could not generate preview (scraping failed)'})
 
+            content = processed.get('content', '')
+            # Limit content to 50,000 characters to avoid response size issues
+            if len(content) > 50000:
+                content = content[:50000] + "\n\n...[content truncated due to length]"
+            summary = processed.get('description', '')[:200]
+
             return JsonResponse({
                 'success': True,
-                'content': processed.get('content', ''),
-                'summary': processed.get('description', '')[:200],
+                'content': content,
+                'summary': summary,
                 'word_count': processed.get('word_count', 0)
             })
         except Exception as e:
+            import traceback
+            traceback.print_exc()  # Log the full error to Railway console
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 

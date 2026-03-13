@@ -642,13 +642,13 @@ function previewArticle(index) {
 
     // Show loading in modal
     document.getElementById('previewTitle').innerText = article.title;
-    document.getElementById('previewSummary').value = ''; // clear
+    document.getElementById('previewSummary').value = '';
     document.getElementById('previewContent').value = 'Generating preview...';
     document.getElementById('previewWordCount').innerText = '0';
     const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
     previewModal.show();
 
-    // Call preview endpoint
+    // Call preview endpoint with improved error handling
     fetch('/api/preview-article/', {
         method: 'POST',
         headers: {
@@ -657,7 +657,19 @@ function previewArticle(index) {
         },
         body: JSON.stringify({ article: article })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.text().then(text => {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Invalid JSON response:', text);
+                throw new Error('Server returned an invalid response (possible timeout or size limit)');
+            }
+        });
+    })
     .then(data => {
         if (data.success) {
             document.getElementById('previewContent').value = data.content;
@@ -674,7 +686,8 @@ function previewArticle(index) {
         }
     })
     .catch(error => {
-        document.getElementById('previewContent').value = 'Error: ' + error;
+        console.error('Preview fetch error:', error);
+        document.getElementById('previewContent').value = 'Failed to load preview: ' + error.message;
         currentPreviewData.generated = null;
     });
 }
