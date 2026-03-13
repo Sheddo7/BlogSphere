@@ -1,4 +1,4 @@
-# blog/views.py - COMPLETE WORKING VERSION (BEFORE DRAFT CHANGES)
+# blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS (COMMENTS REMOVED)
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.utils import timezone
@@ -9,16 +9,32 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
 
-from .models import Post, Category, NewsArticle
+from .models import Post, Category, NewsArticle  # Comment removed
 from django.core.paginator import Paginator
-from .ai_service import EnhancedNewsFetcher, OpenRouterService
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+from blog.ai_service import OpenRouterService
+import logging
+from django.http import HttpResponseServerError
+
+from django.shortcuts import render
+from django.db.models import Count
+from .models import Category
+
+from django.db.models import Count
+from django.contrib.auth.decorators import login_required, user_passes_test
 
 # ===== BASIC VIEWS =====
 
 def home(request):
+    """Homepage view"""
     featured_posts = Post.objects.filter(is_featured=True)[:3]
     latest_posts = Post.objects.all()[:8]
+
     context = {
         'featured_posts': featured_posts,
         'latest_posts': latest_posts,
@@ -27,10 +43,13 @@ def home(request):
 
 
 def post_detail(request, slug):
+    """Individual post detail view (comments removed)"""
     post = get_object_or_404(Post, slug=slug)
     post.views += 1
     post.save()
+
     related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
+
     context = {
         'post': post,
         'related_posts': related_posts,
@@ -38,22 +57,32 @@ def post_detail(request, slug):
     return render(request, 'blog/post_detail.html', context)
 
 
+logger = logging.getLogger(__name__)
+
 def category_posts(request, slug):
-    category = get_object_or_404(Category, slug=slug)
-    posts_list = Post.objects.filter(category=category)
-    paginator = Paginator(posts_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')
-    context = {
-        'page_obj': page_obj,
-        'category': category,
-        'categories': categories,
-    }
-    return render(request, 'blog/category.html', context)
+    try:
+        category = get_object_or_404(Category, slug=slug)
+        posts_list = Post.objects.filter(category=category)
+        paginator = Paginator(posts_list, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Get all categories for the "Other categories" navigation
+        categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')
+
+        context = {
+            'page_obj': page_obj,
+            'category': category,
+            'categories': categories,
+        }
+        return render(request, 'blog/category.html', context)
+    except Exception as e:
+        logger.error(f"Error in category_posts for slug '{slug}': {e}", exc_info=True)
+        return HttpResponseServerError("An internal error occurred.")
 
 
 def search(request):
+    """Search results view"""
     query = request.GET.get('q', '')
     if query:
         results = Post.objects.filter(
@@ -63,6 +92,7 @@ def search(request):
         ).distinct()
     else:
         results = Post.objects.none()
+
     context = {
         'results': results,
         'query': query,
@@ -71,14 +101,17 @@ def search(request):
 
 
 def news_dashboard(request):
+    """Simple dashboard to view fetched news"""
     if not request.user.is_authenticated:
         return redirect('admin:login')
+
     total_articles = NewsArticle.objects.count()
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:10]
     from django.db.models import Count
     category_stats = NewsArticle.objects.values('category').annotate(
         count=Count('id')
     ).order_by('-count')
+
     context = {
         'total_articles': total_articles,
         'recent_articles': recent_articles,
@@ -142,12 +175,12 @@ def enhanced_news_dashboard(request):
 @login_required
 @user_passes_test(is_staff)
 def fetch_news_now(request):
+    """AJAX endpoint to fetch news immediately"""
     if request.method == 'POST':
         try:
             categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment'])
             sources = request.POST.getlist('sources', ['google', 'reddit'])
             limit_per_source = int(request.POST.get('limit_per_source', 3))
-            auto_save = request.POST.get('auto_save') == 'true'
 
             from blog.ai_service import EnhancedNewsFetcher
             fetcher = EnhancedNewsFetcher()
@@ -158,6 +191,8 @@ def fetch_news_now(request):
             )
 
             saved_count = 0
+            auto_save = request.POST.get('auto_save') == 'true'
+
             if auto_save:
                 for article in articles:
                     if not NewsArticle.objects.filter(url=article['url']).exists():
@@ -192,17 +227,14 @@ def generate_posts_now(request):
         try:
             count = int(request.POST.get('count', 5))
             category_filter = request.POST.get('category', '')
-
             queryset = NewsArticle.objects.filter(created_as_post=False)
             if category_filter:
                 queryset = queryset.filter(category=category_filter)
-
             articles = queryset.order_by('-published_at')[:count]
 
             from blog.ai_service import EnhancedNewsFetcher
             fetcher = EnhancedNewsFetcher()
             created_count = 0
-
             for article in articles:
                 article_dict = {
                     'title': article.title,
@@ -218,16 +250,9 @@ def generate_posts_now(request):
                     article.created_as_post = True
                     article.save()
                     created_count += 1
-
-            return JsonResponse({
-                'success': True,
-                'message': f'Generated {created_count} blog posts'
-            })
+            return JsonResponse({'success': True, 'message': f'Generated {created_count} blog posts'})
         except Exception as e:
-            return JsonResponse({
-                'success': False,
-                'message': f'Error: {str(e)}'
-            })
+            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 
@@ -247,6 +272,8 @@ def dashboard_stats(request):
         'to_process': to_process,
     })
 
+
+# ===== HELPER VIEWS =====
 
 @login_required
 @user_passes_test(is_staff)
@@ -277,12 +304,13 @@ def convert_to_post(request, article_id):
         return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
 
 
-# ===== POST ARTICLE =====
+# ===== NEW API ENDPOINTS =====
 
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def post_article(request):
+    """Post article with AI content generation – accepts pre-generated content."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -346,6 +374,7 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
+            # Save as NewsArticle if requested
             if data.get('save_article', True):
                 from blog.models import NewsArticle
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
@@ -561,22 +590,23 @@ def delete_post(request, post_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
-# ===== OPENROUTER CHAT =====
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def openrouter_chat(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST method required'}, status=405)
+
     try:
         data = json.loads(request.body)
         message = data.get('message', '')
         temperature = float(data.get('temperature', 0.7))
         if not message:
             return JsonResponse({'error': 'Message is required'}, status=400)
+
         service = OpenRouterService()
         result = service.generate_response(message, temperature=temperature)
+
         if result['success']:
             return JsonResponse({
                 'success': True,
@@ -594,12 +624,11 @@ def openrouter_chat(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-# ===== PREVIEW ARTICLE =====
-
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def preview_article(request):
+    """Generate AI content for preview without saving."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -613,6 +642,7 @@ def preview_article(request):
                 return JsonResponse({'success': False, 'message': 'Could not generate preview (scraping failed)'})
 
             content = processed.get('content', '')
+            # Limit content to 50,000 characters to avoid response size issues
             if len(content) > 50000:
                 content = content[:50000] + "\n\n...[content truncated due to length]"
             summary = processed.get('description', '')[:200]
@@ -625,9 +655,77 @@ def preview_article(request):
             })
         except Exception as e:
             import traceback
-            traceback.print_exc()
+            traceback.print_exc()  # Log the full error to Railway console
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+def custom_404(request, exception):
+    """Custom 404 page with categories and search."""
+    # Get categories with post counts, ordered by popularity
+    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:6]
+    return render(request, '404.html', {'categories': categories}, status=404)
+
+
+@login_required
+@user_passes_test(is_staff)
+def combined_dashboard(request):
+    """Single dashboard with all stats, recent articles, posts, fetch form, and scheduled jobs."""
+    # Stats
+    total_articles = NewsArticle.objects.count()
+    today_articles = NewsArticle.objects.filter(
+        imported_at__date=timezone.now().date()
+    ).count()
+    auto_posts = Post.objects.filter(title__startswith='[News]').count()
+    to_process = NewsArticle.objects.filter(created_as_post=False).count()
+
+    # Recent articles
+    recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
+
+    # Recent posts
+    recent_posts = Post.objects.order_by('-published_date')[:10]
+
+    # Categories
+    categories = Category.objects.all()
+
+    # Category stats
+    category_stats = NewsArticle.objects.values('category').annotate(
+        count=Count('id')
+    ).order_by('-count')
+
+    # Mock scheduled jobs (you can replace with real job data)
+    scheduled_jobs = [
+        {
+            'id': 1,
+            'name': 'Hourly News Fetch',
+            'schedule': 'Every hour',
+            'last_run': timezone.now() - timezone.timedelta(minutes=30),
+            'next_run': timezone.now() + timezone.timedelta(minutes=30),
+            'is_active': True,
+        },
+        {
+            'id': 2,
+            'name': 'Daily Post Generation',
+            'schedule': '9:00 AM daily',
+            'last_run': timezone.now() - timezone.timedelta(hours=15),
+            'next_run': timezone.now() + timezone.timedelta(hours=9),
+            'is_active': True,
+        },
+    ]
+
+    context = {
+        'stats': {
+            'total_articles': total_articles,
+            'today_articles': today_articles,
+            'auto_posts': auto_posts,
+            'to_process': to_process,
+        },
+        'recent_articles': recent_articles,
+        'recent_posts': recent_posts,
+        'categories': categories,
+        'category_stats': category_stats,
+        'scheduled_jobs': scheduled_jobs,
+    }
+    return render(request, 'blog/combined_dashboard.html', context)
 
 
 # Backward compatibility alias
