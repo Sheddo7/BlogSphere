@@ -850,8 +850,7 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
-            if ai_processed:
-                post.tags.add('ai-rewritten')
+
 
             # Save as NewsArticle if requested
             if data.get('save_article', True):
