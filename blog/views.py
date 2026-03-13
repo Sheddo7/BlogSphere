@@ -9,7 +9,7 @@ from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
 
-from .models import Post, Category, Comment, NewsArticle
+from .models import Post, Category, NewsArticle
 from django.core.paginator import Paginator
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -40,15 +40,14 @@ def post_detail(request, slug):
     post.views += 1
     post.save()
 
-    # Get comments for this post
-    comments = Comment.objects.filter(post=post, is_approved=True)
+
 
     related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
 
     context = {
         'post': post,
         'related_posts': related_posts,
-        'comments': comments,
+
     }
     return render(request, 'blog/post_detail.html', context)
 

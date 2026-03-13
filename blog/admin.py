@@ -1,7 +1,7 @@
 # blog/admin.py - UPDATED VERSION (remove print statements)
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Post, Comment, NewsArticle
+from .models import Category, Post, NewsArticle
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -50,22 +50,7 @@ class PostAdmin(admin.ModelAdmin):
         self.message_user(request, f"{updated} posts removed from featured.")
     remove_featured.short_description = "Remove from featured"
 
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'post', 'created_at', 'is_approved']
-    list_filter = ['is_approved', 'created_at']
-    search_fields = ['name', 'email', 'content']
-    actions = ['approve_comments', 'disapprove_comments']
 
-    def approve_comments(self, request, queryset):
-        updated = queryset.update(is_approved=True)
-        self.message_user(request, f"{updated} comments approved.")
-    approve_comments.short_description = "Approve comments"
-
-    def disapprove_comments(self, request, queryset):
-        updated = queryset.update(is_approved=False)
-        self.message_user(request, f"{updated} comments disapproved.")
-    disapprove_comments.short_description = "Disapprove comments"
 
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
