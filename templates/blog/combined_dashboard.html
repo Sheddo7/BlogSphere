@@ -609,6 +609,8 @@ function deleteSelectedArticles() {
 function openArticleEditor(index) {
     currentEditIndex = index;
     const article = fetchedArticles[index];
+
+    // Populate fields
     document.getElementById('editArticleIndex').value = index;
     document.getElementById('editTitle').value = article.title || '';
     document.getElementById('editContent').value = article.content || '';
@@ -618,6 +620,7 @@ function openArticleEditor(index) {
     document.getElementById('editCategory').value = article.category || 'NEWS';
     document.getElementById('editUrl').value = article.url || '';
 
+    // Image preview
     if (article.image_url) {
         document.getElementById('articleImagePreview').src = article.image_url;
         document.getElementById('imageUrl').value = article.image_url;
@@ -626,17 +629,32 @@ function openArticleEditor(index) {
         document.getElementById('imageUrl').value = '';
     }
 
+    // File input change handler
     document.getElementById('imageUpload').onchange = function(e) {
         if (e.target.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) { document.getElementById('articleImagePreview').src = e.target.result; };
+            reader.onload = function(e) {
+                document.getElementById('articleImagePreview').src = e.target.result;
+            };
             reader.readAsDataURL(e.target.files[0]);
         }
     };
-    const modal = new bootstrap.Modal(document.getElementById('articleEditorModal'));
-    modal.show();
-}
 
+    // Ensure modal inputs are enabled (remove any disabled attributes)
+    const modalInputs = document.querySelectorAll('#articleEditorModal input, #articleEditorModal textarea, #articleEditorModal select');
+    modalInputs.forEach(el => el.removeAttribute('disabled'));
+
+    // Show modal using Bootstrap's API
+    const modalEl = document.getElementById('articleEditorModal');
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+
+    // Focus on first input after modal is shown
+    modalEl.addEventListener('shown.bs.modal', function onShown() {
+        document.getElementById('editTitle').focus();
+        modalEl.removeEventListener('shown.bs.modal', onShown);
+    }, { once: true });
+}
 // Save article edits
 function saveArticleEdits() {
     if (currentEditIndex === -1) return;
