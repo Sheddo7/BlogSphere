@@ -25,6 +25,9 @@ from django.shortcuts import render
 from django.db.models import Count
 from .models import Category
 
+from django.db.models import Count
+from django.contrib.auth.decorators import login_required, user_passes_test
+
 # ===== BASIC VIEWS =====
 
 def home(request):
@@ -661,6 +664,68 @@ def custom_404(request, exception):
     # Get categories with post counts, ordered by popularity
     categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:6]
     return render(request, '404.html', {'categories': categories}, status=404)
+
+
+@login_required
+@user_passes_test(is_staff)
+def combined_dashboard(request):
+    """Single dashboard with all stats, recent articles, posts, fetch form, and scheduled jobs."""
+    # Stats from enhanced dashboard
+    total_articles = NewsArticle.objects.count()
+    today_articles = NewsArticle.objects.filter(
+        imported_at__date=timezone.now().date()
+    ).count()
+    auto_posts = Post.objects.filter(title__startswith='[News]').count()
+    to_process = NewsArticle.objects.filter(created_as_post=False).count()
+
+    # Recent articles
+    recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
+
+    # Recent posts
+    recent_posts = Post.objects.order_by('-published_date')[:10]
+
+    # Categories (for stats and sidebar)
+    categories = Category.objects.all()
+
+    # Category stats (from news_dashboard)
+    category_stats = NewsArticle.objects.values('category').annotate(
+        count=Count('id')
+    ).order_by('-count')
+
+    # Mock scheduled jobs (from enhanced dashboard)
+    scheduled_jobs = [
+        {
+            'id': 1,
+            'name': 'Hourly News Fetch',
+            'schedule': 'Every hour',
+            'last_run': timezone.now() - timezone.timedelta(minutes=30),
+            'next_run': timezone.now() + timezone.timedelta(minutes=30),
+            'is_active': True,
+        },
+        {
+            'id': 2,
+            'name': 'Daily Post Generation',
+            'schedule': '9:00 AM daily',
+            'last_run': timezone.now() - timezone.timedelta(hours=15),
+            'next_run': timezone.now() + timezone.timedelta(hours=9),
+            'is_active': True,
+        },
+    ]
+
+    context = {
+        'stats': {
+            'total_articles': total_articles,
+            'today_articles': today_articles,
+            'auto_posts': auto_posts,
+            'to_process': to_process,
+        },
+        'recent_articles': recent_articles,
+        'recent_posts': recent_posts,
+        'categories': categories,
+        'category_stats': category_stats,
+        'scheduled_jobs': scheduled_jobs,
+    }
+    return render(request, 'blog/combined_dashboard.html', context)
 
 
 # Backward compatibility alias

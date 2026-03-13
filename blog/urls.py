@@ -31,6 +31,7 @@ urlpatterns = [
     path('api/remove-post-image/<int:post_id>/', views.remove_post_image, name='remove_post_image'),
     path('api/delete-news-article/<int:article_id>/', views.delete_news_article, name='delete_news_article'),
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
+    path('dashboard/', views.combined_dashboard, name='combined_dashboard'),
 ]
 
 handler404 = 'blog.views.custom_404'
