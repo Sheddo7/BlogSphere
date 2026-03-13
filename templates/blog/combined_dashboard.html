@@ -179,7 +179,7 @@
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="sources" value="google" id="sourceGoogle">
-              <label class="form-check-label" for="sourceGoogle"><i class="fab fa-google text-warning"></i> Google News <small class="text-muted">(May not work)</small></label>
+              <label class="form-check-label" for="sourceGoogle"><i class="fab fa-google text-warning"></i> Google News</label>
             </div>
             <div class="form-check">
               <input class="form-check-input" type="checkbox" name="sources" value="reddit" id="sourceReddit">
@@ -214,11 +214,10 @@
               <label class="form-check-label" for="catTechnology"><span class="badge bg-secondary">Technology</span></label>
             </div>
           </div>
-          <!-- Limit and Options -->
+          <!-- Limit -->
           <div class="col-md-3 mb-3">
             <label for="limit" class="form-label fw-bold">Articles per source</label>
             <input type="number" class="form-control" id="limit" name="limit_per_source" value="5" min="1" max="20">
-            <!-- Auto-save is now implicit; we hide the option -->
           </div>
           <!-- Fetch Button -->
           <div class="col-md-3 mb-3 d-flex align-items-end">
@@ -298,7 +297,7 @@
               </td>
             </tr>
             {% empty %}
-            <tr><td colspan="5" style="text-align:center;padding:2rem;">No articles found. Fetch some news!</td></tr>
+            <tr><td colspan="5" style="text-align:center;">No articles found. Fetch some news!</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -493,11 +492,11 @@
 
 <script>
 // ========== DASHBOARD JAVASCRIPT ==========
-let fetchedArticles = []; // kept for compatibility with old functions
+let fetchedArticles = [];
 let currentEditIndex = -1;
-let currentEditDraftId = null; // for tracking draft being edited
+let currentEditDraftId = null;
 
-// Fetch news with AJAX (now always saves drafts)
+// Fetch news with AJAX
 document.getElementById('fetchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const form = this;
@@ -515,7 +514,7 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     sources.forEach(source => formData.append('sources', source));
     categories.forEach(category => formData.append('categories', category));
     formData.append('limit_per_source', limit);
-    formData.append('auto_save', 'true'); // always true
+    formData.append('auto_save', 'true');
 
     fetch(form.action, {
         method: 'POST',
@@ -526,7 +525,6 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     .then(data => {
         if (data.success) {
             showToast(data.message, 'success');
-            // Reload page to show new drafts
             setTimeout(() => location.reload(), 1500);
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -542,13 +540,9 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     });
 });
 
-// ===== DRAFT FUNCTIONS =====
-
-// Edit a draft – open modal with draft data
+// Draft functions
 function editDraft(draftId) {
     currentEditDraftId = draftId;
-    currentEditIndex = null; // not a fetched article
-
     fetch(`/api/get-draft/${draftId}/`)
     .then(response => response.json())
     .then(data => {
@@ -557,7 +551,7 @@ function editDraft(draftId) {
             document.getElementById('editTitle').value = data.title;
             document.getElementById('editContent').value = data.content;
             document.getElementById('editDescription').value = data.summary;
-            document.getElementById('editTags').value = 'news'; // you could store tags in draft
+            document.getElementById('editTags').value = 'news';
             document.getElementById('editSource').value = data.source;
             document.getElementById('editCategory').value = data.category;
             document.getElementById('editUrl').value = data.url;
@@ -568,7 +562,6 @@ function editDraft(draftId) {
                 document.getElementById('articleImagePreview').src = "{% static 'img/default-article.jpg' %}";
                 document.getElementById('imageUrl').value = '';
             }
-            // Show modal
             const modal = new bootstrap.Modal(document.getElementById('articleEditorModal'));
             modal.show();
         } else {
@@ -577,7 +570,6 @@ function editDraft(draftId) {
     });
 }
 
-// Save draft edits
 function saveDraftEdits() {
     if (!currentEditDraftId) return;
     const data = {
@@ -603,7 +595,6 @@ function saveDraftEdits() {
         if (data.success) {
             showToast('Draft updated', 'success');
             bootstrap.Modal.getInstance(document.getElementById('articleEditorModal')).hide();
-            // Update the draft row in the table (simple reload for now)
             location.reload();
         } else {
             showToast('Error: ' + data.message, 'danger');
@@ -611,7 +602,6 @@ function saveDraftEdits() {
     });
 }
 
-// Publish draft (from modal)
 function publishDraftFromModal() {
     if (!currentEditDraftId) return;
     fetch('/api/publish-draft/', {
@@ -634,7 +624,6 @@ function publishDraftFromModal() {
     });
 }
 
-// Publish draft directly from drafts table
 function publishDraft(draftId) {
     fetch('/api/publish-draft/', {
         method: 'POST',
@@ -655,7 +644,6 @@ function publishDraft(draftId) {
     });
 }
 
-// Delete draft
 function deleteDraft(draftId) {
     if (confirm('Delete this draft?')) {
         fetch('/api/delete-draft/' + draftId + '/', {
@@ -674,24 +662,21 @@ function deleteDraft(draftId) {
     }
 }
 
-// ===== OTHER EXISTING FUNCTIONS (postSingleArticle, postAllArticles, etc.) =====
-// We'll keep them for compatibility, but the main workflow now uses drafts.
-// If you no longer use the old "fetchedArticles" display, you can remove these functions.
-function postSingleArticle(index = null) { /* ... existing code ... */ }
-function postAllArticles() { /* ... existing code ... */ }
-function deleteFetchedArticle(index) { /* ... existing code ... */ }
-function deleteSelectedArticles() { /* ... existing code ... */ }
-function openArticleEditor(index) { /* ... existing code ... */ }
-function saveArticleEdits() { /* ... existing code ... */ }
-function clearResults() { /* ... existing code ... */ }
-function deleteNewsArticle(articleId) { /* ... existing code ... */ }
-function deletePost(postId) { /* ... existing code ... */ }
-function editPostImage(postId) { /* ... existing code ... */ }
-function updatePostImage() { /* ... existing code ... */ }
-function removePostImage() { /* ... existing code ... */ }
-function convertToPost(articleId) { /* ... existing code ... */ }
+// Other functions (stubs to avoid errors)
+function postSingleArticle(index) { showToast('Function not implemented', 'warning'); }
+function postAllArticles() { showToast('Function not implemented', 'warning'); }
+function deleteFetchedArticle(index) { showToast('Function not implemented', 'warning'); }
+function deleteSelectedArticles() { showToast('Function not implemented', 'warning'); }
+function openArticleEditor(index) { showToast('Function not implemented', 'warning'); }
+function saveArticleEdits() { showToast('Function not implemented', 'warning'); }
+function clearResults() { showToast('Function not implemented', 'warning'); }
+function deleteNewsArticle(articleId) { showToast('Function not implemented', 'warning'); }
+function deletePost(postId) { showToast('Function not implemented', 'warning'); }
+function editPostImage(postId) { showToast('Function not implemented', 'warning'); }
+function updatePostImage() { showToast('Function not implemented', 'warning'); }
+function removePostImage() { showToast('Function not implemented', 'warning'); }
+function convertToPost(articleId) { showToast('Function not implemented', 'warning'); }
 
-// Toast notification
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed bottom-0 end-0 m-3';
@@ -708,7 +693,7 @@ function showToast(message, type) {
     setTimeout(() => toast.remove(), 3000);
 }
 
-// Smooth page transitions
+// Smooth page transitions (optional)
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('a[href]').forEach(function(a) {
     var href = a.getAttribute('href');

@@ -13,6 +13,7 @@ import logging
 from .models import Post, Category, NewsArticle
 from django.core.paginator import Paginator
 from .ai_service import EnhancedNewsFetcher, OpenRouterService
+from django.http import HttpResponseServerError
 
 logger = logging.getLogger(__name__)
 
@@ -111,48 +112,52 @@ def is_staff(user):
 @user_passes_test(is_staff)
 def combined_dashboard(request):
     """Single dashboard with all stats, drafts, recent articles, posts, fetch form, and scheduled jobs."""
-    # Stats
-    total_articles = NewsArticle.objects.count()
-    today_articles = NewsArticle.objects.filter(imported_at__date=timezone.now().date()).count()
-    auto_posts = Post.objects.filter(title__startswith='[News]').count()
-    to_process = NewsArticle.objects.filter(status='draft').count()
+    try:
+        # Stats
+        total_articles = NewsArticle.objects.count()
+        today_articles = NewsArticle.objects.filter(imported_at__date=timezone.now().date()).count()
+        auto_posts = Post.objects.filter(title__startswith='[News]').count()
+        to_process = NewsArticle.objects.filter(status='draft').count()
 
-    # Recent articles (all)
-    recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
+        # Recent articles (all)
+        recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
 
-    # Drafts
-    draft_articles = NewsArticle.objects.filter(status='draft').order_by('-imported_at')[:10]
+        # Drafts
+        draft_articles = NewsArticle.objects.filter(status='draft').order_by('-imported_at')[:10]
 
-    # Recent posts
-    recent_posts = Post.objects.order_by('-published_date')[:10]
+        # Recent posts
+        recent_posts = Post.objects.order_by('-published_date')[:10]
 
-    # Categories
-    categories = Category.objects.all()
+        # Categories
+        categories = Category.objects.all()
 
-    # Category stats
-    category_stats = NewsArticle.objects.values('category').annotate(count=Count('id')).order_by('-count')
+        # Category stats
+        category_stats = NewsArticle.objects.values('category').annotate(count=Count('id')).order_by('-count')
 
-    # Mock scheduled jobs (replace with real data if you have a scheduler)
-    scheduled_jobs = [
-        {'id': 1, 'name': 'Hourly News Fetch', 'schedule': 'Every hour', 'last_run': timezone.now() - timezone.timedelta(minutes=30), 'next_run': timezone.now() + timezone.timedelta(minutes=30), 'is_active': True},
-        {'id': 2, 'name': 'Daily Post Generation', 'schedule': '9:00 AM daily', 'last_run': timezone.now() - timezone.timedelta(hours=15), 'next_run': timezone.now() + timezone.timedelta(hours=9), 'is_active': True},
-    ]
+        # Mock scheduled jobs (replace with real data if you have a scheduler)
+        scheduled_jobs = [
+            {'id': 1, 'name': 'Hourly News Fetch', 'schedule': 'Every hour', 'last_run': timezone.now() - timezone.timedelta(minutes=30), 'next_run': timezone.now() + timezone.timedelta(minutes=30), 'is_active': True},
+            {'id': 2, 'name': 'Daily Post Generation', 'schedule': '9:00 AM daily', 'last_run': timezone.now() - timezone.timedelta(hours=15), 'next_run': timezone.now() + timezone.timedelta(hours=9), 'is_active': True},
+        ]
 
-    context = {
-        'stats': {
-            'total_articles': total_articles,
-            'today_articles': today_articles,
-            'auto_posts': auto_posts,
-            'to_process': to_process,
-        },
-        'recent_articles': recent_articles,
-        'draft_articles': draft_articles,
-        'recent_posts': recent_posts,
-        'categories': categories,
-        'category_stats': category_stats,
-        'scheduled_jobs': scheduled_jobs,
-    }
-    return render(request, 'blog/combined_dashboard.html', context)
+        context = {
+            'stats': {
+                'total_articles': total_articles,
+                'today_articles': today_articles,
+                'auto_posts': auto_posts,
+                'to_process': to_process,
+            },
+            'recent_articles': recent_articles,
+            'draft_articles': draft_articles,
+            'recent_posts': recent_posts,
+            'categories': categories,
+            'category_stats': category_stats,
+            'scheduled_jobs': scheduled_jobs,
+        }
+        return render(request, 'blog/combined_dashboard.html', context)
+    except Exception as e:
+        logger.error(f"Error in combined_dashboard: {e}", exc_info=True)
+        return HttpResponseServerError("An internal error occurred. Check logs for details.")
 
 
 # ===== FETCH NEWS (modified to save drafts) =====
