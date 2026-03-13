@@ -50,16 +50,19 @@ def post_detail(request, slug):
 
 
 def category_posts(request, slug):
-    """Category posts listing view"""
     category = get_object_or_404(Category, slug=slug)
     posts_list = Post.objects.filter(category=category)
     paginator = Paginator(posts_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Get all categories for the "Other categories" navigation
+    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')
+
     context = {
         'page_obj': page_obj,
         'category': category,
+        'categories': categories,
     }
     return render(request, 'blog/category.html', context)
 
