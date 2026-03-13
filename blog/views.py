@@ -1,32 +1,20 @@
-# blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS (COMMENTS REMOVED)
+# blog/views.py - COMPLETE WITH DRAFT WORKFLOW
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseServerError
 from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
 import json
-
-from .models import Post, Category, NewsArticle  # Comment removed
-from django.core.paginator import Paginator
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
-from blog.ai_service import OpenRouterService
 import logging
-from django.http import HttpResponseServerError
 
-from django.shortcuts import render
-from django.db.models import Count
-from .models import Category
+from .models import Post, Category, NewsArticle
+from django.core.paginator import Paginator
+from .ai_service import EnhancedNewsFetcher, OpenRouterService
 
-from django.db.models import Count
-from django.contrib.auth.decorators import login_required, user_passes_test
+logger = logging.getLogger(__name__)
 
 # ===== BASIC VIEWS =====
 
@@ -34,7 +22,6 @@ def home(request):
     """Homepage view"""
     featured_posts = Post.objects.filter(is_featured=True)[:3]
     latest_posts = Post.objects.all()[:8]
-
     context = {
         'featured_posts': featured_posts,
         'latest_posts': latest_posts,
@@ -47,9 +34,7 @@ def post_detail(request, slug):
     post = get_object_or_404(Post, slug=slug)
     post.views += 1
     post.save()
-
     related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
-
     context = {
         'post': post,
         'related_posts': related_posts,
@@ -57,19 +42,16 @@ def post_detail(request, slug):
     return render(request, 'blog/post_detail.html', context)
 
 
-logger = logging.getLogger(__name__)
-
 def category_posts(request, slug):
+    """Category posts listing view"""
     try:
         category = get_object_or_404(Category, slug=slug)
         posts_list = Post.objects.filter(category=category)
         paginator = Paginator(posts_list, 10)
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
-
         # Get all categories for the "Other categories" navigation
         categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')
-
         context = {
             'page_obj': page_obj,
             'category': category,
@@ -92,7 +74,6 @@ def search(request):
         ).distinct()
     else:
         results = Post.objects.none()
-
     context = {
         'results': results,
         'query': query,
@@ -101,17 +82,15 @@ def search(request):
 
 
 def news_dashboard(request):
-    """Simple dashboard to view fetched news"""
+    """Simple dashboard to view fetched news (kept for backward compatibility)"""
     if not request.user.is_authenticated:
         return redirect('admin:login')
-
     total_articles = NewsArticle.objects.count()
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:10]
     from django.db.models import Count
     category_stats = NewsArticle.objects.values('category').annotate(
         count=Count('id')
     ).order_by('-count')
-
     context = {
         'total_articles': total_articles,
         'recent_articles': recent_articles,
@@ -120,42 +99,45 @@ def news_dashboard(request):
     return render(request, 'blog/news_dashboard.html', context)
 
 
-# ===== ENHANCED NEWS DASHBOARD VIEWS =====
+# ===== STAFF ONLY HELPER =====
 
 def is_staff(user):
     return user.is_staff
 
 
+# ===== ENHANCED / COMBINED DASHBOARD =====
+
 @login_required
 @user_passes_test(is_staff)
-def enhanced_news_dashboard(request):
+def combined_dashboard(request):
+    """Single dashboard with all stats, drafts, recent articles, posts, fetch form, and scheduled jobs."""
+    # Stats
     total_articles = NewsArticle.objects.count()
-    today_articles = NewsArticle.objects.filter(
-        imported_at__date=timezone.now().date()
-    ).count()
+    today_articles = NewsArticle.objects.filter(imported_at__date=timezone.now().date()).count()
     auto_posts = Post.objects.filter(title__startswith='[News]').count()
-    to_process = NewsArticle.objects.filter(created_as_post=False).count()
+    to_process = NewsArticle.objects.filter(status='draft').count()
+
+    # Recent articles (all)
     recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
+
+    # Drafts
+    draft_articles = NewsArticle.objects.filter(status='draft').order_by('-imported_at')[:10]
+
+    # Recent posts
     recent_posts = Post.objects.order_by('-published_date')[:10]
+
+    # Categories
     categories = Category.objects.all()
+
+    # Category stats
+    category_stats = NewsArticle.objects.values('category').annotate(count=Count('id')).order_by('-count')
+
+    # Mock scheduled jobs (replace with real data if you have a scheduler)
     scheduled_jobs = [
-        {
-            'id': 1,
-            'name': 'Hourly News Fetch',
-            'schedule': 'Every hour',
-            'last_run': timezone.now() - timezone.timedelta(minutes=30),
-            'next_run': timezone.now() + timezone.timedelta(minutes=30),
-            'is_active': True,
-        },
-        {
-            'id': 2,
-            'name': 'Daily Post Generation',
-            'schedule': '9:00 AM daily',
-            'last_run': timezone.now() - timezone.timedelta(hours=15),
-            'next_run': timezone.now() + timezone.timedelta(hours=9),
-            'is_active': True,
-        },
+        {'id': 1, 'name': 'Hourly News Fetch', 'schedule': 'Every hour', 'last_run': timezone.now() - timezone.timedelta(minutes=30), 'next_run': timezone.now() + timezone.timedelta(minutes=30), 'is_active': True},
+        {'id': 2, 'name': 'Daily Post Generation', 'schedule': '9:00 AM daily', 'last_run': timezone.now() - timezone.timedelta(hours=15), 'next_run': timezone.now() + timezone.timedelta(hours=9), 'is_active': True},
     ]
+
     context = {
         'stats': {
             'total_articles': total_articles,
@@ -164,25 +146,28 @@ def enhanced_news_dashboard(request):
             'to_process': to_process,
         },
         'recent_articles': recent_articles,
+        'draft_articles': draft_articles,
         'recent_posts': recent_posts,
         'categories': categories,
+        'category_stats': category_stats,
         'scheduled_jobs': scheduled_jobs,
     }
-    return render(request, 'blog/enhanced-news-dashboard.html', context)
+    return render(request, 'blog/combined_dashboard.html', context)
 
+
+# ===== FETCH NEWS (modified to save drafts) =====
 
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def fetch_news_now(request):
-    """AJAX endpoint to fetch news immediately"""
+    """Fetch news and save as drafts after AI processing."""
     if request.method == 'POST':
         try:
             categories = request.POST.getlist('categories', ['news', 'sport', 'entertainment'])
             sources = request.POST.getlist('sources', ['google', 'reddit'])
             limit_per_source = int(request.POST.get('limit_per_source', 3))
 
-            from blog.ai_service import EnhancedNewsFetcher
             fetcher = EnhancedNewsFetcher()
             articles = fetcher.fetch_multiple_sources(
                 categories=categories,
@@ -191,26 +176,27 @@ def fetch_news_now(request):
             )
 
             saved_count = 0
-            auto_save = request.POST.get('auto_save') == 'true'
-
-            if auto_save:
-                for article in articles:
-                    if not NewsArticle.objects.filter(url=article['url']).exists():
+            for article in articles:
+                if not NewsArticle.objects.filter(url=article['url']).exists():
+                    processed = EnhancedNewsFetcher.process_article_with_ai(article)
+                    if processed:
                         NewsArticle.objects.create(
                             title=article['title'][:499],
                             content=article.get('content', '')[:5000],
-                            summary=article.get('description', '')[:500],
+                            paraphrased_content=processed.get('content', '')[:5000],
+                            summary=processed.get('description', '')[:500],
                             url=article['url'],
                             source=article.get('source', 'Unknown'),
                             category=article.get('category', 'NEWS'),
                             image_url=article.get('image_url', ''),
                             published_at=timezone.now(),
+                            status='draft'
                         )
                         saved_count += 1
 
             return JsonResponse({
                 'success': True,
-                'message': f'Fetched {len(articles)} articles' + (f' and saved {saved_count}' if auto_save else ''),
+                'message': f'Fetched {len(articles)} articles, saved {saved_count} as drafts.',
                 'articles': articles,
                 'saved_count': saved_count
             })
@@ -219,92 +205,94 @@ def fetch_news_now(request):
     return JsonResponse({'success': False, 'message': 'Invalid request'})
 
 
+# ===== DRAFT API ENDPOINTS =====
+
+@login_required
+@user_passes_test(is_staff)
+def get_draft(request, draft_id):
+    """Get a single draft for editing."""
+    try:
+        draft = NewsArticle.objects.get(id=draft_id)
+        return JsonResponse({
+            'success': True,
+            'id': draft.id,
+            'title': draft.title,
+            'content': draft.paraphrased_content or draft.content,
+            'summary': draft.summary,
+            'source': draft.source,
+            'category': draft.category,
+            'url': draft.url,
+            'image_url': draft.image_url,
+        })
+    except NewsArticle.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Draft not found'})
+
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
-def generate_posts_now(request):
+def update_draft(request):
+    """Update an existing draft with edited content."""
     if request.method == 'POST':
+        data = json.loads(request.body)
         try:
-            count = int(request.POST.get('count', 5))
-            category_filter = request.POST.get('category', '')
-            queryset = NewsArticle.objects.filter(created_as_post=False)
-            if category_filter:
-                queryset = queryset.filter(category=category_filter)
-            articles = queryset.order_by('-published_at')[:count]
-
-            from blog.ai_service import EnhancedNewsFetcher
-            fetcher = EnhancedNewsFetcher()
-            created_count = 0
-            for article in articles:
-                article_dict = {
-                    'title': article.title,
-                    'description': article.summary,
-                    'content': article.content,
-                    'url': article.url,
-                    'source': article.source,
-                    'category': article.category,
-                    'published_at': article.published_at.isoformat() if article.published_at else None,
-                }
-                post = fetcher.generate_blog_post_from_article(article_dict)
-                if post:
-                    article.created_as_post = True
-                    article.save()
-                    created_count += 1
-            return JsonResponse({'success': True, 'message': f'Generated {created_count} blog posts'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
-    return JsonResponse({'success': False, 'message': 'Invalid request'})
+            draft = NewsArticle.objects.get(id=data['id'])
+            draft.title = data['title']
+            draft.paraphrased_content = data['content']
+            draft.summary = data['summary']
+            draft.source = data['source']
+            draft.category = data['category']
+            draft.url = data['url']
+            draft.image_url = data['image_url']
+            draft.save()
+            return JsonResponse({'success': True})
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+    return JsonResponse({'success': False, 'message': 'Invalid method'})
 
 
+@csrf_exempt
 @login_required
 @user_passes_test(is_staff)
-def dashboard_stats(request):
-    total_articles = NewsArticle.objects.count()
-    today_articles = NewsArticle.objects.filter(
-        imported_at__date=timezone.now().date()
-    ).count()
-    auto_posts = Post.objects.filter(title__startswith='[News]').count()
-    to_process = NewsArticle.objects.filter(created_as_post=False).count()
-    return JsonResponse({
-        'total_articles': total_articles,
-        'today_articles': today_articles,
-        'auto_posts': auto_posts,
-        'to_process': to_process,
-    })
-
-
-# ===== HELPER VIEWS =====
-
-@login_required
-@user_passes_test(is_staff)
-def convert_to_post(request, article_id):
-    try:
-        article = NewsArticle.objects.get(id=article_id)
-        from blog.ai_service import EnhancedNewsFetcher
-        fetcher = EnhancedNewsFetcher()
-        article_dict = {
-            'title': article.title,
-            'description': article.summary,
-            'content': article.content,
-            'url': article.url,
-            'source': article.source,
-            'category': article.category,
-            'published_at': article.published_at.isoformat() if article.published_at else None,
-        }
-        post = fetcher.generate_blog_post_from_article(article_dict)
+def publish_draft(request):
+    """Publish a draft as a blog post."""
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        draft = get_object_or_404(NewsArticle, id=data['id'])
+        post = EnhancedNewsFetcher.generate_blog_post_from_article({
+            'title': draft.title,
+            'description': draft.summary,
+            'content': draft.paraphrased_content or draft.content,
+            'url': draft.url,
+            'source': draft.source,
+            'category': draft.category,
+            'image_url': draft.image_url,
+        })
         if post:
-            article.created_as_post = True
-            article.save()
-            return JsonResponse({'success': True, 'message': f'Created post: {post.title}'})
+            draft.status = 'published'
+            draft.created_as_post = True
+            draft.save()
+            return JsonResponse({'success': True, 'post_title': post.title})
         else:
             return JsonResponse({'success': False, 'message': 'Failed to create post'})
-    except NewsArticle.DoesNotExist:
-        return JsonResponse({'success': False, 'message': 'Article not found'})
-    except Exception as e:
-        return JsonResponse({'success': False, 'message': f'Error: {str(e)}'})
+    return JsonResponse({'success': False, 'message': 'Invalid method'})
 
 
-# ===== NEW API ENDPOINTS =====
+@login_required
+@user_passes_test(is_staff)
+def delete_draft(request, draft_id):
+    """Delete a draft."""
+    if request.method == 'DELETE':
+        try:
+            draft = NewsArticle.objects.get(id=draft_id)
+            draft.delete()
+            return JsonResponse({'success': True})
+        except NewsArticle.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'Draft not found'})
+    return JsonResponse({'success': False, 'message': 'Invalid method'})
+
+
+# ===== POST ARTICLE (original, kept for compatibility) =====
 
 @csrf_exempt
 @login_required
@@ -321,7 +309,6 @@ def post_article(request):
             category_name = article.get('category', 'NEWS')
             from django.utils.text import slugify
             from django.contrib.auth.models import User
-            from blog.models import Category, Post
 
             category_obj, created = Category.objects.get_or_create(name=category_name)
 
@@ -347,7 +334,6 @@ def post_article(request):
                 word_count = provided_word_count or len(article_content.split())
                 ai_processed = True
             else:
-                from blog.ai_service import EnhancedNewsFetcher
                 processed_article = EnhancedNewsFetcher.process_article_with_ai(article)
                 if processed_article is None:
                     return JsonResponse({'success': False, 'message': 'Could not generate content (scraping failed)'})
@@ -374,9 +360,7 @@ def post_article(request):
             for tag in tags:
                 post.tags.add(tag.strip())
 
-            # Save as NewsArticle if requested
             if data.get('save_article', True):
-                from blog.models import NewsArticle
                 if not NewsArticle.objects.filter(url=article.get('url', '')).exists():
                     NewsArticle.objects.create(
                         title=article['title'][:499],
@@ -409,6 +393,7 @@ def post_article(request):
 @login_required
 @user_passes_test(is_staff)
 def post_multiple_articles(request):
+    """Post multiple articles at once."""
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
@@ -470,6 +455,7 @@ def post_multiple_articles(request):
 @login_required
 @user_passes_test(is_staff)
 def get_post(request, post_id):
+    """Get post details for editing."""
     try:
         post = Post.objects.get(id=post_id)
         return JsonResponse({
@@ -494,6 +480,7 @@ def get_post(request, post_id):
 @login_required
 @user_passes_test(is_staff)
 def update_post_image(request):
+    """Update post's featured image."""
     if request.method == 'POST':
         try:
             post_id = request.POST.get('post_id')
@@ -547,6 +534,7 @@ def update_post_image(request):
 @login_required
 @user_passes_test(is_staff)
 def remove_post_image(request, post_id):
+    """Remove post's featured image."""
     if request.method == 'POST':
         try:
             post = Post.objects.get(id=post_id)
@@ -563,6 +551,7 @@ def remove_post_image(request, post_id):
 @login_required
 @user_passes_test(is_staff)
 def delete_news_article(request, article_id):
+    """Delete a news article."""
     if request.method == 'DELETE':
         try:
             article = NewsArticle.objects.get(id=article_id)
@@ -578,6 +567,7 @@ def delete_news_article(request, article_id):
 @login_required
 @user_passes_test(is_staff)
 def delete_post(request, post_id):
+    """Delete a blog post."""
     if request.method == 'DELETE':
         try:
             post = Post.objects.get(id=post_id)
@@ -590,10 +580,13 @@ def delete_post(request, post_id):
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
 
 
+# ===== OPENROUTER CHAT =====
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
 def openrouter_chat(request):
+    """API endpoint for direct OpenRouter interactions."""
     if request.method != 'POST':
         return JsonResponse({'error': 'POST method required'}, status=405)
 
@@ -624,6 +617,8 @@ def openrouter_chat(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+# ===== PREVIEW ARTICLE =====
+
 @csrf_exempt
 @login_required
 @user_passes_test(is_staff)
@@ -636,13 +631,11 @@ def preview_article(request):
             if not article:
                 return JsonResponse({'success': False, 'message': 'No article data provided'})
 
-            from blog.ai_service import EnhancedNewsFetcher
             processed = EnhancedNewsFetcher.process_article_with_ai(article)
             if processed is None:
                 return JsonResponse({'success': False, 'message': 'Could not generate preview (scraping failed)'})
 
             content = processed.get('content', '')
-            # Limit content to 50,000 characters to avoid response size issues
             if len(content) > 50000:
                 content = content[:50000] + "\n\n...[content truncated due to length]"
             summary = processed.get('description', '')[:200]
@@ -655,77 +648,9 @@ def preview_article(request):
             })
         except Exception as e:
             import traceback
-            traceback.print_exc()  # Log the full error to Railway console
+            traceback.print_exc()
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
-
-def custom_404(request, exception):
-    """Custom 404 page with categories and search."""
-    # Get categories with post counts, ordered by popularity
-    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:6]
-    return render(request, '404.html', {'categories': categories}, status=404)
-
-
-@login_required
-@user_passes_test(is_staff)
-def combined_dashboard(request):
-    """Single dashboard with all stats, recent articles, posts, fetch form, and scheduled jobs."""
-    # Stats
-    total_articles = NewsArticle.objects.count()
-    today_articles = NewsArticle.objects.filter(
-        imported_at__date=timezone.now().date()
-    ).count()
-    auto_posts = Post.objects.filter(title__startswith='[News]').count()
-    to_process = NewsArticle.objects.filter(created_as_post=False).count()
-
-    # Recent articles
-    recent_articles = NewsArticle.objects.order_by('-imported_at')[:20]
-
-    # Recent posts
-    recent_posts = Post.objects.order_by('-published_date')[:10]
-
-    # Categories
-    categories = Category.objects.all()
-
-    # Category stats
-    category_stats = NewsArticle.objects.values('category').annotate(
-        count=Count('id')
-    ).order_by('-count')
-
-    # Mock scheduled jobs (you can replace with real job data)
-    scheduled_jobs = [
-        {
-            'id': 1,
-            'name': 'Hourly News Fetch',
-            'schedule': 'Every hour',
-            'last_run': timezone.now() - timezone.timedelta(minutes=30),
-            'next_run': timezone.now() + timezone.timedelta(minutes=30),
-            'is_active': True,
-        },
-        {
-            'id': 2,
-            'name': 'Daily Post Generation',
-            'schedule': '9:00 AM daily',
-            'last_run': timezone.now() - timezone.timedelta(hours=15),
-            'next_run': timezone.now() + timezone.timedelta(hours=9),
-            'is_active': True,
-        },
-    ]
-
-    context = {
-        'stats': {
-            'total_articles': total_articles,
-            'today_articles': today_articles,
-            'auto_posts': auto_posts,
-            'to_process': to_process,
-        },
-        'recent_articles': recent_articles,
-        'recent_posts': recent_posts,
-        'categories': categories,
-        'category_stats': category_stats,
-        'scheduled_jobs': scheduled_jobs,
-    }
-    return render(request, 'blog/combined_dashboard.html', context)
 
 
 # Backward compatibility alias

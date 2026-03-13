@@ -1,4 +1,3 @@
-# blog/models.py
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.auth.models import User
@@ -23,16 +22,16 @@ class Category(models.Model):
 
 
 class Post(models.Model):
-    title           = models.CharField(max_length=500)          # was 200 — titles from news can be long
+    title           = models.CharField(max_length=500)
     slug            = models.SlugField(unique=True, blank=True, max_length=550)
     content         = models.TextField()
-    excerpt         = models.CharField(max_length=500, blank=True)  # was 300
+    excerpt         = models.CharField(max_length=500, blank=True)
     author          = models.ForeignKey(User, on_delete=models.CASCADE)
     category        = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, related_name='posts')
     featured_image  = models.ImageField(
         upload_to='blog_images/',
         blank=True, null=True,
-        max_length=1000           # was default 100 — external URLs can be 500+ chars
+        max_length=1000
     )
     views           = models.PositiveIntegerField(default=0)
     is_featured     = models.BooleanField(default=False)
@@ -58,9 +57,6 @@ class Post(models.Model):
         ordering = ['-published_date']
 
 
-# Comment model has been removed
-
-
 class NewsSource(models.Model):
     name             = models.CharField(max_length=100)
     api_endpoint     = models.URLField()
@@ -73,19 +69,27 @@ class NewsSource(models.Model):
 
 
 class NewsArticle(models.Model):
-    title          = models.CharField(max_length=500)
-    content        = models.TextField()
-    summary        = models.TextField(blank=True)
-    url            = models.URLField(unique=True, max_length=1000)  # was default 200
-    source         = models.CharField(max_length=100)
-    category       = models.CharField(max_length=50, blank=True)
-    image_url      = models.URLField(blank=True, max_length=1000)   # was default 200
-    published_at   = models.DateTimeField(null=True, blank=True)
-    imported_at    = models.DateTimeField(auto_now_add=True)
-    created_as_post = models.BooleanField(default=False)
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('ready', 'Ready to Publish'),
+        ('published', 'Published'),
+    )
+    title            = models.CharField(max_length=500)
+    content          = models.TextField()                     # original scraped content
+    paraphrased_content = models.TextField(blank=True)        # AI‑generated version
+    summary          = models.TextField(blank=True)
+    url              = models.URLField(unique=True, max_length=1000)
+    source           = models.CharField(max_length=100)
+    category         = models.CharField(max_length=50, blank=True)
+    image_url        = models.URLField(blank=True, max_length=1000)
+    published_at     = models.DateTimeField(null=True, blank=True)
+    imported_at      = models.DateTimeField(auto_now_add=True)
+    created_as_post  = models.BooleanField(default=False)
+    status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    edited_content   = models.TextField(blank=True)           # optional manual edits
 
     class Meta:
-        ordering = ['-published_at', '-imported_at']
+        ordering = ['-imported_at']
 
     def __str__(self):
         return self.title[:100]
