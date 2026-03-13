@@ -12,7 +12,7 @@
     --ease:cubic-bezier(0.4,0,0.2,1);
   }
 
-  /* ── Reading progress bar ── */
+  /* Reading progress bar */
   #readProgress {
     position:fixed; top:0; left:0; height:3px; width:0%;
     background:var(--accent); z-index:9999;
@@ -20,17 +20,17 @@
     border-radius:0 2px 2px 0;
   }
 
-  /* ── Page entry ── */
+  /* Page entry */
   .article-wrap { animation: articleIn .4s var(--ease) both; }
   @keyframes articleIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-  /* ── Breadcrumb ── */
+  /* Breadcrumb */
   .bc { display:flex; align-items:center; gap:.4rem; font-size:.75rem; color:var(--mid); margin-bottom:1.5rem; flex-wrap:wrap; }
   .bc a { color:var(--mid); text-decoration:none; }
   .bc a:hover { color:var(--accent); }
   .bc-sep { opacity:.4; }
 
-  /* ── Article header ── */
+  /* Article header */
   .art-cat {
     display:inline-block; font-size:.65rem; font-weight:700;
     text-transform:uppercase; letter-spacing:.12em;
@@ -59,14 +59,7 @@
   .art-meta i { color:var(--accent); font-size:.75rem; }
   .read-time { font-weight:600; color:var(--ink); }
 
-  /* ── Hero image ── */
-  .art-hero-img {
-    width:100%; max-height:500px; object-fit:cover;
-    border-radius:3px; margin-bottom:1.8rem;
-    display:block;
-  }
-
-  /* ── Article body ── */
+  /* Article body */
   .art-body {
     font-family:'Source Serif 4', Georgia, serif;
     font-size:1.05rem; line-height:1.85; color:#1a1a1a;
@@ -84,7 +77,7 @@
   .art-body code { background:#f3f0eb; color:#c0392b; padding:.1em .4em; border-radius:3px; font-size:.9em; }
   .art-body pre { background:#f3f0eb; padding:1.2rem; border-radius:6px; overflow-x:auto; }
 
-  /* ── Tags ── */
+  /* Tags */
   .art-tags { display:flex; flex-wrap:wrap; gap:.4rem; margin:2rem 0; padding-top:1.5rem; border-top:1px solid var(--rule); }
   .art-tag {
     font-size:.7rem; font-weight:600; text-transform:uppercase; letter-spacing:.07em;
@@ -93,7 +86,7 @@
   }
   .art-tag:hover { border-color:var(--ink); color:var(--ink); }
 
-  /* ── Share bar ── */
+  /* Share bar */
   .share-bar {
     display:flex; align-items:center; gap:.6rem;
     padding:1.2rem 0; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
@@ -115,7 +108,7 @@
   .share-copy { background:#fff; color:var(--ink); border-color:var(--rule); cursor:pointer; }
   .share-copy:hover { border-color:var(--ink); background:#f5f3ee; }
 
-  /* ── Sidebar ── */
+  /* Sidebar */
   .sidebar-section { margin-bottom:2rem; }
   .sidebar-title {
     font-family:'Playfair Display', Georgia, serif;
@@ -147,7 +140,33 @@
   .latest-item a:hover { color:var(--accent); }
   .latest-date { font-size:.7rem; color:var(--mid); margin-top:.18rem; font-family:'Source Serif 4', serif; }
 
-  /* ── Dark mode ── */
+  /* Lazy image styles */
+  .lazy-image {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .lazy-image.loaded {
+    opacity: 1;
+  }
+  .lazy-image-wrapper {
+    position: relative;
+    overflow: hidden;
+    background: #f0f0f0;
+  }
+  .lazy-image-wrapper.aspect-ratio-16-9 {
+    width: 100%;
+    padding-bottom: 56.25%;
+  }
+  .lazy-image-wrapper.aspect-ratio-16-9 img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Dark mode */
   @media (prefers-color-scheme:dark) {
     :root{--ink:#f0f0f0;--rule:#2a2a2a;--mid:#888;}
     .art-body{color:#d0d0d0;} .art-body blockquote{background:#1a1a1a;color:#aaa;} .art-body code{background:#2a2a2a;}
@@ -187,15 +206,13 @@
         {% if user.is_staff %}<div class="art-meta-item"><i class="fas fa-eye"></i><span>{{ post.views }} views</span></div>{% endif %}
       </div>
 
-      <!-- Hero image -->
+      <!-- Hero image with lazy wrapper -->
       {% if post.featured_image %}
-        {% with img=post.featured_image.name %}
-          {% if img|slice:":4" == "http" %}
-            <img src="{{ img }}" class="art-hero-img" alt="{{ post.title }}">
-          {% else %}
-            <img src="{{ post.featured_image.url }}" class="art-hero-img" alt="{{ post.title }}">
-          {% endif %}
-        {% endwith %}
+        <div class="lazy-image-wrapper aspect-ratio-16-9 mb-4">
+          <img class="lazy-image rounded"
+               data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+               alt="{{ post.title }}">
+        </div>
       {% endif %}
 
       <!-- Body -->
@@ -233,10 +250,9 @@
           {% for rp in related_posts %}
           <a href="{% url 'post_detail' rp.slug %}" class="related-item">
             {% if rp.featured_image %}
-              {% with img=rp.featured_image.name %}
-                {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="related-thumb" alt="">
-                {% else %}<img src="{{ rp.featured_image.url }}" class="related-thumb" alt="">{% endif %}
-              {% endwith %}
+              <img class="lazy-image related-thumb"
+                   data-src="{% if rp.featured_image.name|slice:':4' == 'http' %}{{ rp.featured_image.name }}{% else %}{{ rp.featured_image.url }}{% endif %}"
+                   alt="">
             {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
             <div>
               <div class="related-title">{{ rp.title }}</div>
@@ -275,9 +291,61 @@
   </div>
 </div>
 
+<!-- Lazy loading script -->
 <script>
 (function() {
-  // ── Reading progress ──
+  function initLazyLoad() {
+    const lazyImages = document.querySelectorAll('.lazy-image:not(.loaded)');
+    if ('IntersectionObserver' in window) {
+      let lazyObserver = new IntersectionObserver(function(entries, observer) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            let img = entry.target;
+            img.src = img.dataset.src;
+            if (img.dataset.srcset) {
+              img.srcset = img.dataset.srcset;
+            }
+            img.classList.add('loaded');
+            observer.unobserve(img);
+          }
+        });
+      }, { rootMargin: '200px' });
+
+      lazyImages.forEach(function(img) {
+        lazyObserver.observe(img);
+      });
+
+      window.LazyLoad = {
+        refresh: function() {
+          document.querySelectorAll('.lazy-image:not(.loaded)').forEach(function(img) {
+            lazyObserver.observe(img);
+          });
+        }
+      };
+    } else {
+      // Fallback
+      lazyImages.forEach(function(img) {
+        img.src = img.dataset.src;
+        if (img.dataset.srcset) img.srcset = img.dataset.srcset;
+        img.classList.add('loaded');
+      });
+      window.LazyLoad = { refresh: function() {} };
+    }
+  }
+  initLazyLoad();
+
+  // Refresh after dynamic content (Bootstrap tabs, HTMX)
+  document.addEventListener('htmx:afterSwap', function() { if (window.LazyLoad) LazyLoad.refresh(); });
+  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function() { if (window.LazyLoad) LazyLoad.refresh(); });
+  });
+})();
+</script>
+
+<!-- Existing scripts -->
+<script>
+(function() {
+  // Reading progress
   var bar = document.getElementById('readProgress');
   window.addEventListener('scroll', function() {
     var body = document.body, html = document.documentElement;
@@ -285,7 +353,7 @@
     bar.style.width = (window.scrollY / total * 100) + '%';
   }, {passive:true});
 
-  // ── Estimated read time ──
+  // Estimated read time
   var body = document.getElementById('articleBody');
   if (body) {
     var words = body.innerText.trim().split(/\s+/).length;
@@ -293,7 +361,7 @@
     document.getElementById('readTime').textContent = mins + ' min read';
   }
 
-  // ── Copy link ──
+  // Copy link
   window.copyLink = function() {
     navigator.clipboard.writeText(window.location.href).then(function() {
       var btn = document.getElementById('copyBtn');
@@ -308,7 +376,7 @@
     });
   };
 
-  // ── Page exit transition ──
+  // Page exit transition
   document.querySelectorAll('a[href]').forEach(function(a) {
     var href = a.getAttribute('href');
     if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
