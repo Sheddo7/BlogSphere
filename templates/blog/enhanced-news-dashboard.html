@@ -1,4 +1,4 @@
-<!-- templates/blog/enhanced-news-dashboard.html - WITH EDITABLE PREVIEW -->
+<!-- templates/blog/enhanced-news-dashboard.html - DIRECT POST (NO PREVIEW) -->
 {% extends 'base.html' %}
 {% load static %}
 
@@ -8,7 +8,7 @@
 <div class="container mt-4">
     <h1 class="mb-4">Enhanced News Dashboard</h1>
 
-    <!-- Stats Cards (unchanged) -->
+    <!-- Stats Cards -->
     <div class="row mb-4">
         <div class="col-md-3 mb-3">
             <div class="card bg-primary text-white">
@@ -44,7 +44,7 @@
         </div>
     </div>
 
-    <!-- Fetch News Form (unchanged) -->
+    <!-- Fetch News Form -->
     <div class="card mb-4">
         <div class="card-header">
             <h4>Fetch News</h4>
@@ -316,7 +316,7 @@
     </div>
 </div>
 
-<!-- Article Editor Modal (unchanged) -->
+<!-- Article Editor Modal -->
 <div class="modal fade" id="articleEditorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
@@ -327,28 +327,37 @@
             <div class="modal-body">
                 <form id="articleEditorForm">
                     <input type="hidden" id="editArticleIndex" name="article_index">
+
                     <div class="row">
                         <div class="col-md-8">
+                            <!-- Title -->
                             <div class="mb-3">
                                 <label for="editTitle" class="form-label fw-bold">Title</label>
                                 <input type="text" class="form-control" id="editTitle" name="title" required>
                             </div>
+
+                            <!-- Content -->
                             <div class="mb-3">
                                 <label for="editContent" class="form-label fw-bold">Content</label>
                                 <textarea class="form-control" id="editContent" name="content" rows="10" required></textarea>
                             </div>
+
+                            <!-- Description -->
                             <div class="mb-3">
                                 <label for="editDescription" class="form-label fw-bold">Description/Summary</label>
                                 <textarea class="form-control" id="editDescription" name="description" rows="4"></textarea>
                             </div>
+
+                            <!-- Tags -->
                             <div class="mb-3">
                                 <label for="editTags" class="form-label fw-bold">Tags (comma separated)</label>
                                 <input type="text" class="form-control" id="editTags" name="tags" value="news">
                                 <small class="text-muted">Default: news. Add more separated by commas</small>
                             </div>
                         </div>
+
                         <div class="col-md-4">
-                            <!-- Image Upload and options unchanged -->
+                            <!-- Image Upload -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Article Image</label>
                                 <div class="border rounded p-3 text-center">
@@ -363,10 +372,13 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Metadata -->
                             <div class="mb-3">
                                 <label for="editSource" class="form-label fw-bold">Source</label>
                                 <input type="text" class="form-control" id="editSource" name="source">
                             </div>
+
                             <div class="mb-3">
                                 <label for="editCategory" class="form-label fw-bold">Category</label>
                                 <select class="form-select" id="editCategory" name="category">
@@ -378,10 +390,13 @@
                                     <option value="TECHNOLOGY">TECHNOLOGY</option>
                                 </select>
                             </div>
+
                             <div class="mb-3">
                                 <label for="editUrl" class="form-label fw-bold">Original URL</label>
                                 <input type="url" class="form-control" id="editUrl" name="url">
                             </div>
+
+                            <!-- Post Options -->
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">Post Options</h6>
@@ -417,7 +432,7 @@
     </div>
 </div>
 
-<!-- Post Image Editor Modal (unchanged) -->
+<!-- Post Image Editor Modal -->
 <div class="modal fade" id="postImageEditorModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -428,12 +443,15 @@
             <div class="modal-body">
                 <form id="postImageForm">
                     <input type="hidden" id="editPostId" name="post_id">
+
                     <div class="text-center mb-4">
                         <h6 id="postTitle"></h6>
                         <small class="text-muted" id="postCategory"></small>
                     </div>
+
                     <div class="row">
                         <div class="col-md-6">
+                            <!-- Current Image -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Current Image</label>
                                 <div id="currentImageContainer" class="border rounded p-3 text-center">
@@ -443,7 +461,9 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-6">
+                            <!-- New Image Upload -->
                             <div class="mb-3">
                                 <label class="form-label fw-bold">Upload New Image</label>
                                 <div class="border rounded p-3 text-center">
@@ -463,6 +483,8 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Image Options -->
                             <div class="card">
                                 <div class="card-body">
                                     <h6 class="card-title">Image Options</h6>
@@ -490,40 +512,13 @@
     </div>
 </div>
 
-<!-- Editable Preview Modal (UPDATED) -->
-<div class="modal fade" id="previewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Preview & Edit Article</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <h4 id="previewTitle"></h4>
-                <div class="mb-3">
-                    <label for="previewSummary" class="form-label fw-bold">Summary / Excerpt</label>
-                    <textarea class="form-control" id="previewSummary" rows="2" placeholder="Short summary (will appear in blog listings)"></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="previewContent" class="form-label fw-bold">Content (editable)</label>
-                    <textarea class="form-control" id="previewContent" rows="15" style="font-family: 'Georgia', serif; line-height: 1.6;"></textarea>
-                </div>
-                <p class="text-muted">Word count: <span id="previewWordCount">0</span></p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-success" onclick="publishPreview()">Publish</button>
-            </div>
-        </div>
-    </div>
-</div>
+<!-- Preview Modal (REMOVED) -->
 
 <script>
 let fetchedArticles = [];
 let currentEditIndex = -1;
-let currentPreviewData = null; // For preview modal
 
-// Fetch news with AJAX (unchanged)
+// Fetch news with AJAX
 document.getElementById('fetchForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const form = this;
@@ -576,7 +571,7 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     });
 });
 
-// Display fetched articles with Preview button
+// Display fetched articles with direct Post button
 function displayFetchedArticles() {
     const container = document.getElementById('articlesContainer');
     container.innerHTML = '';
@@ -619,8 +614,8 @@ function displayFetchedArticles() {
                     <button class="btn btn-sm btn-outline-primary me-1" onclick="openArticleEditor(${index})">
                         <i class="fas fa-edit"></i> Edit
                     </button>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="previewArticle(${index})">
-                        <i class="fas fa-eye"></i> Preview & Post
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="postSingleArticle(${index})">
+                        <i class="fas fa-paper-plane"></i> Post
                     </button>
                     <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteFetchedArticle(${index})">
                         <i class="fas fa-trash"></i>
@@ -635,114 +630,7 @@ function displayFetchedArticles() {
     });
 }
 
-// Preview function – fetches generated content and populates editable fields
-function previewArticle(index) {
-    const article = fetchedArticles[index];
-    currentPreviewData = { article: article, index: index };
-
-    // Show loading in modal
-    document.getElementById('previewTitle').innerText = article.title;
-    document.getElementById('previewSummary').value = '';
-    document.getElementById('previewContent').value = 'Generating preview...';
-    document.getElementById('previewWordCount').innerText = '0';
-    const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
-    previewModal.show();
-
-    // Call preview endpoint with improved error handling
-    fetch('/api/preview-article/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-        },
-        body: JSON.stringify({ article: article })
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.text().then(text => {
-            try {
-                return JSON.parse(text);
-            } catch (e) {
-                console.error('Invalid JSON response:', text);
-                throw new Error('Server returned an invalid response (possible timeout or size limit)');
-            }
-        });
-    })
-    .then(data => {
-        if (data.success) {
-            document.getElementById('previewContent').value = data.content;
-            document.getElementById('previewSummary').value = data.summary || '';
-            document.getElementById('previewWordCount').innerText = data.word_count;
-            currentPreviewData.generated = {
-                content: data.content,
-                summary: data.summary,
-                word_count: data.word_count
-            };
-        } else {
-            document.getElementById('previewContent').value = 'Error: ' + data.message;
-            currentPreviewData.generated = null;
-        }
-    })
-    .catch(error => {
-        console.error('Preview fetch error:', error);
-        document.getElementById('previewContent').value = 'Failed to load preview: ' + error.message;
-        currentPreviewData.generated = null;
-    });
-}
-
-// Publish from preview – sends edited content
-function publishPreview() {
-    if (!currentPreviewData || !currentPreviewData.generated) {
-        showToast('No preview data available', 'warning');
-        return;
-    }
-
-    const article = currentPreviewData.article;
-    const index = currentPreviewData.index;
-    const editedContent = document.getElementById('previewContent').value;
-    const editedSummary = document.getElementById('previewSummary').value;
-    const wordCount = editedContent.split(/\s+/).length;
-
-    fetch('/api/post-article/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': '{{ csrf_token }}',
-        },
-        body: JSON.stringify({
-            article: article,
-            content: editedContent,
-            summary: editedSummary,
-            word_count: wordCount,
-            tags: article.tags || ['news'],
-            is_featured: article.is_featured || false,
-            save_article: article.save_article !== false
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast(`Posted: ${data.post_title}`, 'success');
-            // Remove from fetched articles
-            fetchedArticles.splice(index, 1);
-            displayFetchedArticles();
-            document.getElementById('resultsCount').textContent = fetchedArticles.length;
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('previewModal')).hide();
-            // Reload after a short delay
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('Error: ' + data.message, 'danger');
-        }
-    })
-    .catch(error => {
-        showToast('Error posting article', 'danger');
-    });
-}
-
-// Delete fetched article (unchanged)
+// Delete fetched article
 function deleteFetchedArticle(index) {
     if (confirm('Are you sure you want to delete this article?')) {
         fetchedArticles.splice(index, 1);
@@ -757,7 +645,7 @@ function deleteFetchedArticle(index) {
     }
 }
 
-// Delete selected articles (unchanged)
+// Delete selected articles
 function deleteSelectedArticles() {
     const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
         .map(cb => parseInt(cb.value));
@@ -775,7 +663,7 @@ function deleteSelectedArticles() {
     }
 }
 
-// Open article editor (unchanged)
+// Open article editor
 function openArticleEditor(index) {
     currentEditIndex = index;
     const article = fetchedArticles[index];
@@ -810,7 +698,7 @@ function openArticleEditor(index) {
     modal.show();
 }
 
-// Save article edits (unchanged)
+// Save article edits
 function saveArticleEdits() {
     if (currentEditIndex === -1) return;
     const article = fetchedArticles[currentEditIndex];
@@ -833,10 +721,11 @@ function saveArticleEdits() {
     modal.hide();
 }
 
-// Keep original postSingleArticle for Post All (unchanged)
+// Post single article (direct generation)
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
+
     const article = fetchedArticles[articleIndex];
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
@@ -877,7 +766,7 @@ function postSingleArticle(index = null) {
     });
 }
 
-// Post all selected articles (unchanged)
+// Post all selected articles
 function postAllArticles() {
     const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
         .map(cb => parseInt(cb.value));
@@ -916,7 +805,7 @@ function postAllArticles() {
     });
 }
 
-// Clear results (unchanged)
+// Clear results
 function clearResults() {
     if (fetchedArticles.length === 0) return;
     if (confirm('Are you sure you want to clear all fetched articles?')) {
@@ -927,7 +816,7 @@ function clearResults() {
     }
 }
 
-// Delete NewsArticle (unchanged)
+// Delete NewsArticle
 function deleteNewsArticle(articleId) {
     if (confirm('Are you sure you want to delete this news article?')) {
         fetch('/api/delete-news-article/' + articleId + '/', {
@@ -952,7 +841,7 @@ function deleteNewsArticle(articleId) {
     }
 }
 
-// Delete Post (unchanged)
+// Delete Post
 function deletePost(postId) {
     if (confirm('Are you sure you want to delete this blog post?')) {
         fetch('/api/delete-post/' + postId + '/', {
@@ -977,7 +866,7 @@ function deletePost(postId) {
     }
 }
 
-// Edit Post Image (unchanged)
+// Edit Post Image
 function editPostImage(postId) {
     fetch('/api/get-post/' + postId + '/')
     .then(response => response.json())
@@ -1014,7 +903,7 @@ function editPostImage(postId) {
     });
 }
 
-// Update Post Image (unchanged)
+// Update Post Image
 function updatePostImage() {
     const postId = document.getElementById('editPostId').value;
     const formData = new FormData();
@@ -1051,7 +940,7 @@ function updatePostImage() {
     });
 }
 
-// Remove Post Image (unchanged)
+// Remove Post Image
 function removePostImage() {
     const postId = document.getElementById('editPostId').value;
     if (confirm('Are you sure you want to remove the image from this post?')) {
@@ -1078,7 +967,7 @@ function removePostImage() {
     }
 }
 
-// Convert to post (unchanged)
+// Convert to post
 function convertToPost(articleId) {
     fetch('/api/convert-to-post/' + articleId + '/', {
         method: 'POST',
@@ -1121,7 +1010,6 @@ function showToast(message, type) {
 </script>
 
 <style>
-/* ... (same styles as before) ... */
 .article-item:hover {
     background-color: rgba(0, 123, 255, 0.05);
 }
