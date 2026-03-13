@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Page Not Found — BlogSphere{% endblock %}
+
+{% block content %}
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .fourofour{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:2rem 0;}
+  .fourofour-code{font-family:'Playfair Display',Georgia,serif;font-size:8rem;font-weight:900;line-height:1;color:var(--accent);margin-bottom:0.5rem;opacity:0.8;}
+  .fourofour-title{font-family:'Playfair Display',Georgia,serif;font-size:2rem;font-weight:700;color:var(--ink);margin-bottom:1rem;}
+  .fourofour-text{font-family:'Source Serif 4',Georgia,serif;font-size:1rem;color:var(--mid);max-width:500px;margin-bottom:2rem;}
+  .search-form{display:flex;max-width:400px;width:100%;margin:2rem auto;gap:0.5rem;}
+  .search-input{flex:1;border:1.5px solid var(--rule);border-radius:2px;padding:0.6rem 1rem;font-family:'Source Serif 4',serif;font-size:0.9rem;transition:border-color 0.2s;}
+  .search-input:focus{outline:none;border-color:var(--ink);}
+  .search-btn{background:var(--ink);color:#fff;border:none;border-radius:2px;padding:0 1.2rem;font-weight:600;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.05em;cursor:pointer;transition:background 0.2s;}
+  .search-btn:hover{background:var(--accent);}
+  .cat-links{display:flex;flex-wrap:wrap;gap:0.5rem;justify-content:center;margin-top:1.5rem;}
+  .cat-link{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;padding:0.3rem 0.8rem;border:1.5px solid var(--rule);border-radius:2px;color:var(--mid);text-decoration:none;transition:all 0.2s;}
+  .cat-link:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--rule:#2a2a2a;--mid:#888;}
+    .search-input{background:#1e1e1e;border-color:#333;color:#e0e0e0;}
+  }
+</style>
+
+<div class="container fourofour">
+  <div class="fourofour-code">404</div>
+  <h1 class="fourofour-title">Page not found</h1>
+  <p class="fourofour-text">
+    The page you're looking for doesn't exist or has been moved.
+    Try searching or browse our popular categories.
+  </p>
+
+  <!-- Search form -->
+  <form class="search-form" action="{% url 'search' %}" method="GET">
+    <input type="text" name="q" class="search-input" placeholder="Search articles..." required>
+    <button type="submit" class="search-btn">Search</button>
+  </form>
+
+  <!-- Popular categories -->
+  {% if categories %}
+  <div class="cat-links">
+    {% for cat in categories %}
+      <a href="{% url 'category_posts' cat.slug %}" class="cat-link">{{ cat.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div style="margin-top:2.5rem;">
+    <a href="{% url 'home' %}" style="color:var(--accent);font-weight:600;text-decoration:none;border-bottom:1.5px solid var(--accent);padding-bottom:2px;">← Back to Home</a>
+  </div>
+</div>
+{% endblock %}

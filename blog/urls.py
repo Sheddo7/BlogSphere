@@ -33,6 +33,8 @@ urlpatterns = [
     path('api/delete-post/<int:post_id>/', views.delete_post, name='delete_post'),
 ]
 
+handler404 = 'blog.views.custom_404'
+
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

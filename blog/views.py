@@ -21,6 +21,10 @@ from blog.ai_service import OpenRouterService
 import logging
 from django.http import HttpResponseServerError
 
+from django.shortcuts import render
+from django.db.models import Count
+from .models import Category
+
 # ===== BASIC VIEWS =====
 
 def home(request):
@@ -651,6 +655,12 @@ def preview_article(request):
             traceback.print_exc()  # Log the full error to Railway console
             return JsonResponse({'success': False, 'message': str(e)})
     return JsonResponse({'success': False, 'message': 'Invalid request method'})
+
+def custom_404(request, exception):
+    """Custom 404 page with categories and search."""
+    # Get categories with post counts, ordered by popularity
+    categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')[:6]
+    return render(request, '404.html', {'categories': categories}, status=404)
 
 
 # Backward compatibility alias
