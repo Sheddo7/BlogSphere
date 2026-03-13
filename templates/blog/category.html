@@ -136,10 +136,15 @@
     {% endfor %}
   </div>
 
-  <!-- Pagination -->
+    <!-- Pagination -->
   {% if page_obj.has_other_pages %}
   <nav class="pager" aria-label="Pagination">
-    <a href="?page={{ page_obj.previous_page_number }}" class="pager-btn pager-arrow {% if not page_obj.has_previous %}disabled{% endif %}">‹</a>
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}" class="pager-btn pager-arrow">‹</a>
+    {% else %}
+      <span class="pager-btn pager-arrow disabled">‹</span>
+    {% endif %}
+
     {% for num in page_obj.paginator.page_range %}
       {% if page_obj.number == num %}
         <span class="pager-btn active">{{ num }}</span>
@@ -147,10 +152,14 @@
         <a href="?page={{ num }}" class="pager-btn">{{ num }}</a>
       {% endif %}
     {% endfor %}
-    <a href="?page={{ page_obj.next_page_number }}" class="pager-btn pager-arrow {% if not page_obj.has_next %}disabled{% endif %}">›</a>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}" class="pager-btn pager-arrow">›</a>
+    {% else %}
+      <span class="pager-btn pager-arrow disabled">›</span>
+    {% endif %}
   </nav>
   {% endif %}
-
 </div>
 
 <script>
