@@ -372,10 +372,7 @@
                     {% endfor %}
                     {% if user.is_authenticated and user.is_staff %}
                     <li class="nav-item">
-                        <a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}"
-                           href="{% url 'news_dashboard' %}">
-                            <i class="fas fa-chart-line"></i> Dashboard
-                        </a>
+                        <a class="nav-link" href="{% url 'combined_dashboard' %}">Dashboard</a>
                     </li>
                     {% endif %}
                 </ul>

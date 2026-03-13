@@ -670,7 +670,7 @@ def custom_404(request, exception):
 @user_passes_test(is_staff)
 def combined_dashboard(request):
     """Single dashboard with all stats, recent articles, posts, fetch form, and scheduled jobs."""
-    # Stats from enhanced dashboard
+    # Stats
     total_articles = NewsArticle.objects.count()
     today_articles = NewsArticle.objects.filter(
         imported_at__date=timezone.now().date()
@@ -684,15 +684,15 @@ def combined_dashboard(request):
     # Recent posts
     recent_posts = Post.objects.order_by('-published_date')[:10]
 
-    # Categories (for stats and sidebar)
+    # Categories
     categories = Category.objects.all()
 
-    # Category stats (from news_dashboard)
+    # Category stats
     category_stats = NewsArticle.objects.values('category').annotate(
         count=Count('id')
     ).order_by('-count')
 
-    # Mock scheduled jobs (from enhanced dashboard)
+    # Mock scheduled jobs (you can replace with real job data)
     scheduled_jobs = [
         {
             'id': 1,

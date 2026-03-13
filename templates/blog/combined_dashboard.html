@@ -4,379 +4,480 @@
 {% block title %}Dashboard — BlogSphere{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1 class="mb-4">News Dashboard</h1>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .stagger>*{animation:staggerIn .45s var(--ease) both;}
+  .stagger>*:nth-child(1){animation-delay:.04s}.stagger>*:nth-child(2){animation-delay:.09s}.stagger>*:nth-child(3){animation-delay:.14s}.stagger>*:nth-child(4){animation-delay:.19s}.stagger>*:nth-child(5){animation-delay:.24s}.stagger>*:nth-child(6){animation-delay:.29s}
+  @keyframes staggerIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 
-    <!-- Stats Cards (from enhanced dashboard) -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Total Articles</h5>
-                    <h2>{{ stats.total_articles }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-success text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Today's Articles</h5>
-                    <h2>{{ stats.today_articles }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-info text-white">
-                <div class="card-body">
-                    <h5 class="card-title">Auto Posts</h5>
-                    <h2>{{ stats.auto_posts }}</h2>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card bg-warning text-white">
-                <div class="card-body">
-                    <h5 class="card-title">To Process</h5>
-                    <h2>{{ stats.to_process }}</h2>
-                </div>
-            </div>
-        </div>
+  .section-head{display:flex;align-items:center;justify-content:space-between;border-bottom:2.5px solid var(--ink);padding-bottom:.6rem;margin-bottom:1.5rem;}
+  .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.15rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
+  .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
+
+  .dash-header{border-bottom:2.5px solid var(--ink);padding-bottom:1rem;margin-bottom:2rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:.75rem;}
+  .dash-header-left span{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);display:block;margin-bottom:.3rem;font-family:'Source Serif 4',serif;}
+  .dash-header-left h1{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.6rem,3.5vw,2.2rem);font-weight:900;color:var(--ink);margin:0;letter-spacing:-1px;line-height:1;}
+  .dash-header-right a{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);text-decoration:none;border:1.5px solid var(--rule);border-radius:2px;padding:.35rem .8rem;transition:all .18s;}
+  .dash-header-right a:hover{border-color:var(--ink);color:var(--ink);}
+
+  .stat-card{background:#fff;border:1.5px solid var(--rule);border-radius:2px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:box-shadow .22s,transform .22s;}
+  .stat-card:hover{box-shadow:0 6px 20px rgba(0,0,0,.08);transform:translateY(-2px);}
+  .stat-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);border-radius:0;}
+  .stat-card.green::after{background:#2a9d8f;}
+  .stat-card.blue::after{background:#457b9d;}
+  .stat-card.gold::after{background:#e9c46a;}
+  .stat-num{font-family:'Playfair Display',Georgia,serif;font-size:2.2rem;font-weight:700;color:var(--ink);line-height:1;}
+  .stat-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);margin-top:.3rem;font-family:'Source Serif 4',serif;}
+
+  .action-btn{display:inline-flex;align-items:center;gap:.45rem;font-family:'Playfair Display',Georgia,serif;font-size:.8rem;font-weight:700;letter-spacing:.02em;padding:.6rem 1.2rem;border-radius:2px;text-decoration:none;cursor:pointer;transition:all .18s;border:1.5px solid transparent;}
+  .action-btn-primary{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .action-btn-primary:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .action-btn-outline{background:#fff;color:var(--ink);border-color:var(--rule);}
+  .action-btn-outline:hover{border-color:var(--ink);background:var(--ink);color:#fff;}
+
+  .panel{background:#fff;border:1.5px solid var(--rule);border-radius:2px;overflow:hidden;margin-bottom:1.5rem;}
+  .panel-head{padding:.85rem 1.1rem;border-bottom:1.5px solid var(--rule);background:var(--paper);display:flex;align-items:center;justify-content:space-between;}
+  .panel-head-title{font-family:'Playfair Display',Georgia,serif;font-size:.95rem;font-weight:700;color:var(--ink);margin:0;}
+  .panel-body{padding:1.1rem;}
+
+  .dash-table{width:100%;border-collapse:collapse;font-size:.84rem;}
+  .dash-table th{font-family:'Source Serif 4',serif;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mid);padding:.6rem .8rem;border-bottom:2px solid var(--ink);white-space:nowrap;background:var(--paper);}
+  .dash-table td{padding:.75rem .8rem;border-bottom:1px solid var(--rule);color:var(--ink);vertical-align:middle;}
+  .dash-table tr:last-child td{border-bottom:none;}
+  .dash-table tr:hover td{background:#f8f6f2;}
+  .dash-table td a{color:var(--accent);text-decoration:none;font-weight:600;}
+  .dash-table td a:hover{text-decoration:underline;}
+
+  .tag{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:.18rem .55rem;border-radius:2px;}
+  .tag-source{background:#f0ece4;color:var(--mid);}
+  .tag-cat{background:#fde8e9;color:var(--accent);}
+  .tag-ok{background:#d4f4f0;color:#2a9d8f;}
+  .tag-no{background:#fff3e0;color:#e07b00;}
+  .tag-pos{background:#d4f4f0;color:#2a9d8f;}
+  .tag-neg{background:#fde8e9;color:var(--accent);}
+  .tag-neu{background:#f0ece4;color:var(--mid);}
+
+  .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:2px;border:1.5px solid var(--rule);background:#fff;color:var(--mid);cursor:pointer;text-decoration:none;transition:all .18s;font-size:.7rem;}
+  .icon-btn:hover{border-color:var(--ink);color:var(--ink);}
+
+  .mini-stat{text-align:center;padding:.75rem;border:1.5px solid var(--rule);border-radius:2px;transition:border-color .18s;background:#fff;}
+  .mini-stat:hover{border-color:var(--accent);}
+  .mini-stat-num{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--ink);}
+  .mini-stat-label{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--mid);margin-top:.2rem;font-family:'Source Serif 4',serif;}
+
+  #articlesContainer { max-height: 600px; overflow-y: auto; }
+  .article-item:hover { background-color: rgba(0,123,255,0.05); }
+  .article-item .form-check-input { transform: scale(1.2); }
+  .post-thumbnail { border-radius: 4px; transition: transform 0.2s; }
+  .post-thumbnail:hover { transform: scale(1.1); }
+
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .stat-card,.panel,.icon-btn,.mini-stat{background:#1e1e1e;}
+    .panel-head{background:#161616;}
+    .dash-table th{background:#161616;}
+    .dash-table tr:hover td{background:#1a1a1a;}
+    .action-btn-outline{background:#1e1e1e;color:#e0e0e0;}
+    .action-btn-outline:hover{background:#f0f0f0;color:#111;}
+  }
+</style>
+
+<div class="container page-body" style="padding-top:1.8rem;padding-bottom:3rem;">
+
+  <!-- Header -->
+  <div class="dash-header">
+    <div class="dash-header-left">
+      <span>Admin</span>
+      <h1>News Dashboard</h1>
     </div>
+    <div class="dash-header-right">
+      <a href="{% url 'admin:index' %}">← Admin panel</a>
+    </div>
+  </div>
 
-    <!-- Fetch News Form (from enhanced dashboard) -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Fetch News</h4>
+  <!-- Stats Cards -->
+  <div class="row g-3 mb-4 stagger">
+    <div class="col-6 col-md-3">
+      <div class="stat-card">
+        <div class="stat-num">{{ stats.total_articles }}</div>
+        <div class="stat-label">Total Articles</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card green">
+        <div class="stat-num">{{ stats.today_articles }}</div>
+        <div class="stat-label">Today</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card blue">
+        <div class="stat-num">{{ stats.auto_posts }}</div>
+        <div class="stat-label">Auto Posts</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card gold">
+        <div class="stat-num">{{ stats.to_process }}</div>
+        <div class="stat-label">To Process</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions Panel -->
+  <div class="panel mb-4">
+    <div class="panel-head">
+      <span class="panel-head-title">Quick Actions</span>
+    </div>
+    <div class="panel-body">
+      <div style="display:flex;flex-wrap:wrap;gap:.6rem;">
+        <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="action-btn action-btn-primary">
+          <i class="fas fa-newspaper"></i> Manage Articles
+        </a>
+        <a href="{% url 'admin:blog_newsarticle_add' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-plus"></i> Add Manually
+        </a>
+        <a href="{% url 'admin:blog_post_add' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-pen"></i> Create Post
+        </a>
+        <a href="{% url 'admin:blog_post_changelist' %}" class="action-btn action-btn-outline">
+          <i class="fas fa-list"></i> All Posts
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fetch News Form -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h4>Fetch News</h4>
+    </div>
+    <div class="card-body">
+      <form method="post" action="{% url 'fetch_news_now' %}" id="fetchForm">
+        {% csrf_token %}
+        <div class="row">
+          <!-- Source Selection -->
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">News Sources</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="punch" id="sourcePunch" checked>
+              <label class="form-check-label" for="sourcePunch"><i class="fas fa-newspaper text-success"></i> Punch (Nigeria)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="vanguard" id="sourceVanguard" checked>
+              <label class="form-check-label" for="sourceVanguard"><i class="fas fa-newspaper text-success"></i> Vanguard (Nigeria)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="channels" id="sourceChannels" checked>
+              <label class="form-check-label" for="sourceChannels"><i class="fas fa-tv text-success"></i> Channels TV (Nigeria)</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="bbc" id="sourceBBC" checked>
+              <label class="form-check-label" for="sourceBBC"><i class="fas fa-tv text-primary"></i> BBC News</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="google" id="sourceGoogle">
+              <label class="form-check-label" for="sourceGoogle"><i class="fab fa-google text-warning"></i> Google News <small class="text-muted">(May not work)</small></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="sources" value="reddit" id="sourceReddit">
+              <label class="form-check-label" for="sourceReddit"><i class="fab fa-reddit text-danger"></i> Reddit</label>
+            </div>
+          </div>
+          <!-- Categories Selection -->
+          <div class="col-md-3 mb-3">
+            <label class="form-label fw-bold">Categories</label>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="news" id="catNews" checked>
+              <label class="form-check-label" for="catNews"><span class="badge bg-primary">News</span></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="sport" id="catSport" checked>
+              <label class="form-check-label" for="catSport"><span class="badge bg-success">Sport</span></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="entertainment" id="catEntertainment" checked>
+              <label class="form-check-label" for="catEntertainment"><span class="badge bg-danger">Entertainment</span></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="economy" id="catEconomy">
+              <label class="form-check-label" for="catEconomy"><span class="badge bg-warning">Economy</span></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="politics" id="catPolitics">
+              <label class="form-check-label" for="catPolitics"><span class="badge bg-info">Politics</span></label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" name="categories" value="technology" id="catTechnology">
+              <label class="form-check-label" for="catTechnology"><span class="badge bg-secondary">Technology</span></label>
+            </div>
+          </div>
+          <!-- Limit and Options -->
+          <div class="col-md-3 mb-3">
+            <label for="limit" class="form-label fw-bold">Articles per source</label>
+            <input type="number" class="form-control" id="limit" name="limit_per_source" value="5" min="1" max="20">
+            <div class="mt-3">
+              <label class="form-label fw-bold">Options</label>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="auto_save" id="autoSave">
+                <label class="form-check-label" for="autoSave">Auto-save to database</label>
+              </div>
+            </div>
+          </div>
+          <!-- Fetch Button -->
+          <div class="col-md-3 mb-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="fetchBtn">
+              <i class="fas fa-sync-alt me-2"></i> Fetch News
+            </button>
+          </div>
         </div>
-        <div class="card-body">
-            <form method="post" action="{% url 'fetch_news_now' %}" id="fetchForm">
-                {% csrf_token %}
-                <div class="row">
-                    <!-- Source Selection -->
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold">News Sources</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="punch" id="sourcePunch" checked>
-                            <label class="form-check-label" for="sourcePunch">
-                                <i class="fas fa-newspaper text-success"></i> Punch (Nigeria)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="vanguard" id="sourceVanguard" checked>
-                            <label class="form-check-label" for="sourceVanguard">
-                                <i class="fas fa-newspaper text-success"></i> Vanguard (Nigeria)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="channels" id="sourceChannels" checked>
-                            <label class="form-check-label" for="sourceChannels">
-                                <i class="fas fa-tv text-success"></i> Channels TV (Nigeria)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="bbc" id="sourceBBC" checked>
-                            <label class="form-check-label" for="sourceBBC">
-                                <i class="fas fa-tv text-primary"></i> BBC News
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="google" id="sourceGoogle">
-                            <label class="form-check-label" for="sourceGoogle">
-                                <i class="fab fa-google text-warning"></i> Google News
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="sources" value="reddit" id="sourceReddit">
-                            <label class="form-check-label" for="sourceReddit">
-                                <i class="fab fa-reddit text-danger"></i> Reddit
-                            </label>
-                        </div>
-                    </div>
+      </form>
+    </div>
+  </div>
 
-                    <!-- Categories Selection -->
-                    <div class="col-md-3 mb-3">
-                        <label class="form-label fw-bold">Categories</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="news" id="catNews" checked>
-                            <label class="form-check-label" for="catNews">
-                                <span class="badge bg-primary">News</span>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="sport" id="catSport" checked>
-                            <label class="form-check-label" for="catSport">
-                                <span class="badge bg-success">Sport</span>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="entertainment" id="catEntertainment" checked>
-                            <label class="form-check-label" for="catEntertainment">
-                                <span class="badge bg-danger">Entertainment</span>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="economy" id="catEconomy">
-                            <label class="form-check-label" for="catEconomy">
-                                <span class="badge bg-warning">Economy</span>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="politics" id="catPolitics">
-                            <label class="form-check-label" for="catPolitics">
-                                <span class="badge bg-info">Politics</span>
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" name="categories" value="technology" id="catTechnology">
-                            <label class="form-check-label" for="catTechnology">
-                                <span class="badge bg-secondary">Technology</span>
-                            </label>
-                        </div>
-                    </div>
+  <!-- Fetched Articles Display Area -->
+  <div class="card mb-4" id="resultsSection" style="display: none;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4>Fetched Articles <span id="resultsCount" class="badge bg-primary ms-2">0</span></h4>
+      <div>
+        <button class="btn btn-sm btn-success me-2" onclick="postAllArticles()"><i class="fas fa-paper-plane me-1"></i> Post All</button>
+        <button class="btn btn-sm btn-danger me-2" onclick="deleteSelectedArticles()"><i class="fas fa-trash me-1"></i> Delete Selected</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="clearResults()"><i class="fas fa-times me-1"></i> Clear</button>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <div id="articlesContainer"><!-- articles loaded here --></div>
+    </div>
+  </div>
 
-                    <!-- Limit and Options -->
-                    <div class="col-md-3 mb-3">
-                        <label for="limit" class="form-label fw-bold">Articles per source</label>
-                        <input type="number" class="form-control" id="limit" name="limit_per_source" value="5" min="1" max="20">
-
-                        <div class="mt-3">
-                            <label class="form-label fw-bold">Options</label>
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="auto_save" id="autoSave">
-                                <label class="form-check-label" for="autoSave">
-                                    Auto-save to database
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Fetch Button -->
-                    <div class="col-md-3 mb-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary btn-lg w-100" id="fetchBtn">
-                            <i class="fas fa-sync-alt me-2"></i> Fetch News
-                        </button>
-                    </div>
+  <!-- Recent News Articles -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4>Recent News Articles</h4>
+      <div>
+        <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn btn-sm btn-primary"><i class="fas fa-list me-1"></i> View All</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr><th>Title</th><th>Source</th><th>Category</th><th>Published</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for article in recent_articles %}
+            <tr id="article-row-{{ article.id }}">
+              <td style="max-width:240px;"><div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ article.title|truncatechars:60 }}</div></td>
+              <td><span class="tag tag-source">{{ article.source }}</span></td>
+              <td><span class="tag tag-cat">{{ article.category }}</span></td>
+              <td>{{ article.published_at|date:"M d, Y"|default:"—" }}</td>
+              <td>
+                <div style="display:flex;gap:.3rem;">
+                  <a href="{{ article.url }}" target="_blank" class="icon-btn" title="Open source"><i class="fas fa-external-link-alt"></i></a>
+                  <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="icon-btn" title="Edit"><i class="fas fa-edit"></i></a>
+                  <button onclick="convertToPost({{ article.id }})" class="icon-btn" title="Convert to post"><i class="fas fa-file-alt"></i></button>
+                  <button onclick="deleteNewsArticle({{ article.id }})" class="icon-btn" title="Delete"><i class="fas fa-trash"></i></button>
                 </div>
-            </form>
-        </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="text-align:center;padding:2rem;">No articles found. Fetch some news!</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <!-- Fetched Articles Display Area (from enhanced dashboard) -->
-    <div class="card mb-4" id="resultsSection" style="display: none;">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>Fetched Articles <span id="resultsCount" class="badge bg-primary ms-2">0</span></h4>
-            <div>
-                <button class="btn btn-sm btn-success me-2" onclick="postAllArticles()">
-                    <i class="fas fa-paper-plane me-1"></i> Post All
-                </button>
-                <button class="btn btn-sm btn-danger me-2" onclick="deleteSelectedArticles()">
-                    <i class="fas fa-trash me-1"></i> Delete Selected
-                </button>
-                <button class="btn btn-sm btn-outline-secondary" onclick="clearResults()">
-                    <i class="fas fa-times me-1"></i> Clear
-                </button>
-            </div>
-        </div>
-        <div class="card-body p-0">
-            <div id="articlesContainer">
-                <!-- Articles will be loaded here via JavaScript -->
-            </div>
-        </div>
+  <!-- Category Stats -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h4>Category Stats</h4>
     </div>
-
-    <!-- Recent News Articles (from simple dashboard) -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>Recent News Articles</h4>
-            <div>
-                <a href="{% url 'admin:blog_newsarticle_changelist' %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-list me-1"></i> View All
-                </a>
-            </div>
+    <div class="card-body">
+      <div class="row g-2">
+        {% for stat in category_stats %}
+        <div class="col-6 col-md-3">
+          <div class="mini-stat">
+            <div class="mini-stat-num">{{ stat.count }}</div>
+            <div class="mini-stat-label">{{ stat.category|default:"Uncategorized" }}</div>
+          </div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Title</th>
-                            <th>Source</th>
-                            <th>Category</th>
-                            <th>Published</th>
-                            <th>Converted</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for article in recent_articles %}
-                        <tr id="article-row-{{ article.id }}">
-                            <td>{{ article.title|truncatechars:60 }}</td>
-                            <td><span class="badge bg-secondary">{{ article.source }}</span></td>
-                            <td><span class="badge bg-info">{{ article.category }}</span></td>
-                            <td>{{ article.published_at|date:"M d, Y"|default:"N/A" }}</td>
-                            <td>
-                                {% if article.created_as_post %}
-                                <span class="badge bg-success">Yes</span>
-                                {% else %}
-                                <span class="badge bg-warning">No</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <a href="{{ article.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-external-link-alt"></i>
-                                </a>
-                                <a href="{% url 'admin:blog_newsarticle_change' article.id %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button onclick="convertToPost({{ article.id }})" class="btn btn-sm btn-outline-success">
-                                    <i class="fas fa-file-alt"></i>
-                                </button>
-                                <button onclick="deleteNewsArticle({{ article.id }})" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">No articles found. Fetch some news!</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        {% empty %}
+        <div class="col-12 text-muted">No articles yet.</div>
+        {% endfor %}
+      </div>
     </div>
+  </div>
 
-    <!-- Category Stats (from simple dashboard) -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Category Stats</h4>
-        </div>
-        <div class="card-body">
+  <!-- Recent Blog Posts -->
+  <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h4>Recently Posted Blog Posts</h4>
+      <div>
+        <a href="{% url 'admin:blog_post_changelist' %}" class="btn btn-sm btn-primary"><i class="fas fa-list me-1"></i> View All Posts</a>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr><th>Image</th><th>Title</th><th>Category</th><th>Posted</th><th>Views</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for post in recent_posts|slice:":10" %}
+            <tr id="post-row-{{ post.id }}">
+              <td>
+                {% if post.featured_image %}
+                  <img src="{{ post.featured_image.url }}" class="post-thumbnail" alt="" style="width:60px;height:40px;object-fit:cover;">
+                {% else %}
+                  <div style="width:60px;height:40px;background:#ede9e0;display:flex;align-items:center;justify-content:center;border-radius:2px;"><i class="fas fa-image text-muted"></i></div>
+                {% endif %}
+              </td>
+              <td><a href="{% url 'post_detail' post.slug %}">{{ post.title|truncatechars:50 }}</a></td>
+              <td><span class="tag tag-cat">{{ post.category.name }}</span></td>
+              <td>{{ post.published_date|date:"M d, Y" }}</td>
+              <td><span class="badge bg-secondary">{{ post.views }}</span></td>
+              <td>
+                <div style="display:flex;gap:.3rem;">
+                  <a href="{% url 'post_detail' post.slug %}" target="_blank" class="icon-btn" title="View"><i class="fas fa-eye"></i></a>
+                  <a href="{% url 'admin:blog_post_change' post.id %}" class="icon-btn" title="Edit"><i class="fas fa-edit"></i></a>
+                  <button onclick="editPostImage({{ post.id }})" class="icon-btn" title="Edit image"><i class="fas fa-image"></i></button>
+                  <button onclick="deletePost({{ post.id }})" class="icon-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" style="text-align:center;">No posts yet. Post some articles!</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scheduled Jobs -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h4>Scheduled Jobs</h4>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="dash-table">
+          <thead>
+            <tr><th>Job</th><th>Schedule</th><th>Last Run</th><th>Next Run</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for job in scheduled_jobs %}
+            <tr>
+              <td>{{ job.name }}</td>
+              <td>{{ job.schedule }}</td>
+              <td>{{ job.last_run|timesince }} ago</td>
+              <td>in {{ job.next_run|timeuntil }}</td>
+              <td>{% if job.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Article Editor Modal -->
+  <div class="modal fade" id="articleEditorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Edit Article</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <form id="articleEditorForm">
+            <input type="hidden" id="editArticleIndex" name="article_index">
             <div class="row">
-                {% for stat in category_stats %}
-                <div class="col-md-3 mb-2">
-                    <div class="d-flex justify-content-between">
-                        <span>{{ stat.category|default:"Uncategorized" }}</span>
-                        <span class="badge bg-secondary">{{ stat.count }}</span>
-                    </div>
+              <div class="col-md-8">
+                <div class="mb-3"><label for="editTitle" class="form-label fw-bold">Title</label><input type="text" class="form-control" id="editTitle" required></div>
+                <div class="mb-3"><label for="editContent" class="form-label fw-bold">Content</label><textarea class="form-control" id="editContent" rows="10" required></textarea></div>
+                <div class="mb-3"><label for="editDescription" class="form-label fw-bold">Description/Summary</label><textarea class="form-control" id="editDescription" rows="4"></textarea></div>
+                <div class="mb-3"><label for="editTags" class="form-label fw-bold">Tags (comma separated)</label><input type="text" class="form-control" id="editTags" value="news"></div>
+              </div>
+              <div class="col-md-4">
+                <div class="mb-3">
+                  <label class="form-label fw-bold">Article Image</label>
+                  <div class="border rounded p-3 text-center">
+                    <img id="articleImagePreview" src="{% static 'img/default-article.jpg' %}" class="img-fluid mb-2" style="max-height:200px;">
+                    <input type="file" class="form-control" id="imageUpload" accept="image/*">
+                    <input type="text" class="form-control mt-2" id="imageUrl" placeholder="Or enter image URL">
+                  </div>
                 </div>
-                {% empty %}
-                <p class="text-muted">No articles yet.</p>
-                {% endfor %}
+                <div class="mb-3"><label for="editSource" class="form-label fw-bold">Source</label><input type="text" class="form-control" id="editSource"></div>
+                <div class="mb-3"><label for="editCategory" class="form-label fw-bold">Category</label><select class="form-select" id="editCategory"><option value="NEWS">NEWS</option><option value="SPORT">SPORT</option><option value="ENTERTAINMENT">ENTERTAINMENT</option><option value="ECONOMY">ECONOMY</option><option value="POLITICS">POLITICS</option><option value="TECHNOLOGY">TECHNOLOGY</option></select></div>
+                <div class="mb-3"><label for="editUrl" class="form-label fw-bold">Original URL</label><input type="url" class="form-control" id="editUrl"></div>
+                <div class="card">
+                  <div class="card-body">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="makeFeatured"><label class="form-check-label" for="makeFeatured">Make featured post</label></div>
+                    <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="saveArticle" checked><label class="form-check-label" for="saveArticle">Save as NewsArticle</label></div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </form>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-danger" onclick="deleteFetchedArticle()"><i class="fas fa-trash me-1"></i> Delete</button>
+          <button type="button" class="btn btn-primary" onclick="saveArticleEdits()">Save Changes</button>
+          <button type="button" class="btn btn-success" onclick="postSingleArticle()"><i class="fas fa-paper-plane me-1"></i> Post to Blog</button>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- Recent Blog Posts (from enhanced dashboard) -->
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h4>Recently Posted Blog Posts</h4>
-            <div>
-                <a href="{% url 'admin:blog_post_changelist' %}" class="btn btn-sm btn-primary">
-                    <i class="fas fa-list me-1"></i> View All Posts
-                </a>
+  <!-- Post Image Editor Modal -->
+  <div class="modal fade" id="postImageEditorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Edit Post Image</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <form id="postImageForm">
+            <input type="hidden" id="editPostId" name="post_id">
+            <div class="text-center mb-4"><h6 id="postTitle"></h6><small class="text-muted" id="postCategory"></small></div>
+            <div class="row">
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Current Image</label>
+                <div id="currentImageContainer" class="border rounded p-3 text-center">
+                  <img id="currentPostImage" src="" class="img-fluid" style="max-height:300px;">
+                  <p id="noImageText" class="text-muted mt-2" style="display:none;">No image set</p>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-bold">Upload New Image</label>
+                <div class="border rounded p-3 text-center">
+                  <img id="newImagePreview" src="{% static 'img/default-article.jpg' %}" class="img-fluid mb-2" style="max-height:200px;">
+                  <input type="file" class="form-control" id="postImageUpload" accept="image/*">
+                  <input type="text" class="form-control mt-2" id="postImageUrl" placeholder="Or enter image URL">
+                  <button type="button" class="btn btn-sm btn-outline-danger mt-3" onclick="removePostImage()"><i class="fas fa-times me-1"></i> Remove Image</button>
+                </div>
+                <div class="card mt-3">
+                  <div class="card-body">
+                    <div class="form-check"><input class="form-check-input" type="checkbox" id="useDefaultImage"><label class="form-check-label" for="useDefaultImage">Use default blog image</label></div>
+                    <small class="text-muted d-block mt-2">Max size: 5MB</small>
+                  </div>
+                </div>
+              </div>
             </div>
+          </form>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Image</th>
-                            <th>Title</th>
-                            <th>Category</th>
-                            <th>Posted</th>
-                            <th>Views</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for post in recent_posts|slice:":10" %}
-                        <tr id="post-row-{{ post.id }}">
-                            <td>
-                                {% if post.featured_image %}
-                                <img src="{{ post.featured_image.url }}" class="post-thumbnail"
-                                     alt="{{ post.title }}" style="width: 60px; height: 40px; object-fit: cover;">
-                                {% else %}
-                                <div class="bg-light rounded d-flex align-items-center justify-content-center"
-                                     style="width: 60px; height: 40px;">
-                                    <i class="fas fa-image text-muted"></i>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td>{{ post.title|truncatechars:50 }}</td>
-                            <td><span class="badge bg-info">{{ post.category.name }}</span></td>
-                            <td>{{ post.published_date|date:"M d, Y" }}</td>
-                            <td><span class="badge bg-secondary">{{ post.views }}</span></td>
-                            <td>
-                                <a href="{% url 'post_detail' post.slug %}" target="_blank" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{% url 'admin:blog_post_change' post.id %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button onclick="editPostImage({{ post.id }})" class="btn btn-sm btn-outline-info">
-                                    <i class="fas fa-image"></i>
-                                </button>
-                                <button onclick="deletePost({{ post.id }})" class="btn btn-sm btn-outline-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">No posts yet. Post some articles!</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="updatePostImage()"><i class="fas fa-save me-1"></i> Update Image</button>
         </div>
+      </div>
     </div>
-
-    <!-- Scheduled Jobs (from enhanced dashboard) -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h4>Scheduled Jobs</h4>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Job</th>
-                            <th>Schedule</th>
-                            <th>Last Run</th>
-                            <th>Next Run</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for job in scheduled_jobs %}
-                        <tr>
-                            <td>{{ job.name }}</td>
-                            <td>{{ job.schedule }}</td>
-                            <td>{{ job.last_run|timesince }} ago</td>
-                            <td>in {{ job.next_run|timeuntil }}</td>
-                            <td>
-                                {% if job.is_active %}
-                                <span class="badge bg-success">Active</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Inactive</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+  </div>
 </div>
 
-<!-- JavaScript from enhanced dashboard (keep your existing functions) -->
 <script>
+// ========== ENHANCED DASHBOARD JAVASCRIPT (copied from enhanced-news-dashboard.html) ==========
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -386,14 +487,11 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     const form = this;
     const button = form.querySelector('#fetchBtn');
     const originalText = button.innerHTML;
-
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Fetching...';
     button.disabled = true;
 
-    const sources = Array.from(form.querySelectorAll('input[name="sources"]:checked'))
-        .map(cb => cb.value);
-    const categories = Array.from(form.querySelectorAll('input[name="categories"]:checked'))
-        .map(cb => cb.value);
+    const sources = Array.from(form.querySelectorAll('input[name="sources"]:checked')).map(cb => cb.value);
+    const categories = Array.from(form.querySelectorAll('input[name="categories"]:checked')).map(cb => cb.value);
     const limit = form.querySelector('#limit').value;
     const autoSave = form.querySelector('#autoSave').checked;
 
@@ -433,7 +531,7 @@ document.getElementById('fetchForm').addEventListener('submit', function(e) {
     });
 });
 
-// Display fetched articles with direct Post button
+// Display fetched articles
 function displayFetchedArticles() {
     const container = document.getElementById('articlesContainer');
     container.innerHTML = '';
@@ -445,19 +543,14 @@ function displayFetchedArticles() {
             <div class="row align-items-center">
                 <div class="col-md-1 text-center">
                     <div class="form-check">
-                        <input class="form-check-input article-checkbox" type="checkbox"
-                               value="${index}" id="articleCheck${index}" checked>
+                        <input class="form-check-input article-checkbox" type="checkbox" value="${index}" id="articleCheck${index}" checked>
                     </div>
                 </div>
                 <div class="col-md-7">
                     <div class="d-flex">
                         ${article.image_url ?
-                            `<img src="${article.image_url}" class="me-3 rounded"
-                                  style="width: 80px; height: 60px; object-fit: cover;">` :
-                            `<div class="me-3 bg-light rounded d-flex align-items-center justify-content-center"
-                                  style="width: 80px; height: 60px;">
-                                <i class="fas fa-newspaper text-muted"></i>
-                             </div>`
+                            `<img src="${article.image_url}" class="me-3 rounded" style="width:80px;height:60px;object-fit:cover;">` :
+                            `<div class="me-3 bg-light rounded d-flex align-items-center justify-content-center" style="width:80px;height:60px;"><i class="fas fa-newspaper text-muted"></i></div>`
                         }
                         <div>
                             <h6 class="mb-1">${article.title}</h6>
@@ -465,26 +558,16 @@ function displayFetchedArticles() {
                                 <span class="badge bg-secondary me-2">${article.source}</span>
                                 <span class="badge bg-info me-2">${article.category}</span>
                                 <span class="me-2"><i class="far fa-clock"></i> ${article.published_at || 'Recent'}</span>
-                                <span class="text-truncate d-block mt-1" style="max-width: 500px;">
-                                    ${article.description || article.content?.substring(0, 150) || 'No description'}...
-                                </span>
+                                <span class="text-truncate d-block mt-1" style="max-width:500px;">${article.description || article.content?.substring(0,150) || 'No description'}...</span>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4 text-end">
-                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openArticleEditor(${index})">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-outline-success me-1" onclick="postSingleArticle(${index})">
-                        <i class="fas fa-paper-plane"></i> Post
-                    </button>
-                    <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteFetchedArticle(${index})">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                    <a href="${article.url}" target="_blank" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-external-link-alt"></i>
-                    </a>
+                    <button class="btn btn-sm btn-outline-primary me-1" onclick="openArticleEditor(${index})"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn btn-sm btn-outline-success me-1" onclick="postSingleArticle(${index})"><i class="fas fa-paper-plane"></i> Post</button>
+                    <button class="btn btn-sm btn-outline-danger me-1" onclick="deleteFetchedArticle(${index})"><i class="fas fa-trash"></i></button>
+                    <a href="${article.url}" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="fas fa-external-link-alt"></i></a>
                 </div>
             </div>
         `;
@@ -509,16 +592,13 @@ function deleteFetchedArticle(index) {
 
 // Delete selected articles
 function deleteSelectedArticles() {
-    const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
-        .map(cb => parseInt(cb.value));
+    const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => parseInt(cb.value));
     if (selectedIndices.length === 0) {
         showToast('No articles selected', 'warning');
         return;
     }
     if (confirm(`Are you sure you want to delete ${selectedIndices.length} selected articles?`)) {
-        selectedIndices.sort((a, b) => b - a).forEach(index => {
-            fetchedArticles.splice(index, 1);
-        });
+        selectedIndices.sort((a, b) => b - a).forEach(index => fetchedArticles.splice(index, 1));
         displayFetchedArticles();
         document.getElementById('resultsCount').textContent = fetchedArticles.length;
         showToast(`Deleted ${selectedIndices.length} articles`, 'info');
@@ -549,13 +629,10 @@ function openArticleEditor(index) {
     document.getElementById('imageUpload').onchange = function(e) {
         if (e.target.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
-                document.getElementById('articleImagePreview').src = e.target.result;
-            };
+            reader.onload = function(e) { document.getElementById('articleImagePreview').src = e.target.result; };
             reader.readAsDataURL(e.target.files[0]);
         }
     };
-
     const modal = new bootstrap.Modal(document.getElementById('articleEditorModal'));
     modal.show();
 }
@@ -583,11 +660,10 @@ function saveArticleEdits() {
     modal.hide();
 }
 
-// Post single article (direct generation)
+// Post single article
 function postSingleArticle(index = null) {
     const articleIndex = index !== null ? index : currentEditIndex;
     if (articleIndex === -1 || !fetchedArticles[articleIndex]) return;
-
     const article = fetchedArticles[articleIndex];
     const isFeatured = article.is_featured || false;
     const saveArticle = article.save_article !== false;
@@ -630,8 +706,7 @@ function postSingleArticle(index = null) {
 
 // Post all selected articles
 function postAllArticles() {
-    const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked'))
-        .map(cb => parseInt(cb.value));
+    const selectedIndices = Array.from(document.querySelectorAll('.article-checkbox:checked')).map(cb => parseInt(cb.value));
     if (selectedIndices.length === 0) {
         showToast('No articles selected', 'warning');
         return;
@@ -683,10 +758,7 @@ function deleteNewsArticle(articleId) {
     if (confirm('Are you sure you want to delete this news article?')) {
         fetch('/api/delete-news-article/' + articleId + '/', {
             method: 'DELETE',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => response.json())
         .then(data => {
@@ -708,10 +780,7 @@ function deletePost(postId) {
     if (confirm('Are you sure you want to delete this blog post?')) {
         fetch('/api/delete-post/' + postId + '/', {
             method: 'DELETE',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => response.json())
         .then(data => {
@@ -748,9 +817,7 @@ function editPostImage(postId) {
             document.getElementById('postImageUpload').onchange = function(e) {
                 if (e.target.files[0]) {
                     const reader = new FileReader();
-                    reader.onload = function(e) {
-                        document.getElementById('newImagePreview').src = e.target.result;
-                    };
+                    reader.onload = function(e) { document.getElementById('newImagePreview').src = e.target.result; };
                     reader.readAsDataURL(e.target.files[0]);
                 }
             };
@@ -808,10 +875,7 @@ function removePostImage() {
     if (confirm('Are you sure you want to remove the image from this post?')) {
         fetch('/api/remove-post-image/' + postId + '/', {
             method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
+            headers: { 'X-CSRFToken': '{{ csrf_token }}', 'X-Requested-With': 'XMLHttpRequest' }
         })
         .then(response => response.json())
         .then(data => {
@@ -854,6 +918,7 @@ function convertToPost(articleId) {
     });
 }
 
+// Toast notification
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed bottom-0 end-0 m-3';
@@ -868,51 +933,24 @@ function showToast(message, type) {
     const bsToast = new bootstrap.Toast(toast);
     bsToast.show();
     setTimeout(() => toast.remove(), 3000);
+}
+
+// Smooth page transitions (from simple dashboard)
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('a[href]').forEach(function(a) {
+    var href = a.getAttribute('href');
+    if (href && href.startsWith('/') && !href.startsWith('//') && !a.target && !a.classList.contains('btn-close')) {
+      a.addEventListener('click', function(e) {
+        var url = this.href;
+        e.preventDefault();
+        var pb = document.querySelector('.page-body');
+        pb.style.transition = 'opacity .24s ease, transform .24s ease';
+        pb.style.opacity = '0';
+        pb.style.transform = 'translateY(8px)';
+        setTimeout(function() { window.location.href = url; }, 230);
+      });
+    }
+  });
+});
 </script>
-
-<style>
-.article-item:hover {
-    background-color: rgba(0, 123, 255, 0.05);
-}
-.article-item .form-check-input {
-    transform: scale(1.2);
-}
-#articlesContainer {
-    max-height: 600px;
-    overflow-y: auto;
-}
-#editContent, #editDescription {
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-}
-#articleImagePreview, #currentPostImage, #newImagePreview {
-    border: 2px dashed #dee2e6;
-    padding: 5px;
-}
-.modal-xl {
-    max-width: 1200px;
-}
-.badge {
-    font-size: 0.75em;
-}
-.post-thumbnail {
-    border-radius: 4px;
-    transition: transform 0.2s;
-}
-.post-thumbnail:hover {
-    transform: scale(1.1);
-}
-.btn-outline-danger:hover {
-    background-color: #dc3545;
-    color: white;
-}
-.btn-outline-info:hover {
-    background-color: #0dcaf0;
-    color: white;
-}
-
-
-</style>
-
-
 {% endblock %}
