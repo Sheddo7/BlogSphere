@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About Us - BlogSphere{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <h1 class="mb-4">About BlogSphere</h1>
+
+            <div class="legal-content">
+                <h2>Who We Are</h2>
+                <p>BlogSphere is a leading Nigerian news platform dedicated to bringing you the latest news, insights, and analysis from Nigeria and around the world. Founded in 2024, we are committed to delivering accurate, timely, and engaging content to our readers.</p>
+
+                <h2>Our Mission</h2>
+                <p>Our mission is to inform, educate, and empower our readers by providing high-quality journalism that matters. We strive to be your trusted source for news on politics, business, technology, entertainment, sports, and more.</p>
+
+                <h2>What We Do</h2>
+                <p>BlogSphere covers a wide range of topics, including:</p>
+                <ul>
+                    <li><strong>Nigerian News:</strong> Breaking news and in-depth coverage of events across Nigeria</li>
+                    <li><strong>Politics:</strong> Analysis of political developments and policy decisions</li>
+                    <li><strong>Business & Economy:</strong> Market trends, business insights, and economic analysis</li>
+                    <li><strong>Technology:</strong> Latest tech news, innovations, and digital trends</li>
+                    <li><strong>Entertainment:</strong> Celebrity news, music, movies, and pop culture</li>
+                    <li><strong>Sports:</strong> Coverage of Nigerian and international sports events</li>
+                </ul>
+
+                <h2>Our Values</h2>
+                <h3>Accuracy</h3>
+                <p>We are committed to factual reporting and thorough fact-checking. Our team works diligently to verify information before publication.</p>
+
+                <h3>Independence</h3>
+                <p>We maintain editorial independence and report news without bias or external influence. Our primary responsibility is to our readers.</p>
+
+                <h3>Integrity</h3>
+                <p>We adhere to the highest standards of journalism ethics. We are transparent about our sources and correct errors promptly when they occur.</p>
+
+                <h3>Innovation</h3>
+                <p>We embrace new technologies and storytelling methods to deliver news in engaging and accessible formats.</p>
+
+                <h2>Our Team</h2>
+                <p>BlogSphere is powered by a dedicated team of journalists, editors, and content creators who are passionate about delivering quality news to our readers. Our team members bring diverse perspectives and expertise across various fields.</p>
+
+                <h2>Editorial Standards</h2>
+                <p>We maintain strict editorial standards to ensure the quality and credibility of our content:</p>
+                <ul>
+                    <li>All news articles are researched and fact-checked before publication</li>
+                    <li>We clearly distinguish between news reporting and opinion pieces</li>
+                    <li>We cite sources and provide proper attribution for all information</li>
+                    <li>We welcome corrections and feedback from our readers</li>
+                    <li>We respect privacy and protect the identity of confidential sources</li>
+                </ul>
+
+                <h2>Our Commitment to Readers</h2>
+                <p>We are committed to:</p>
+                <ul>
+                    <li>Providing free access to quality news and information</li>
+                    <li>Respecting your privacy and protecting your personal data</li>
+                    <li>Listening to your feedback and continuously improving</li>
+                    <li>Being accountable for the content we publish</li>
+                    <li>Serving the public interest through responsible journalism</li>
+                </ul>
+
+                <h2>Advertise With Us</h2>
+                <p>BlogSphere offers various advertising opportunities to help businesses reach our engaged audience. For advertising inquiries, please contact us at: advertising@blogsphere.ng</p>
+
+                <h2>Partner With Us</h2>
+                <p>We welcome partnerships with organizations that share our commitment to quality journalism and public service. For partnership opportunities, please reach out to: partnerships@blogsphere.ng</p>
+
+                <h2>Disclaimer</h2>
+                <p>While we strive for accuracy in all our reporting, BlogSphere is a news aggregation and original content platform. We endeavor to verify all information, but readers are encouraged to conduct their own research and verification. The views expressed in opinion pieces and guest articles do not necessarily reflect the views of BlogSphere.</p>
+
+                <h2>Contact Information</h2>
+                <p>We value your feedback and inquiries:</p>
+                <ul>
+                    <li><strong>General Inquiries:</strong> info@blogsphere.ng</li>
+                    <li><strong>Editorial:</strong> editor@blogsphere.ng</li>
+                    <li><strong>Advertising:</strong> advertising@blogsphere.ng</li>
+                    <li><strong>Technical Support:</strong> support@blogsphere.ng</li>
+                    <li><strong>Contact Form:</strong> <a href="{% url 'contact' %}">Contact Us</a></li>
+                </ul>
+
+                <h2>Stay Connected</h2>
+                <p>Follow us on social media to stay updated with the latest news:</p>
+                <ul>
+                    <li><strong>Facebook:</strong> @BlogSphereNG</li>
+                    <li><strong>Twitter/X:</strong> @BlogSphereNG</li>
+                    <li><strong>Instagram:</strong> @BlogSphereNG</li>
+                    <li><strong>LinkedIn:</strong> BlogSphere Nigeria</li>
+                </ul>
+
+                <p class="mt-5">Thank you for choosing BlogSphere as your trusted news source. We are honored to serve you and committed to upholding the highest standards of journalism.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.legal-content {
+    line-height: 1.8;
+}
+
+.legal-content h2 {
+    color: #2c3e50;
+    margin-top: 2.5rem;
+    margin-bottom: 1rem;
+    font-size: 1.75rem;
+    font-weight: 600;
+}
+
+.legal-content h3 {
+    color: #34495e;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.legal-content p {
+    margin-bottom: 1rem;
+    color: #555;
+}
+
+.legal-content ul {
+    margin-bottom: 1rem;
+    padding-left: 2rem;
+}
+
+.legal-content li {
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.legal-content a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.legal-content a:hover {
+    text-decoration: underline;
+}
+</style>
+{% endblock %}

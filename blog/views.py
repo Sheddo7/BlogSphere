@@ -27,6 +27,7 @@ from .models import Category
 
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.conf import settings
 
 
 # ===== BASIC VIEWS =====
@@ -962,3 +963,84 @@ def update_draft_image(request, draft_id):
             return JsonResponse({'success': False, 'message': str(e)})
 
     return JsonResponse({'success': False, 'message': 'Invalid request'})
+
+
+
+def robots_txt(request):
+    """Serve robots.txt with custom admin URL"""
+    context = {
+        'ADMIN_URL': settings.ADMIN_URL
+    }
+    return render(request, 'robots.txt', context, content_type='text/plain')
+
+
+# Legal Pages Views
+def privacy_policy(request):
+    """Privacy Policy page"""
+    return render(request, 'blog/privacy_policy.html')
+
+
+def about(request):
+    """About Us page"""
+    return render(request, 'blog/about.html')
+
+
+def terms_of_service(request):
+    """Terms of Service page"""
+    return render(request, 'blog/terms.html')
+
+
+def contact(request):
+    """Contact Us page and form handler"""
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name', '')
+            email = request.POST.get('email', '')
+            subject_type = request.POST.get('subject', '')
+            message = request.POST.get('message', '')
+
+            if not all([name, email, message]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Please fill in all required fields.'
+                })
+
+            full_subject = f"BlogSphere Contact Form: {subject_type}"
+            full_message = f"""
+New contact form submission from BlogSphere
+
+Name: {name}
+Email: {email}
+Subject: {subject_type}
+
+Message:
+{message}
+            """
+
+            try:
+                send_mail(
+                    subject=full_subject,
+                    message=full_message,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[settings.CONTACT_EMAIL],
+                    fail_silently=False,
+                )
+
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
+                })
+            except Exception as email_error:
+                print(f"Email error: {email_error}")
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Thank you for your message! We will get back to you soon.'
+                })
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': 'An error occurred. Please try again or email us directly at info@blogsphere.ng'
+            })
+
+    return render(request, 'blog/contact.html')

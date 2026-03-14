@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
     'storages',
     'blog',
     'accounts',
@@ -124,3 +125,17 @@ APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
 CSRF_TRUSTED_ORIGINS = ['https://blogsphere.up.railway.app']
+
+# Google Analytics
+GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', '')
+
+# Contact Form Email
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@blogsphere.ng')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@blogsphere.ng')
+
+# Email Backend (development - prints to console)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Site Configuration
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.up.railway.app')
+SITE_NAME = 'BlogSphere'

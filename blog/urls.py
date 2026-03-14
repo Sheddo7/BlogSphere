@@ -39,8 +39,13 @@ urlpatterns = [
     path('api/delete-draft/<int:draft_id>/', views.delete_draft, name='delete_draft'),
     path('api/publish-draft/<int:draft_id>/', views.publish_draft, name='publish_draft'),
     path('api/update-draft-image/<int:draft_id>/', views.update_draft_image, name='update_draft_image'),
-
     path('dashboard/', views.combined_dashboard, name='combined_dashboard'),
+
+        # Legal Pages
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('about/', views.about, name='about'),
+    path('terms-of-service/', views.terms_of_service, name='terms_of_service'),
+    path('contact/', views.contact, name='contact'),
 ]
 
 handler404 = 'blog.views.custom_404'

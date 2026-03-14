@@ -2,6 +2,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-T0BH5EWQBM"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-T0BH5EWQBM');
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BlogSphere - Modern Blog Platform{% endblock %}</title>
@@ -396,11 +405,12 @@
     </main>
 
     <!-- ══ FOOTER ══ -->
-    <footer>
+    <footer class="bg-dark text-white mt-5 py-4">
         <div class="container">
             <div class="row g-4">
 
-                <div class="col-lg-4 col-md-12">
+                <!-- Logo & Description -->
+                <div class="col-lg-3 col-md-12">
                     <div class="footer-logo">
                         <i class="fas fa-blog"></i> BlogSphere
                     </div>
@@ -415,6 +425,7 @@
                     </div>
                 </div>
 
+                <!-- Explore -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Explore</h5>
@@ -425,6 +436,7 @@
                                 <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
                                 {% endif %}
                             {% endfor %}
+                            <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>About Us</a></li>
                             {% if user.is_authenticated and user.is_staff %}
                             <li><a href="{% url 'news_dashboard' %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
                             {% endif %}
@@ -432,13 +444,14 @@
                     </div>
                 </div>
 
+                <!-- Connect -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Connect</h5>
                         <ul class="footer-links">
                             <li><a href="#"><i class="fas fa-envelope"></i>Newsletter</a></li>
                             <li><a href="#"><i class="fas fa-rss"></i>RSS Feed</a></li>
-                            <li><a href="#"><i class="fas fa-comment"></i>Contact</a></li>
+                            <li><a href="{% url 'contact' %}"><i class="fas fa-comment"></i>Contact</a></li>
                             {% if user.is_authenticated and user.is_staff %}
                             <li><a href="/admin/"><i class="fas fa-lock"></i>Admin</a></li>
                             {% endif %}
@@ -446,7 +459,19 @@
                     </div>
                 </div>
 
-                <div class="col-lg-4 col-md-12">
+                <!-- Legal -->
+                <div class="col-lg-2 col-md-6">
+                    <div class="footer-section">
+                        <h5>Legal</h5>
+                        <ul class="footer-links">
+                            <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>Privacy Policy</a></li>
+                            <li><a href="{% url 'terms_of_service' %}"><i class="fas fa-chevron-right"></i>Terms of Service</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Newsletter -->
+                <div class="col-lg-3 col-md-12">
                     <div class="footer-section">
                         <h5>Newsletter</h5>
                         <p style="color:rgba(255,255,255,.55);font-size:.86rem;margin-bottom:1rem;line-height:1.6;">
@@ -470,7 +495,6 @@
             </div>
         </div>
     </footer>
-
     <!-- ══ MOBILE BOTTOM NAV ══ -->
     <nav id="mobileBottomNav" aria-label="Mobile navigation">
         <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">
@@ -519,6 +543,18 @@
     }, true);
     </script>
     <script src="{% static 'js/lazy-load.js' %}"></script>
+    {% if not debug %}
 
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ GOOGLE_ANALYTICS_ID }}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '{{ GOOGLE_ANALYTICS_ID }}', {
+        'anonymize_ip': true
+      });
+    </script>
+    {% endif %}
 </body>
 </html>
