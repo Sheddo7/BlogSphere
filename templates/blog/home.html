@@ -3,6 +3,19 @@
 
 {% block title %}BlogSphere — Today's News{% endblock %}
 
+{% block meta_description %}
+    <meta name="description" content="BlogSphere brings you the latest Nigerian news, politics, entertainment, sports, and business – sharp, fast, and reliable.">
+{% endblock %}
+
+{% block og_title %}BlogSphere — Today's News{% endblock %}
+{% block og_description %}Your trusted source for Nigerian news and analysis.{% endblock %}
+{% block og_image %}{{ block.super }}{% endblock %}
+{% block og_type %}website{% endblock %}
+
+{% block twitter_title %}{{ block.super }}{% endblock %}
+{% block twitter_description %}{{ block.super }}{% endblock %}
+{% block twitter_image %}{{ block.super }}{% endblock %}
+
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');

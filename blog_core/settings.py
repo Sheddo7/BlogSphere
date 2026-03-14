@@ -57,6 +57,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'blog.context_processors.categories_processor',
                 'blog.context_processors.latest_posts_processor',
+                'blog.context_processors.seo_defaults',
             ],
         },
     },
@@ -139,3 +140,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # Site Configuration
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.up.railway.app')
 SITE_NAME = 'BlogSphere'
+
+# Social Media
+TWITTER_HANDLE = os.environ.get('TWITTER_HANDLE', '@BlogSphereNG')
+

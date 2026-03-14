@@ -3,6 +3,63 @@
 
 {% block title %}{{ post.title }} — BlogSphere{% endblock %}
 
+{% block meta_description %}
+    <meta name="description" content="{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}">
+{% endblock %}
+
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}{% endblock %}
+{% block og_image %}
+    {% if post.featured_image %}
+        {{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+{% endblock %}
+{% block og_type %}article{% endblock %}
+
+{% block twitter_title %}{{ block.super }}{% endblock %}
+{% block twitter_description %}{{ block.super }}{% endblock %}
+{% block twitter_image %}{{ block.super }}{% endblock %}
+
+{% block schema %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "NewsArticle",
+  "headline": "{{ post.title|escapejs }}",
+  "image": [
+    "{% if post.featured_image %}{{ request.build_absolute_uri }}{{ post.featured_image.url }}{% else %}{{ default_social_image }}{% endif %}"
+  ],
+  "datePublished": "{{ post.published_date|date:'c' }}",
+  "dateModified": "{{ post.updated_at|date:'c' }}",
+  "author": {
+    "@type": "Person",
+    "name": "{{ post.author.get_full_name|default:post.author.username|escapejs }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "{{ site_name|escapejs }}",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{{ site_url }}{% static 'img/logo.png' %}"
+    },
+    "sameAs": [
+      "https://twitter.com/{{ twitter_handle|cut:'@' }}",
+      "https://www.facebook.com/BlogSphereNG",
+      "https://www.instagram.com/BlogSphereNG",
+      "https://www.linkedin.com/company/blogsphere"
+    ]
+  },
+  "description": "{{ post.excerpt|default:post.content|striptags|truncatechars:200|escapejs }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ request.build_absolute_uri }}"
+  }
+}
+</script>
+{% endblock %}
+
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
