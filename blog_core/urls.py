@@ -20,7 +20,7 @@ sitemaps = {
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path('', include('blog.urls')),
-    path('accounts/', include('accounts.urls')),
+    #path('accounts/', include('accounts.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
     path('robots.txt', views.robots_txt, name='robots_txt'),
 ]
