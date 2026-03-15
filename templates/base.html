@@ -452,24 +452,21 @@
                     </div>
                 </div>
 
-                <!-- Explore -->
+                <!-- Explore (all categories) -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Explore</h5>
                         <ul class="footer-links">
                             <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>Home</a></li>
-                            {% for cat in categories|slice:":4" %}
-                                <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
+                            {% for cat in categories %}
+                            <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
                             {% endfor %}
                             <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>About Us</a></li>
-                            {% if user.is_authenticated and user.is_staff %}
-                            <li><a href="{% url 'news_dashboard' %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
-                            {% endif %}
                         </ul>
                     </div>
                 </div>
 
-                <!-- Connect -->
+                <!-- Connect & Legal -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Connect</h5>
@@ -480,11 +477,7 @@
                             {% endif %}
                         </ul>
                     </div>
-                </div>
-
-                <!-- Legal -->
-                <div class="col-lg-4 col-md-6">
-                    <div class="footer-section">
+                    <div class="footer-section mt-4">
                         <h5>Legal</h5>
                         <ul class="footer-links">
                             <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>Privacy Policy</a></li>
@@ -492,6 +485,9 @@
                         </ul>
                     </div>
                 </div>
+
+                <!-- Empty column for spacing (optional) -->
+                <div class="col-lg-4"></div>
 
             </div>
         </div>
