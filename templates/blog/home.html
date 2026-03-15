@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static cache %}
 
 {% block title %}BlogSphere — Today's News{% endblock %}
 
@@ -284,7 +284,7 @@
   <div style="margin-bottom:2.5rem;">
     <div class="row g-4">
 
-      <!-- Carousel -->
+      <!-- Carousel (keep dynamic – not cached) -->
       <div class="col-lg-7">
         <div class="carousel-wrap" id="heroCarousel">
           <div class="carousel-track" id="carouselTrack">
@@ -335,7 +335,7 @@
         </div>
       </div>
 
-      <!-- Side stack -->
+      <!-- Side stack (keep dynamic) -->
       <div class="col-lg-5">
         {% for post in featured_posts|slice:"1:5" %}
         <a href="{% url 'post_detail' post.slug %}" class="side-card">
@@ -370,12 +370,13 @@
   </div>
   {% endif %}
 
-  <!-- Skeleton -->
+  <!-- Skeleton (unchanged) -->
   <div id="skeletonGrid" style="display:none;" aria-hidden="true">
     <div class="row g-3">{% for i in "12345678" %}<div class="col-lg-3 col-md-6"><div class="news-card"><div class="skeleton" style="height:168px;border-radius:2px 2px 0 0;"></div><div class="nc-body"><div class="skeleton" style="height:11px;width:38%;margin-bottom:10px;"></div><div class="skeleton" style="height:14px;margin-bottom:8px;"></div><div class="skeleton" style="height:14px;width:70%;"></div></div></div></div>{% endfor %}</div>
   </div>
 
-  <!-- Latest News -->
+  <!-- Latest News (CACHED for 5 minutes) -->
+  {% cache 300 latest_news_section %}
   <section>
     <div class="section-head"><h2>Latest News</h2></div>
     <div class="row g-3 stagger">
@@ -404,10 +405,12 @@
       {% endfor %}
     </div>
   </section>
+  {% endcache %}
 
   <hr class="rule">
 
-  <!-- Categories -->
+  <!-- Categories (CACHED for 1 hour) -->
+  {% cache 3600 categories_section %}
   <section>
     <div class="section-head"><h2>Browse Topics</h2></div>
     <div class="cat-pills">
@@ -416,10 +419,11 @@
       {% endfor %}
     </div>
   </section>
+  {% endcache %}
 
 </div>
 
-<!-- Lazy loading script -->
+<!-- Lazy loading script (unchanged) -->
 <script>
 (function() {
   function initLazyLoad() {
@@ -470,7 +474,7 @@
 })();
 </script>
 
-<!-- Carousel and other scripts (FIXED) -->
+<!-- Carousel script (unchanged) -->
 <script>
 (function() {
   // Carousel code - ensures one slide per frame
