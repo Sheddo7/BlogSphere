@@ -452,42 +452,46 @@
                     </div>
                 </div>
 
-                <!-- Explore (all categories) -->
+                <!-- Explore -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Explore</h5>
                         <ul class="footer-links">
-                            <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>Home</a></li>
-                            {% for cat in categories %}
-                            <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
+                            <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>HOME</a></li>
+                            {% for cat in categories|slice:":4" %}
+                                <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
                             {% endfor %}
-                            <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>About Us</a></li>
+                            <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>ABOUT US</a></li>
+                            {% if user.is_authenticated and user.is_staff %}
+                            <li><a href="{% url 'news_dashboard' %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
+                            {% endif %}
                         </ul>
                     </div>
                 </div>
 
-                <!-- Connect & Legal -->
+                <!-- Connect -->
                 <div class="col-lg-2 col-6">
                     <div class="footer-section">
                         <h5>Connect</h5>
                         <ul class="footer-links">
-                            <li><a href="{% url 'contact' %}"><i class="fas fa-comment"></i>Contact</a></li>
+                            <li><a href="{% url 'contact' %}"><i class="fas fa-comment"></i>CONTACT</a></li>
                             {% if user.is_authenticated and user.is_staff %}
-                            <li><a href="/admin/"><i class="fas fa-lock"></i>Admin</a></li>
+                            <li><a href="/admin/"><i class="fas fa-lock"></i>ADMIN</a></li>
                             {% endif %}
-                        </ul>
-                    </div>
-                    <div class="footer-section mt-4">
-                        <h5>Legal</h5>
-                        <ul class="footer-links">
-                            <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>Privacy Policy</a></li>
-                            <li><a href="{% url 'terms_of_service' %}"><i class="fas fa-chevron-right"></i>Terms of Service</a></li>
                         </ul>
                     </div>
                 </div>
 
-                <!-- Empty column for spacing (optional) -->
-                <div class="col-lg-4"></div>
+                <!-- Legal -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="footer-section">
+                        <h5>Legal</h5>
+                        <ul class="footer-links">
+                            <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>PRIVACY POLICY</a></li>
+                            <li><a href="{% url 'terms_of_service' %}"><i class="fas fa-chevron-right"></i>TERMS OF SERVICE</a></li>
+                        </ul>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -501,7 +505,7 @@
     <!-- ══ MOBILE BOTTOM NAV ══ -->
     <nav id="mobileBottomNav" aria-label="Mobile navigation">
         <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">
-            <i class="fas fa-home"></i><span>Home</span>
+            <i class="fas fa-home"></i><span>HOME</span>
         </a>
         {% for cat in categories|slice:":3" %}
             {% if cat.slug != "sport" %}
