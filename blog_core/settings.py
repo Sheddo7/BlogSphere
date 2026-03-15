@@ -71,7 +71,7 @@ CACHES = {
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             # Optional: Improve performance by using hiredis parser
-            "PARSER_CLASS": "redis.connection.HiredisParser",
+            #"PARSER_CLASS": "redis.connection.HiredisParser",
             # Optional: Add a prefix to your cache keys to avoid collisions
             "KEY_PREFIX": "blogsphere",
         },
