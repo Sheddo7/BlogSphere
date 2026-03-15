@@ -63,26 +63,6 @@ TEMPLATES = [
     },
 ]
 
-
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/1"),  # Use REDIS_URL from Railway, fallback for local
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-            # Optional: Improve performance by using hiredis parser
-            #"PARSER_CLASS": "redis.connection.HiredisParser",
-            # Optional: Add a prefix to your cache keys to avoid collisions
-            "KEY_PREFIX": "blogsphere",
-        },
-        # Optional: Set a default timeout for cache keys (in seconds)
-        "TIMEOUT": 300,  # 5 minutes
-    }
-}
-
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-
 WSGI_APPLICATION = 'blog_core.wsgi.application'
 
 # --- Database ---
@@ -163,4 +143,3 @@ SITE_NAME = 'BlogSphere'
 
 # Social Media
 TWITTER_HANDLE = os.environ.get('TWITTER_HANDLE', '@BlogSphereNG')
-
