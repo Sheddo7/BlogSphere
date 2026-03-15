@@ -36,33 +36,149 @@
   .section-head h2{font-family:'Playfair Display',Georgia,serif;font-size:1.25rem;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.3px;}
   .section-head h2::before{content:'';display:inline-block;width:4px;height:1.1em;background:var(--accent);margin-right:.55rem;vertical-align:-.1em;border-radius:1px;}
 
-  /* ══ CAROUSEL ══ */
-  .carousel-wrap{position:relative;border-radius:2px;overflow:hidden;user-select:none;}
-  .carousel-track{display:flex;transition:transform .55s var(--ease);will-change:transform;}
-  .carousel-slide{min-width:100%;position:relative;display:block;text-decoration:none;flex-shrink:0;}
-  .carousel-slide img{width:100%;height:460px;object-fit:cover;display:block;pointer-events:none;}
-  .carousel-fallback{width:100%;height:460px;background:linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);display:flex;align-items:center;justify-content:center;}
-  .carousel-gradient{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.18) 55%,transparent 100%);pointer-events:none;}
-  .carousel-body{position:absolute;bottom:0;left:0;right:0;padding:2rem 1.8rem 2.4rem;color:#fff;}
-  .carousel-cat{display:inline-block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;background:var(--accent);color:#fff;padding:.2rem .65rem;border-radius:2px;margin-bottom:.65rem;}
-  .carousel-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(1.4rem,3.2vw,2.1rem);font-weight:700;line-height:1.22;color:#fff;margin:0 0 .65rem;}
-  .carousel-meta{font-size:.75rem;opacity:.8;font-family:'Source Serif 4',serif;}
+  /* ══ CAROUSEL (FIXED) ══ */
+  .carousel-wrap {
+    position: relative;
+    border-radius: 2px;
+    overflow: hidden;
+    user-select: none;
+    width: 100%;
+  }
+  .carousel-track {
+    display: flex;
+    transition: transform 0.55s var(--ease);
+    will-change: transform;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .carousel-slide {
+    flex: 0 0 100%;          /* each slide takes exactly 100% width of container */
+    min-width: 0;            /* override any min-width */
+    position: relative;
+    display: block;
+    text-decoration: none;
+    margin: 0;
+    padding: 0;
+  }
+  .carousel-slide img {
+    width: 100%;
+    height: 460px;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
+  }
+  .carousel-fallback {
+    width: 100%;
+    height: 460px;
+    background: linear-gradient(135deg,#1a1a2e,#16213e,#0f3460);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .carousel-gradient {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,rgba(0,0,0,.88) 0%,rgba(0,0,0,.18) 55%,transparent 100%);
+    pointer-events: none;
+  }
+  .carousel-body {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 2rem 1.8rem 2.4rem;
+    color: #fff;
+  }
+  .carousel-cat {
+    display: inline-block;
+    font-size: .65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    background: var(--accent);
+    color: #fff;
+    padding: .2rem .65rem;
+    border-radius: 2px;
+    margin-bottom: .65rem;
+  }
+  .carousel-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: clamp(1.4rem, 3.2vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.22;
+    color: #fff;
+    margin: 0 0 .65rem;
+  }
+  .carousel-meta {
+    font-size: .75rem;
+    opacity: .8;
+    font-family: 'Source Serif 4', serif;
+  }
 
   /* Arrows */
-  .carousel-btn{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;background:rgba(255,255,255,.15);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border:1.5px solid rgba(255,255,255,.25);border-radius:2px;color:#fff;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s;z-index:10;}
+  .carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 42px;
+    height: 42px;
+    background: rgba(255,255,255,.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(255,255,255,.25);
+    border-radius: 2px;
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .18s;
+    z-index: 10;
+  }
   .carousel-btn:hover{background:rgba(255,255,255,.3);}
   .carousel-btn.prev{left:.85rem;}
   .carousel-btn.next{right:.85rem;}
 
   /* Dots */
-  .carousel-dots{position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);display:flex;gap:.45rem;z-index:10;}
-  .carousel-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);cursor:pointer;transition:all .22s;border:none;padding:0;}
-  .carousel-dot.active{background:#fff;width:20px;border-radius:3px;}
+  .carousel-dots{
+    position:absolute;
+    bottom:1rem;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:.45rem;
+    z-index:10;
+  }
+  .carousel-dot{
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:rgba(255,255,255,.4);
+    cursor:pointer;
+    transition:all .22s;
+    border:none;
+    padding:0;
+  }
+  .carousel-dot.active{
+    background:#fff;
+    width:20px;
+    border-radius:3px;
+  }
 
   /* Progress bar */
-  .carousel-progress{position:absolute;bottom:0;left:0;height:3px;background:var(--accent);width:0%;z-index:10;}
+  .carousel-progress{
+    position:absolute;
+    bottom:0;
+    left:0;
+    height:3px;
+    background:var(--accent);
+    width:0%;
+    z-index:10;
+  }
 
-  /* Side stack */
+  /* Side stack (unchanged) */
   .side-card{display:flex;gap:.85rem;align-items:flex-start;padding:.9rem 0;border-bottom:1px solid var(--rule);text-decoration:none;transition:background .18s;}
   .side-card:last-child{border-bottom:none;padding-bottom:0;}
   .side-card:hover{background:#f5f3ee;}
@@ -72,7 +188,7 @@
   .side-title{font-family:'Playfair Display',Georgia,serif;font-size:.87rem;font-weight:600;color:var(--ink);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
   .side-date{display:block;font-size:.7rem;color:var(--mid);margin-top:.28rem;font-family:'Source Serif 4',serif;}
 
-  /* News card */
+  /* News card (unchanged) */
   .news-card{height:100%;border:none;border-radius:2px;background:#fff;overflow:hidden;transition:box-shadow .25s var(--ease),transform .25s var(--ease);}
   .news-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10);transform:translateY(-3px);}
   .nc-img{position:relative;overflow:hidden;height:168px;}
@@ -85,7 +201,7 @@
   .nc-title:hover{color:var(--accent);}
   .nc-meta{font-size:.7rem;color:var(--mid);margin-top:.55rem;font-family:'Source Serif 4',serif;}
 
-  /* Cat pills */
+  /* Cat pills (unchanged) */
   .cat-pills{display:flex;flex-wrap:wrap;gap:.5rem;}
   .cat-pill{font-size:.73rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:.38rem 1rem;border:1.5px solid var(--rule);border-radius:2px;color:var(--ink);text-decoration:none;transition:all .18s;}
   .cat-pill:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
@@ -93,7 +209,7 @@
 
   .rule{border:none;border-top:1px solid var(--rule);margin:2.5rem 0;}
 
-  /* Lazy image styles */
+  /* Lazy image styles (unchanged) */
   .lazy-image {
     opacity: 0;
     transition: opacity 0.3s ease;
@@ -357,7 +473,7 @@
 <!-- Carousel and other scripts (FIXED) -->
 <script>
 (function() {
-  // Carousel code - fixed to show one slide per frame
+  // Carousel code - ensures one slide per frame
   const track = document.getElementById('carouselTrack');
   const dotsWrap = document.getElementById('carouselDots');
   const progress = document.getElementById('carouselProgress');
@@ -396,7 +512,9 @@
 
   function goToSlide(index) {
     currentIndex = (index + totalSlides) % totalSlides;
-    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    // Use the width of the first slide as reference (all slides same size)
+    const slideWidth = slides[0].getBoundingClientRect().width;
+    track.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
     updateDots();
   }
 
@@ -470,6 +588,11 @@
   // Initialise
   goToSlide(0);
   resetAuto();
+
+  // Recalculate on window resize
+  window.addEventListener('resize', () => {
+    goToSlide(currentIndex);
+  });
 
   // Page exit transition (unchanged)
   document.querySelectorAll('a[href]').forEach(function(a) {
