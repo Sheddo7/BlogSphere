@@ -1,20 +1,7 @@
 {% extends 'base.html' %}
-{% load static trending %}   <!-- added trending -->
+{% load static %}
 
 {% block title %}BlogSphere — Today's News{% endblock %}
-
-{% block meta_description %}
-    <meta name="description" content="BlogSphere brings you the latest Nigerian news, politics, entertainment, sports, and business – sharp, fast, and reliable.">
-{% endblock %}
-
-{% block og_title %}BlogSphere — Today's News{% endblock %}
-{% block og_description %}Your trusted source for Nigerian news and analysis.{% endblock %}
-{% block og_image %}{{ block.super }}{% endblock %}
-{% block og_type %}website{% endblock %}
-
-{% block twitter_title %}{{ block.super }}{% endblock %}
-{% block twitter_description %}{{ block.super }}{% endblock %}
-{% block twitter_image %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <style>
@@ -302,39 +289,6 @@
     </div>
   </section>
 
-  <!-- 🔥 TRENDING SECTION (NEW) -->
-  {% get_trending_posts 4 days=7 as trending_list %}
-  {% if trending_list %}
-  <section style="margin-top:2.5rem;">
-    <div class="section-head"><h2>🔥 Trending Now</h2></div>
-    <div class="row g-3 stagger">
-      {% for post in trending_list %}
-      <div class="col-lg-3 col-md-6">
-        <div class="news-card">
-          <div class="nc-img">
-            {% if post.featured_image %}
-              <img class="lazy-image"
-                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
-                   alt="{{ post.title }}"
-                   loading="lazy">
-            {% else %}
-              <div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>
-            {% endif %}
-          </div>
-          <div class="nc-body">
-            <span class="nc-cat">{{ post.category.name }}</span>
-            <a href="{% url 'post_detail' post.slug %}" class="nc-title">{{ post.title|truncatechars:80 }}</a>
-            <div class="nc-meta">
-              {{ post.published_date|date:"M d, Y" }} · <i class="fas fa-eye"></i> {{ post.views }}
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-
   <hr class="rule">
 
   <!-- Categories -->
@@ -400,93 +354,137 @@
 })();
 </script>
 
-<!-- Carousel and other scripts -->
+<!-- Carousel and other scripts (FIXED) -->
 <script>
-(function(){
-  // Carousel code (unchanged)
-  var track    = document.getElementById('carouselTrack');
-  var dotsWrap = document.getElementById('carouselDots');
-  var progress = document.getElementById('carouselProgress');
-  var prevBtn  = document.getElementById('carouselPrev');
-  var nextBtn  = document.getElementById('carouselNext');
+(function() {
+  // Carousel code - fixed to show one slide per frame
+  const track = document.getElementById('carouselTrack');
+  const dotsWrap = document.getElementById('carouselDots');
+  const progress = document.getElementById('carouselProgress');
+  const prevBtn = document.getElementById('carouselPrev');
+  const nextBtn = document.getElementById('carouselNext');
+
   if (!track) return;
 
-  var slides = track.querySelectorAll('.carousel-slide');
-  var total  = slides.length;
-  var cur    = 0;
-  var DELAY  = 5000;
-  var timer;
+  const slides = track.querySelectorAll('.carousel-slide');
+  const totalSlides = slides.length;
 
-  if (total <= 1) {
+  if (totalSlides <= 1) {
     if (prevBtn) prevBtn.style.display = 'none';
     if (nextBtn) nextBtn.style.display = 'none';
     if (dotsWrap) dotsWrap.style.display = 'none';
     if (progress) progress.style.display = 'none';
+    return;
   }
 
-  // Build dots
-  for (var i = 0; i < total; i++) {
-    (function(idx){
-      var d = document.createElement('button');
-      d.className = 'carousel-dot' + (idx === 0 ? ' active' : '');
-      d.setAttribute('aria-label', 'Go to slide ' + (idx + 1));
-      d.addEventListener('click', function(){ goTo(idx); resetAuto(); });
-      dotsWrap.appendChild(d);
-    })(i);
+  let currentIndex = 0;
+  const DELAY = 5000;
+  let autoTimer;
+
+  // Create dots
+  dotsWrap.innerHTML = '';
+  for (let i = 0; i < totalSlides; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+    dot.addEventListener('click', () => {
+      goToSlide(i);
+      resetAuto();
+    });
+    dotsWrap.appendChild(dot);
   }
 
-  function goTo(idx) {
-    cur = ((idx % total) + total) % total;
-    track.style.transform = 'translateX(-' + (cur * 100) + '%)';
-    var dots = dotsWrap.querySelectorAll('.carousel-dot');
-    dots.forEach(function(d, i){ d.classList.toggle('active', i === cur); });
+  function goToSlide(index) {
+    currentIndex = (index + totalSlides) % totalSlides;
+    track.style.transform = `translateX(-${currentIndex * 100}%)`;
+    updateDots();
+  }
+
+  function updateDots() {
+    const dots = dotsWrap.querySelectorAll('.carousel-dot');
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === currentIndex);
+    });
   }
 
   function startProgress() {
     if (!progress) return;
     progress.style.transition = 'none';
     progress.style.width = '0%';
-    progress.offsetWidth; // reflow
-    progress.style.transition = 'width ' + DELAY + 'ms linear';
+    progress.offsetWidth; // force reflow
+    progress.style.transition = `width ${DELAY}ms linear`;
     progress.style.width = '100%';
   }
 
   function resetAuto() {
-    clearInterval(timer);
+    clearInterval(autoTimer);
     startProgress();
-    timer = setInterval(function(){ goTo(cur + 1); startProgress(); }, DELAY);
+    autoTimer = setInterval(() => {
+      goToSlide(currentIndex + 1);
+      startProgress();
+    }, DELAY);
   }
 
-  if (prevBtn) prevBtn.addEventListener('click', function(){ goTo(cur - 1); resetAuto(); });
-  if (nextBtn) nextBtn.addEventListener('click', function(){ goTo(cur + 1); resetAuto(); });
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      goToSlide(currentIndex - 1);
+      resetAuto();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      goToSlide(currentIndex + 1);
+      resetAuto();
+    });
+  }
 
   // Touch swipe
-  var tx = 0;
-  track.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; }, {passive:true});
-  track.addEventListener('touchend',   function(e){
-    var diff = tx - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 40) { diff > 0 ? goTo(cur+1) : goTo(cur-1); resetAuto(); }
-  }, {passive:true});
+  let touchStartX = 0;
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+  }, { passive: true });
+
+  track.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        goToSlide(currentIndex + 1);
+      } else {
+        goToSlide(currentIndex - 1);
+      }
+      resetAuto();
+    }
+  }, { passive: true });
 
   // Pause on hover
-  var wrap = document.getElementById('heroCarousel');
-  if (wrap) {
-    wrap.addEventListener('mouseenter', function(){ clearInterval(timer); if(progress){progress.style.transition='none';} });
-    wrap.addEventListener('mouseleave', resetAuto);
+  const carouselWrap = document.getElementById('heroCarousel');
+  if (carouselWrap) {
+    carouselWrap.addEventListener('mouseenter', () => {
+      clearInterval(autoTimer);
+      if (progress) progress.style.transition = 'none';
+    });
+    carouselWrap.addEventListener('mouseleave', resetAuto);
   }
 
-  if (total > 1) resetAuto();
+  // Initialise
+  goToSlide(0);
+  resetAuto();
 
-  // Page transitions
+  // Page exit transition (unchanged)
   document.querySelectorAll('a[href]').forEach(function(a) {
-    var href = a.getAttribute('href');
+    const href = a.getAttribute('href');
     if (href && href.startsWith('/') && !href.startsWith('//') && !a.target) {
       a.addEventListener('click', function(e) {
-        var url = this.href; e.preventDefault();
-        var pb = document.querySelector('.page-body');
-        pb.style.transition = 'opacity .24s ease, transform .24s ease';
-        pb.style.opacity = '0'; pb.style.transform = 'translateY(8px)';
-        setTimeout(function(){ window.location.href = url; }, 230);
+        const url = this.href;
+        e.preventDefault();
+        const pb = document.querySelector('.page-body');
+        if (pb) {
+          pb.style.transition = 'opacity .24s ease, transform .24s ease';
+          pb.style.opacity = '0';
+          pb.style.transform = 'translateY(8px)';
+        }
+        setTimeout(() => { window.location.href = url; }, 230);
       });
     }
   });

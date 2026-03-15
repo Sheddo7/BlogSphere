@@ -1,64 +1,7 @@
 {% extends 'base.html' %}
-{% load static trending %}
+{% load static %}
 
 {% block title %}{{ post.title }} — BlogSphere{% endblock %}
-
-{% block meta_description %}
-    <meta name="description" content="{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}">
-{% endblock %}
-
-{% block og_title %}{{ post.title }}{% endblock %}
-{% block og_description %}{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}{% endblock %}
-{% block og_image %}
-    {% if post.featured_image %}
-        {{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}
-    {% else %}
-        {{ block.super }}
-    {% endif %}
-{% endblock %}
-{% block og_type %}article{% endblock %}
-
-{% block twitter_title %}{{ block.super }}{% endblock %}
-{% block twitter_description %}{{ block.super }}{% endblock %}
-{% block twitter_image %}{{ block.super }}{% endblock %}
-
-{% block schema %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "NewsArticle",
-  "headline": "{{ post.title|escapejs }}",
-  "image": [
-    "{% if post.featured_image %}{{ request.build_absolute_uri }}{{ post.featured_image.url }}{% else %}{{ default_social_image }}{% endif %}"
-  ],
-  "datePublished": "{{ post.published_date|date:'c' }}",
-  "dateModified": "{{ post.updated_at|date:'c' }}",
-  "author": {
-    "@type": "Person",
-    "name": "{{ post.author.get_full_name|default:post.author.username|escapejs }}"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "{{ site_name|escapejs }}",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "{{ site_url }}{% static 'img/logo.png' %}"
-    },
-    "sameAs": [
-      "https://twitter.com/{{ twitter_handle|cut:'@' }}",
-      "https://www.facebook.com/BlogSphereNG",
-      "https://www.instagram.com/BlogSphereNG",
-      "https://www.linkedin.com/company/blogsphere"
-    ]
-  },
-  "description": "{{ post.excerpt|default:post.content|striptags|truncatechars:200|escapejs }}",
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "{{ request.build_absolute_uri }}"
-  }
-}
-</script>
-{% endblock %}
 
 {% block content %}
 <style>
@@ -321,22 +264,6 @@
           {% endfor %}
         </div>
 
-        <!-- 🔥 TRENDING POSTS (NEW) -->
-        {% get_trending_posts 5 days=7 as trending_list %}
-        {% if trending_list %}
-        <div class="sidebar-section">
-          <div class="sidebar-title">🔥 Trending Now</div>
-          {% for post in trending_list %}
-          <div class="latest-item">
-            <a href="{% url 'post_detail' post.slug %}">{{ post.title|truncatechars:55 }}</a>
-            <div class="latest-date">
-              <i class="fas fa-eye"></i> {{ post.views }} views
-            </div>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
         <!-- Categories -->
         <div class="sidebar-section">
           <div class="sidebar-title">Topics</div>
@@ -467,3 +394,4 @@
 })();
 </script>
 {% endblock %}
+z
