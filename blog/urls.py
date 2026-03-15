@@ -8,7 +8,7 @@ from django.contrib import admin
 
 urlpatterns = [
     # Basic URLs
-    path(settings.ADMIN_URL, admin.site.urls),
+    #path(settings.ADMIN_URL, admin.site.urls),
     path('', views.home, name='home'),
     path('post/<slug:slug>/', views.post_detail, name='post_detail'),
     path('category/<slug:slug>/', views.category_posts, name='category_posts'),
