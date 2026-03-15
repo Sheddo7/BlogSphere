@@ -1,0 +1,14 @@
+{% load static %}
+<div class="sidebar-section">
+    <div class="sidebar-title">🔥 Trending Now</div>
+    {% for post in trending_posts %}
+    <div class="latest-item">
+        <a href="{% url 'post_detail' post.slug %}">{{ post.title|truncatechars:55 }}</a>
+        <div class="latest-date">
+            <i class="fas fa-eye"></i> {{ post.views }} views
+        </div>
+    </div>
+    {% empty %}
+    <p style="color:var(--mid);">No trending posts yet.</p>
+    {% endfor %}
+</div>

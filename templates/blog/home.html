@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static trending %}   <!-- added trending -->
 
 {% block title %}BlogSphere — Today's News{% endblock %}
 
@@ -301,6 +301,39 @@
       {% endfor %}
     </div>
   </section>
+
+  <!-- 🔥 TRENDING SECTION (NEW) -->
+  {% get_trending_posts 4 days=7 as trending_list %}
+  {% if trending_list %}
+  <section style="margin-top:2.5rem;">
+    <div class="section-head"><h2>🔥 Trending Now</h2></div>
+    <div class="row g-3 stagger">
+      {% for post in trending_list %}
+      <div class="col-lg-3 col-md-6">
+        <div class="news-card">
+          <div class="nc-img">
+            {% if post.featured_image %}
+              <img class="lazy-image"
+                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                   alt="{{ post.title }}"
+                   loading="lazy">
+            {% else %}
+              <div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>
+            {% endif %}
+          </div>
+          <div class="nc-body">
+            <span class="nc-cat">{{ post.category.name }}</span>
+            <a href="{% url 'post_detail' post.slug %}" class="nc-title">{{ post.title|truncatechars:80 }}</a>
+            <div class="nc-meta">
+              {{ post.published_date|date:"M d, Y" }} · <i class="fas fa-eye"></i> {{ post.views }}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
 
   <hr class="rule">
 
