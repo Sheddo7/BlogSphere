@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load cloudinary %}
 
 {% block title %}{{ post.title }} — BlogSphere{% endblock %}
 
@@ -208,10 +209,11 @@
 
       <!-- Hero image with lazy wrapper -->
       {% if post.featured_image %}
-        <div class="lazy-image-wrapper aspect-ratio-16-9 mb-4">
-          <img class="lazy-image rounded"
-               data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
-               alt="{{ post.title }}">
+        {% load cloudinary %}
+        <div class="lazy-image-wrapper aspect-ratio-16-9">
+            <img class="lazy-image rounded"
+                 data-src="{% cloudinary_url post.featured_image width=1200 height=675 crop='fill' %}"
+                 alt="{{ post.title }}">
         </div>
       {% endif %}
 
@@ -250,9 +252,11 @@
           {% for rp in related_posts %}
           <a href="{% url 'post_detail' rp.slug %}" class="related-item">
             {% if rp.featured_image %}
-              <img class="lazy-image related-thumb"
-                   data-src="{% if rp.featured_image.name|slice:':4' == 'http' %}{{ rp.featured_image.name }}{% else %}{{ rp.featured_image.url }}{% endif %}"
-                   alt="">
+                <div class="lazy-image-wrapper aspect-ratio-16-9">
+                    <img class="lazy-image rounded"
+                         data-src="{% cloudinary_url post.featured_image width=1200 height=675 crop='fill' %}"
+                         alt="{{ post.title }}">
+                </div>
             {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
             <div>
               <div class="related-title">{{ rp.title }}</div>
