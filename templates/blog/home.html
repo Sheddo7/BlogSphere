@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load cloudinary %}
 
 {% block title %}BlogSphere — Today's News{% endblock %}
 
@@ -293,11 +292,9 @@
             {% for post in featured_posts %}
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
               {% if post.featured_image %}
-                <div class="lazy-image-wrapper">
-                    <img class="lazy-image"
-                         data-src="{% cloudinary_url post.featured_image width=1200 height=675 crop='fill' %}"
-                         alt="{{ post.title }}">
-                </div>
+                <img class="lazy-image"
+                     data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                     alt="{{ post.title }}"
                      {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
               {% else %}
                 <div class="carousel-fallback"><i class="fas fa-newspaper" style="font-size:3.5rem;color:rgba(255,255,255,.15);"></i></div>

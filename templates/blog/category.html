@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load cloudinary %}
 {% block title %}{{ category.name }} — BlogSphere{% endblock %}
 
 {% block content %}
@@ -135,11 +134,9 @@
       <div class="news-card">
         <div class="nc-img">
           {% if post.featured_image %}
-            <div class="lazy-image-wrapper">
-                <img class="lazy-image"
-                     data-src="{% cloudinary_url post.featured_image width=1200 height=675 crop='fill' %}"
-                     alt="{{ post.title }}">
-            </div>
+            <img class="lazy-image"
+                 data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                 alt="{{ post.title }}"
                  loading="lazy">
           {% else %}
             <div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>

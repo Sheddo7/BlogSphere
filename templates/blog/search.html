@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-{% load cloudinary %}
 {% block title %}{% if query %}Search: {{ query }}{% else %}Search{% endif %} — BlogSphere{% endblock %}
 
 {% block content %}
@@ -161,11 +160,12 @@
     <div class="stagger">
       {% for post in results %}
       <a href="{% url 'post_detail' post.slug %}" class="result-row">
-        <div class="result-thumb-wrapper">
-            <img class="result-thumb lazy-image"
-                 data-src="{% cloudinary_url post.featured_image width=300 height=200 crop='fill' %}"
-                 alt="">
-        </div>
+        {% if post.featured_image %}
+          {% with img=post.featured_image.name %}
+            {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="result-thumb" alt="">
+            {% else %}<img src="{{ post.featured_image.url }}" class="result-thumb" alt="">{% endif %}
+          {% endwith %}
+        {% else %}
           <div class="result-thumb-placeholder"><i class="fas fa-newspaper"></i></div>
         {% endif %}
         <div class="result-body">
