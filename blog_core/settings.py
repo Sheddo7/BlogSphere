@@ -30,10 +30,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sitemaps',
 
-    # Cloudinary (MUST be before staticfiles!)
-    'cloudinary_storage',
-    'cloudinary',
-
     # Third party
     'storages',
     'taggit',
