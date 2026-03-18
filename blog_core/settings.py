@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'django_apscheduler',
+    'image_optimizer',
+    'webp_converter',
 ]
 
 MIDDLEWARE = [
@@ -143,3 +145,15 @@ SITE_NAME = 'BlogSphere'
 
 # Social Media
 TWITTER_HANDLE = os.environ.get('TWITTER_HANDLE', '@BlogSphereNG')
+
+
+# Image optimization
+IMAGE_OPTIMIZER_QUALITY = 85          # good balance between quality and file size
+IMAGE_OPTIMIZER_USE_WEBP = True        # automatically generate WebP versions
+IMAGE_OPTIMIZER_FORCE_FORMAT = 'webp'  # force WebP for supported browsers
+
+IMAGE_OPTIMIZER_EXTRA_SIZES = [
+    (320, 0),   # width 320px, height auto
+    (640, 0),
+    (1024, 0),
+]

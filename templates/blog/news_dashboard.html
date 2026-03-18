@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static webp_converter %}
+
 {% block title %}News Dashboard — BlogSphere{% endblock %}
 
 {% block content %}
@@ -122,7 +123,6 @@
     <div class="col-6 col-md-3">
       <div class="stat-card blue">
         <div class="stat-num">{{ total_articles }}</div>
-
       </div>
     </div>
     <div class="col-6 col-md-3">

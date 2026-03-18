@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static webp_converter %}
+
 {% block title %}{% if query %}Search: {{ query }}{% else %}Search{% endif %} — BlogSphere{% endblock %}
 
 {% block content %}
@@ -161,10 +162,7 @@
       {% for post in results %}
       <a href="{% url 'post_detail' post.slug %}" class="result-row">
         {% if post.featured_image %}
-          {% with img=post.featured_image.name %}
-            {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="result-thumb" alt="">
-            {% else %}<img src="{{ post.featured_image.url }}" class="result-thumb" alt="">{% endif %}
-          {% endwith %}
+          <img class="result-thumb" src="{% webp post.featured_image.url %}" alt="">
         {% else %}
           <div class="result-thumb-placeholder"><i class="fas fa-newspaper"></i></div>
         {% endif %}

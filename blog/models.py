@@ -4,7 +4,8 @@ from django.utils.text import slugify
 from django.contrib.auth.models import User
 from django.utils import timezone
 from taggit.managers import TaggableManager
-
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -33,6 +34,13 @@ class Post(models.Model):
         upload_to='blog_images/',
         blank=True, null=True,
         max_length=1000  # was default 100 — external URLs can be 500+ chars
+    )
+    # WebP version of the featured image – automatically generated
+    featured_image_webp = ImageSpecField(
+        source='featured_image',
+        processors=[ResizeToFill(1200, 630)],   # adjust dimensions to suit your layout
+        format='WEBP',
+        options={'quality': 85}
     )
     views = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
