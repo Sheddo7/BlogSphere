@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load static webp_converter %}
+{% load static %}
 
 {% block title %}BlogSphere — Today's News{% endblock %}
 
@@ -293,7 +293,7 @@
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
               {% if post.featured_image %}
                 <img class="lazy-image"
-                     data-src="{% webp post.featured_image.url %}"
+                     data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                      alt="{{ post.title }}"
                      {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
               {% else %}
@@ -311,7 +311,7 @@
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
               {% if post.featured_image %}
                 <img class="lazy-image"
-                     data-src="{% webp post.featured_image.url %}"
+                     data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                      alt="{{ post.title }}"
                      {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
               {% else %}
@@ -341,7 +341,7 @@
         <a href="{% url 'post_detail' post.slug %}" class="side-card">
           {% if post.featured_image %}
             <img class="lazy-image side-img"
-                 data-src="{% webp post.featured_image.url %}"
+                 data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                  alt="">
           {% else %}
             <div class="side-placeholder"><i class="fas fa-image"></i></div>
@@ -355,7 +355,7 @@
           <a href="{% url 'post_detail' post.slug %}" class="side-card">
             {% if post.featured_image %}
               <img class="lazy-image side-img"
-                   data-src="{% webp post.featured_image.url %}"
+                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                    alt="">
             {% else %}
               <div class="side-placeholder"><i class="fas fa-image"></i></div>
@@ -385,7 +385,7 @@
           <div class="nc-img">
             {% if post.featured_image %}
               <img class="lazy-image"
-                   data-src="{% webp post.featured_image.url %}"
+                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                    alt="{{ post.title }}"
                    loading="lazy">
             {% else %}

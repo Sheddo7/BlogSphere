@@ -1,64 +1,7 @@
 {% extends 'base.html' %}
-{% load static webp_converter %}
+{% load static %}
 
 {% block title %}{{ post.title }} — BlogSphere{% endblock %}
-
-{% block meta_description %}
-    <meta name="description" content="{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}">
-{% endblock %}
-
-{% block og_title %}{{ post.title }}{% endblock %}
-{% block og_description %}{{ post.excerpt|default:post.content|striptags|truncatechars:160 }}{% endblock %}
-{% block og_image %}
-    {% if post.featured_image %}
-        {{ request.scheme }}://{{ request.get_host }}{% webp post.featured_image.url %}
-    {% else %}
-        {{ block.super }}
-    {% endif %}
-{% endblock %}
-{% block og_type %}article{% endblock %}
-
-{% block twitter_title %}{{ block.super }}{% endblock %}
-{% block twitter_description %}{{ block.super }}{% endblock %}
-{% block twitter_image %}{{ block.super }}{% endblock %}
-
-{% block schema %}
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "NewsArticle",
-  "headline": "{{ post.title|escapejs }}",
-  "image": [
-    "{% if post.featured_image %}{{ request.build_absolute_uri }}{% webp post.featured_image.url %}{% else %}{{ default_social_image }}{% endif %}"
-  ],
-  "datePublished": "{{ post.published_date|date:'c' }}",
-  "dateModified": "{{ post.updated_at|date:'c' }}",
-  "author": {
-    "@type": "Person",
-    "name": "{{ post.author.get_full_name|default:post.author.username|escapejs }}"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "{{ site_name|escapejs }}",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "{{ site_url }}{% static 'img/logo.png' %}"
-    },
-    "sameAs": [
-      "https://twitter.com/{{ twitter_handle|cut:'@' }}",
-      "https://www.facebook.com/BlogSphereNG",
-      "https://www.instagram.com/BlogSphereNG",
-      "https://www.linkedin.com/company/blogsphere"
-    ]
-  },
-  "description": "{{ post.excerpt|default:post.content|striptags|truncatechars:200|escapejs }}",
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "{{ request.build_absolute_uri }}"
-  }
-}
-</script>
-{% endblock %}
 
 {% block content %}
 <style>
@@ -267,7 +210,7 @@
       {% if post.featured_image %}
         <div class="lazy-image-wrapper aspect-ratio-16-9 mb-4">
           <img class="lazy-image rounded"
-               data-src="{% webp post.featured_image.url %}"
+               data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                alt="{{ post.title }}">
         </div>
       {% endif %}
@@ -308,7 +251,7 @@
           <a href="{% url 'post_detail' rp.slug %}" class="related-item">
             {% if rp.featured_image %}
               <img class="lazy-image related-thumb"
-                   data-src="{% webp rp.featured_image.url %}"
+                   data-src="{% if rp.featured_image.name|slice:':4' == 'http' %}{{ rp.featured_image.name }}{% else %}{{ rp.featured_image.url }}{% endif %}"
                    alt="">
             {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
             <div>

@@ -10,21 +10,53 @@
       gtag('js', new Date());
       gtag('config', 'G-T0BH5EWQBM');
     </script>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>{% block title %}BlogSphere - Modern Blog Platform{% endblock %}</title>
+
+    <!-- Meta Description (block for override) -->
+    {% block meta_description %}
+    <meta name="description" content="BlogSphere delivers the latest Nigerian news, politics, entertainment, sports, and business updates with sharp journalism.">
+    {% endblock %}
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="{% block og_title %}{{ block.super }}{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}{{ block.super }}{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{{ default_social_image }}{% endblock %}">
+    <meta property="og:site_name" content="{{ site_name }}">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock %}">
+    <meta name="twitter:site" content="{{ twitter_handle }}">
+    <meta name="twitter:title" content="{% block twitter_title %}{{ block.super }}{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}{{ block.super }}{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}{{ block.super }}{% endblock %}">
+
+    <!-- Schema.org markup (injected via block) -->
+    {% block schema %}{% endblock %}
 
     {% load static %}
 
-    <link rel="stylesheet" href="{% static 'css/lazy-load.css' %}">
+    <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="{% static 'favicon.ico' %}">
     <link rel="icon" type="image/png" sizes="32x32" href="{% static 'favicon-32x32.png' %}">
     <link rel="icon" type="image/png" sizes="16x16" href="{% static 'favicon-16x16.png' %}">
     <link rel="apple-touch-icon" href="{% static 'apple-touch-icon.png' %}">
+
+    <!-- Bootstrap & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600&display=swap" rel="stylesheet">
 
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/lazy-load.css' %}">
     <link rel="stylesheet" href="{% static 'css/custom.css' %}">
 
     <style>
@@ -371,12 +403,10 @@
                            href="{% url 'home' %}">Home</a>
                     </li>
                     {% for cat in categories|slice:":6" %}
-                        {% if cat.slug != "sport" %}
                         <li class="nav-item">
                             <a class="nav-link {% if cat.slug in request.path %}active{% endif %}"
                                href="{% url 'category_posts' cat.slug %}">{{ cat.name }}</a>
                         </li>
-                        {% endif %}
                     {% endfor %}
                     {% if user.is_authenticated and user.is_staff %}
                     <li class="nav-item">
@@ -415,10 +445,9 @@
                         Home for sharp journalism, breaking news, and thoughtful perspectives across politics, economy, entertainment, and beyond.
                     </p>
                     <div class="social-links">
-                        <a href="#" aria-label="Twitter/X"><i class="fab fa-x-twitter"></i></a>
+                        <a href="#" aria-label="X"><i class="fab fa-x-twitter"></i></a>
                         <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" aria-label="WhatsApp"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
 
@@ -427,13 +456,11 @@
                     <div class="footer-section">
                         <h5>Explore</h5>
                         <ul class="footer-links">
-                            <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>Home</a></li>
+                            <li><a href="{% url 'home' %}"><i class="fas fa-chevron-right"></i>HOME</a></li>
                             {% for cat in categories|slice:":4" %}
-                                {% if cat.slug != "sport" %}
                                 <li><a href="{% url 'category_posts' cat.slug %}"><i class="fas fa-chevron-right"></i>{{ cat.name }}</a></li>
-                                {% endif %}
                             {% endfor %}
-                            <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>About Us</a></li>
+                            <li><a href="{% url 'about' %}"><i class="fas fa-chevron-right"></i>ABOUT US</a></li>
                             {% if user.is_authenticated and user.is_staff %}
                             <li><a href="{% url 'news_dashboard' %}"><i class="fas fa-chart-line"></i>Dashboard</a></li>
                             {% endif %}
@@ -446,40 +473,22 @@
                     <div class="footer-section">
                         <h5>Connect</h5>
                         <ul class="footer-links">
-                            <li><a href="#"><i class="fas fa-envelope"></i>Newsletter</a></li>
-                            <li><a href="#"><i class="fas fa-rss"></i>RSS Feed</a></li>
-                            <li><a href="{% url 'contact' %}"><i class="fas fa-comment"></i>Contact</a></li>
+                            <li><a href="{% url 'contact' %}"><i class="fas fa-comment"></i>CONTACT</a></li>
                             {% if user.is_authenticated and user.is_staff %}
-                            <li><a href="/admin/"><i class="fas fa-lock"></i>Admin</a></li>
+                            <li><a href="/admin/"><i class="fas fa-lock"></i>ADMIN</a></li>
                             {% endif %}
                         </ul>
                     </div>
                 </div>
 
                 <!-- Legal -->
-                <div class="col-lg-2 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="footer-section">
                         <h5>Legal</h5>
                         <ul class="footer-links">
-                            <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>Privacy Policy</a></li>
-                            <li><a href="{% url 'terms_of_service' %}"><i class="fas fa-chevron-right"></i>Terms of Service</a></li>
+                            <li><a href="{% url 'privacy_policy' %}"><i class="fas fa-chevron-right"></i>PRIVACY POLICY</a></li>
+                            <li><a href="{% url 'terms_of_service' %}"><i class="fas fa-chevron-right"></i>TERMS OF SERVICE</a></li>
                         </ul>
-                    </div>
-                </div>
-
-                <!-- Newsletter -->
-                <div class="col-lg-3 col-md-12">
-                    <div class="footer-section">
-                        <h5>Newsletter</h5>
-                        <p style="color:rgba(255,255,255,.55);font-size:.86rem;margin-bottom:1rem;line-height:1.6;">
-                            Get the latest stories delivered to your inbox every morning.
-                        </p>
-                        <form class="newsletter-form" onsubmit="return false;">
-                            <div class="input-group">
-                                <input type="email" class="form-control" placeholder="Your email address">
-                                <button class="btn-subscribe" type="button">Subscribe</button>
-                            </div>
-                        </form>
                     </div>
                 </div>
 
@@ -492,11 +501,10 @@
             </div>
         </div>
     </footer>
-
     <!-- ══ MOBILE BOTTOM NAV ══ -->
     <nav id="mobileBottomNav" aria-label="Mobile navigation">
         <a href="{% url 'home' %}" class="{% if request.path == '/' %}active{% endif %}">
-            <i class="fas fa-home"></i><span>Home</span>
+            <i class="fas fa-home"></i><span>HOME</span>
         </a>
         {% for cat in categories|slice:":3" %}
             {% if cat.slug != "sport" %}
@@ -541,6 +549,9 @@
     }, true);
     </script>
     <script src="{% static 'js/lazy-load.js' %}"></script>
+    {% if not debug %}
 
+
+    {% endif %}
 </body>
 </html>

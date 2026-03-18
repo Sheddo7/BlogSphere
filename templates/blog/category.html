@@ -1,20 +1,6 @@
 {% extends 'base.html' %}
-{% load static webp_converter %}
-
+{% load static %}
 {% block title %}{{ category.name }} — BlogSphere{% endblock %}
-
-{% block meta_description %}
-    <meta name="description" content="Read the latest {{ category.name }} news, updates, and in‑depth stories on BlogSphere.">
-{% endblock %}
-
-{% block og_title %}{{ category.name }} - BlogSphere{% endblock %}
-{% block og_description %}Read the latest {{ category.name }} news on BlogSphere.{% endblock %}
-{% block og_image %}{{ block.super }}{% endblock %}
-{% block og_type %}website{% endblock %}
-
-{% block twitter_title %}{{ block.super }}{% endblock %}
-{% block twitter_description %}{{ block.super }}{% endblock %}
-{% block twitter_image %}{{ block.super }}{% endblock %}
 
 {% block content %}
 <style>
@@ -149,7 +135,7 @@
         <div class="nc-img">
           {% if post.featured_image %}
             <img class="lazy-image"
-                 data-src="{% webp post.featured_image.url %}"
+                 data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
                  alt="{{ post.title }}"
                  loading="lazy">
           {% else %}

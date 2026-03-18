@@ -1,6 +1,6 @@
 <!-- templates/blog/enhanced-news-dashboard.html - DIRECT POST (NO PREVIEW) -->
 {% extends 'base.html' %}
-{% load static webp_converter %}
+{% load static %}
 
 {% block title %}Enhanced News Dashboard - BlogSphere{% endblock %}
 
@@ -213,7 +213,7 @@
                         <tr id="post-row-{{ post.id }}">
                             <td>
                                 {% if post.featured_image %}
-                                <img src="{% webp post.featured_image.url %}" class="post-thumbnail"
+                                <img src="{{ post.featured_image.url }}" class="post-thumbnail"
                                      alt="{{ post.title }}" style="width: 60px; height: 40px; object-fit: cover;">
                                 {% else %}
                                 <div class="bg-light rounded d-flex align-items-center justify-content-center"
