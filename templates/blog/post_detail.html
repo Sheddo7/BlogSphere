@@ -63,6 +63,8 @@
   .art-body {
     font-family:'Source Serif 4', Georgia, serif;
     font-size:1.05rem; line-height:1.85; color:#1a1a1a;
+    margin-top: 0;
+    padding-top: 0;
   }
   .art-body p { margin-bottom:1.4rem; }
   .art-body h2,h3,h4 { font-family:'Playfair Display', Georgia, serif; color:var(--ink); margin-top:2rem; margin-bottom:.75rem; }
@@ -183,7 +185,7 @@
 
       <!-- Hero image with lazy wrapper -->
       {% if post.get_image_url %}
-        <div class="lazy-image-wrapper aspect-ratio-16-9 mb-4">
+        <div class="lazy-image-wrapper aspect-ratio-16-9 mb-2">
           <img class="lazy-image rounded"
                data-src="{{ post.get_image_url }}"
                alt="{{ post.title }}">
