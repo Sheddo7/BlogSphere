@@ -234,10 +234,24 @@
 
 <script>
 function fetchNews() {
-  if (confirm('Fetch latest news? This may take a moment.')) {
-    window.location.href = "{% url 'admin:blog_newsarticle_changelist' %}?fetch_news=1";
-  }
+  if (!confirm('Fetch latest news? This may take a moment.')) return;
+  fetch('{% url "fetch_news_now" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ sources: ['google', 'bbc'], categories: ['news'], limit_per_source: 5 })
+  })
+  .then(r => r.json())
+  .then(d => {
+    alert(d.message);
+    if (d.success) location.reload();
+  })
+  .catch(() => alert('Error fetching news'));
 }
+
+
 function generatePosts() {
   fetch('{% url "generate_posts_now" %}', {
     method:'POST',

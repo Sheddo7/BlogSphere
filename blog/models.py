@@ -32,7 +32,12 @@ class Post(models.Model):
     featured_image = models.ImageField(
         upload_to='blog_images/',
         blank=True, null=True,
-        max_length=1000  # was default 100 — external URLs can be 500+ chars
+        max_length=1000
+    )
+    image_url = models.URLField(
+        blank=True, default='',
+        max_length=1000,
+        help_text='External image URL from news sources'
     )
     views = models.PositiveIntegerField(default=0)
     is_featured = models.BooleanField(default=False)
@@ -53,6 +58,13 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    def get_image_url(self):
+        if self.featured_image:
+            return self.featured_image.url
+        if self.image_url:
+            return self.image_url
+        return ''
 
     class Meta:
         ordering = ['-published_date']

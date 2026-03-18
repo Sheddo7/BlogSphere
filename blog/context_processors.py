@@ -13,9 +13,6 @@ def latest_posts_processor(request):
 
 
 def seo_defaults(request):
-    """
-    Provides global SEO variables for all templates.
-    """
     site_url = request.build_absolute_uri('/')[:-1]
     default_social = settings.STATIC_URL + 'img/social-default.jpg'
     return {
@@ -23,4 +20,5 @@ def seo_defaults(request):
         'site_url': site_url,
         'twitter_handle': getattr(settings, 'TWITTER_HANDLE', '@BlogSphereNG'),
         'default_social_image': request.build_absolute_uri(default_social),
+        'google_analytics_id': getattr(settings, 'GOOGLE_ANALYTICS_ID', ''),
     }

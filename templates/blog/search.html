@@ -160,11 +160,8 @@
     <div class="stagger">
       {% for post in results %}
       <a href="{% url 'post_detail' post.slug %}" class="result-row">
-        {% if post.featured_image %}
-          {% with img=post.featured_image.name %}
-            {% if img|slice:":4" == "http" %}<img src="{{ img }}" class="result-thumb" alt="">
-            {% else %}<img src="{{ post.featured_image.url }}" class="result-thumb" alt="">{% endif %}
-          {% endwith %}
+        {% if post.get_image_url %}
+          <img src="{{ post.get_image_url }}" class="result-thumb" alt="">
         {% else %}
           <div class="result-thumb-placeholder"><i class="fas fa-newspaper"></i></div>
         {% endif %}

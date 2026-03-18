@@ -212,8 +212,8 @@
                         {% for post in recent_posts|slice:":10" %}
                         <tr id="post-row-{{ post.id }}">
                             <td>
-                                {% if post.featured_image %}
-                                <img src="{{ post.featured_image.url }}" class="post-thumbnail"
+                                {% if post.get_image_url %}
+                                <img src="{{ post.get_image_url }}" class="post-thumbnail" ...>
                                      alt="{{ post.title }}" style="width: 60px; height: 40px; object-fit: cover;">
                                 {% else %}
                                 <div class="bg-light rounded d-flex align-items-center justify-content-center"
@@ -515,6 +515,14 @@
 <!-- Preview Modal (REMOVED) -->
 
 <script>
+
+function sanitize(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = String(str);
+    return div.innerHTML;
+}
+
 let fetchedArticles = [];
 let currentEditIndex = -1;
 
@@ -598,13 +606,13 @@ function displayFetchedArticles() {
                              </div>`
                         }
                         <div>
-                            <h6 class="mb-1">${article.title}</h6>
+                            <h6 class="mb-1">${sanitize(article.title)}</h6>
                             <div class="small text-muted">
-                                <span class="badge bg-secondary me-2">${article.source}</span>
-                                <span class="badge bg-info me-2">${article.category}</span>
+                                <span class="badge bg-secondary me-2">${sanitize(article.source)}</span>
+                                <span class="badge bg-info me-2">${sanitize(article.category)}</span>
                                 <span class="me-2"><i class="far fa-clock"></i> ${article.published_at || 'Recent'}</span>
                                 <span class="text-truncate d-block mt-1" style="max-width: 500px;">
-                                    ${article.description || article.content?.substring(0, 150) || 'No description'}...
+                                    ${sanitize(article.description || article.content?.substring(0, 150) || 'No description')}...
                                 </span>
                             </div>
                         </div>
@@ -992,21 +1000,6 @@ function convertToPost(articleId) {
     });
 }
 
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed bottom-0 end-0 m-3';
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    const bsToast = new bootstrap.Toast(toast);
-    bsToast.show();
-    setTimeout(() => toast.remove(), 3000);
-}
 </script>
 
 <style>

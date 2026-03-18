@@ -10,9 +10,12 @@ OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY', '')
 ADMIN_URL = os.environ.get('ADMIN_URL', 'admin/')
 
 # --- Security ---
-SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-here')
+SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['blogsphere.up.railway.app']
+ALLOWED_HOSTS = ['blogsphere.up.railway.app'
+                 'localhost',
+                 '127.0.0.1',
+                 ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',

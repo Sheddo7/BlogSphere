@@ -209,31 +209,6 @@
 
   .rule{border:none;border-top:1px solid var(--rule);margin:2.5rem 0;}
 
-  /* Lazy image styles (unchanged) */
-  .lazy-image {
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  .lazy-image.loaded {
-    opacity: 1;
-  }
-  .lazy-image-wrapper {
-    position: relative;
-    overflow: hidden;
-    background: #f0f0f0;
-  }
-  .lazy-image-wrapper.aspect-ratio-16-9 {
-    width: 100%;
-    padding-bottom: 56.25%;
-  }
-  .lazy-image-wrapper.aspect-ratio-16-9 img {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
 
   @media(prefers-color-scheme:dark){
     :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
@@ -309,9 +284,9 @@
             {% empty %}
             {% for post in latest_posts|slice:":5" %}
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
-              {% if post.featured_image %}
+              {% if post.get_image_url %}
                 <img class="lazy-image"
-                     data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                     data-src="{{ post.get_image_url }}"
                      alt="{{ post.title }}"
                      {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
               {% else %}
@@ -339,9 +314,9 @@
       <div class="col-lg-5">
         {% for post in featured_posts|slice:"1:5" %}
         <a href="{% url 'post_detail' post.slug %}" class="side-card">
-          {% if post.featured_image %}
+          {% if post.get_image_url %}
             <img class="lazy-image side-img"
-                 data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                 data-src="{{ post.get_image_url }}"
                  alt="">
           {% else %}
             <div class="side-placeholder"><i class="fas fa-image"></i></div>
@@ -383,9 +358,9 @@
       <div class="col-lg-3 col-md-6">
         <div class="news-card">
           <div class="nc-img">
-            {% if post.featured_image %}
+            {% if post.get_image_url %}
               <img class="lazy-image"
-                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                   data-src="{{ post.get_image_url }}"
                    alt="{{ post.title }}"
                    loading="lazy">
             {% else %}
@@ -412,63 +387,12 @@
     <div class="section-head"><h2>Browse Topics</h2></div>
     <div class="cat-pills">
       {% for category in categories %}
-      <a href="{% url 'category_posts' category.slug %}" class="cat-pill">{{ category.name }}<span class="cat-count">{{ category.posts.count }}</span></a>
+      <a href="{% url 'category_posts' category.slug %}" class="cat-pill">{{ category.name }}<span class="cat-count">{{ category.post_count }}</span></a>
       {% endfor %}
     </div>
   </section>
 
 </div>
-
-<!-- Lazy loading script -->
-<script>
-(function() {
-  function initLazyLoad() {
-    const lazyImages = document.querySelectorAll('.lazy-image:not(.loaded)');
-    if ('IntersectionObserver' in window) {
-      let lazyObserver = new IntersectionObserver(function(entries, observer) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            let img = entry.target;
-            img.src = img.dataset.src;
-            if (img.dataset.srcset) {
-              img.srcset = img.dataset.srcset;
-            }
-            img.classList.add('loaded');
-            observer.unobserve(img);
-          }
-        });
-      }, { rootMargin: '200px' });
-
-      lazyImages.forEach(function(img) {
-        lazyObserver.observe(img);
-      });
-
-      window.LazyLoad = {
-        refresh: function() {
-          document.querySelectorAll('.lazy-image:not(.loaded)').forEach(function(img) {
-            lazyObserver.observe(img);
-          });
-        }
-      };
-    } else {
-      // Fallback
-      lazyImages.forEach(function(img) {
-        img.src = img.dataset.src;
-        if (img.dataset.srcset) img.srcset = img.dataset.srcset;
-        img.classList.add('loaded');
-      });
-      window.LazyLoad = { refresh: function() {} };
-    }
-  }
-  initLazyLoad();
-
-  // Refresh after dynamic content (Bootstrap tabs, HTMX)
-  document.addEventListener('htmx:afterSwap', function() { if (window.LazyLoad) LazyLoad.refresh(); });
-  document.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
-    tab.addEventListener('shown.bs.tab', function() { if (window.LazyLoad) LazyLoad.refresh(); });
-  });
-})();
-</script>
 
 <!-- Carousel and other scripts (FIXED) -->
 <script>

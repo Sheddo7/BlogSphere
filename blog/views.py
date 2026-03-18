@@ -1,42 +1,30 @@
 # blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS (COMMENTS REMOVED)
 from django.shortcuts import render, get_object_or_404, redirect
-from django.db.models import Q, Count
+from django.db.models import Q, Count, F
 from django.utils import timezone
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-import json
-
-from .models import Post, Category, NewsArticle  # Comment removed
+from django.core.mail import send_mail
+from .models import Post, NewsArticle
 from django.core.paginator import Paginator
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from blog.ai_service import OpenRouterService
 import logging
 from django.http import HttpResponseServerError
-
 from django.shortcuts import render
-from django.db.models import Count
 from .models import Category
-
-from django.db.models import Count
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
+import bleach
 
 
 # ===== BASIC VIEWS =====
 
 def home(request):
-    """Homepage view"""
-    featured_posts = Post.objects.filter(is_featured=True)[:3]
-    latest_posts = Post.objects.all()[:8]
-
+    featured_posts = Post.objects.filter(is_featured=True).select_related('category', 'author')[:3]
+    latest_posts = Post.objects.all().select_related('category', 'author')[:8]
     context = {
         'featured_posts': featured_posts,
         'latest_posts': latest_posts,
@@ -45,15 +33,37 @@ def home(request):
 
 
 def post_detail(request, slug):
-    """Individual post detail view (comments removed)"""
-    post = get_object_or_404(Post, slug=slug)
-    post.views += 1
-    post.save()
+    post = get_object_or_404(
+        Post.objects.select_related('category', 'author').prefetch_related('tags'),
+        slug=slug
+    )
+    Post.objects.filter(pk=post.pk).update(views=F('views') + 1)
 
-    related_posts = Post.objects.filter(category=post.category).exclude(id=post.id)[:3]
+    ALLOWED_TAGS = [
+        'p', 'br', 'strong', 'em', 'u', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li', 'blockquote', 'a', 'img', 'figure', 'figcaption',
+        'code', 'pre', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
+    ]
+    ALLOWED_ATTRIBUTES = {
+        'a': ['href', 'title', 'target', 'rel'],
+        'img': ['src', 'alt', 'width', 'height', 'loading'],
+        '*': ['class'],
+    }
+
+    clean_content = bleach.clean(
+        post.content,
+        tags=ALLOWED_TAGS,
+        attributes=ALLOWED_ATTRIBUTES,
+        strip=True
+    )
+
+    related_posts = Post.objects.filter(
+        category=post.category
+    ).exclude(id=post.id).select_related('category')[:3]
 
     context = {
         'post': post,
+        'clean_content': clean_content,
         'related_posts': related_posts,
     }
     return render(request, 'blog/post_detail.html', context)
@@ -65,14 +75,14 @@ logger = logging.getLogger(__name__)
 def category_posts(request, slug):
     try:
         category = get_object_or_404(Category, slug=slug)
-        posts_list = Post.objects.filter(category=category)
+        posts_list = Post.objects.filter(
+            category=category
+        ).select_related('category', 'author')
         paginator = Paginator(posts_list, 10)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        # Get all categories for the "Other categories" navigation
-        categories = Category.objects.annotate(post_count=Count('posts')).order_by('-post_count')
-
+        page_obj = paginator.get_page(request.GET.get('page'))
+        categories = Category.objects.annotate(
+            post_count=Count('posts')
+        ).order_by('-post_count')
         context = {
             'page_obj': page_obj,
             'category': category,
@@ -366,7 +376,7 @@ def post_article(request):
                 excerpt=article_description,
                 author=author,
                 category=category_obj,
-                featured_image=article.get('image_url', ''),
+                image_url=article.get('image_url', ''),
                 published_date=timezone.now(),
                 is_featured=data.get('is_featured', False)
             )
@@ -445,7 +455,7 @@ def post_multiple_articles(request):
                     excerpt=article.get('description', '')[:200],
                     author=author,
                     category=category_obj,
-                    featured_image=article.get('image_url', ''),
+                    image_url=article.get('image_url', ''),
                     published_date=timezone.now(),
                 )
 
@@ -911,7 +921,7 @@ def publish_draft(request, draft_id):
                 excerpt=draft.summary[:500] if draft.summary else draft.title[:500],
                 author=author,
                 category=category_obj,
-                featured_image=draft.image_url if draft.image_url else '',
+                image_url=draft.image_url if draft.image_url else '',
                 published_date=timezone.now(),
                 is_featured=draft.is_featured
             )

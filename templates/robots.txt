@@ -5,6 +5,7 @@ Allow: /
 Disallow: /{{ admin_url }}
 Disallow: /api/
 Disallow: /dashboard/
+Disallow: /combined_dashboard/
 Disallow: /static/
 
 # Sitemaps

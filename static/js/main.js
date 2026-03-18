@@ -3,7 +3,6 @@
 // DOM Ready
 document.addEventListener('DOMContentLoaded', function() {
     initMobileMenu();
-    initImageLoading();
     initResponsiveFeatures();
     initAccessibilityFeatures();
     initPerformanceOptimizations();
@@ -28,77 +27,6 @@ function initMobileMenu() {
     });
 }
 
-// Image Loading - Enhanced version combining both approaches
-function initImageLoading() {
-    const images = document.querySelectorAll('img');
-
-    images.forEach(img => {
-        // Check if this is a lazy-loaded image
-        if (img.hasAttribute('data-src')) {
-            // For lazy-loaded images, use IntersectionObserver (from comprehensive version)
-            if (!img.classList.contains('lazy-initialized')) {
-                img.classList.add('lazy-initialized');
-
-                // Add fade-in effect for lazy-loaded images
-                img.style.opacity = '0';
-                img.style.transition = 'opacity 0.3s ease-in-out';
-
-                // Create observer for this image
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const targetImg = entry.target;
-                            if (targetImg.dataset.src) {
-                                targetImg.src = targetImg.dataset.src;
-                            }
-                            if (targetImg.dataset.srcset) {
-                                targetImg.srcset = targetImg.dataset.srcset;
-                            }
-                            targetImg.classList.add('loaded');
-
-                            // Trigger fade-in
-                            setTimeout(() => {
-                                targetImg.style.opacity = '1';
-                            }, 100);
-
-                            observer.unobserve(targetImg);
-                        }
-                    });
-                }, {
-                    rootMargin: '50px 0px',
-                    threshold: 0.1
-                });
-
-                observer.observe(img);
-            }
-        } else {
-            // For regular images, apply fade-in effect
-            if (!img.complete) {
-                img.style.opacity = '0';
-                img.style.transition = 'opacity 0.3s ease-in-out';
-                img.addEventListener('load', function() {
-                    this.style.opacity = '1';
-                });
-                img.addEventListener('error', function() {
-                    this.style.opacity = '1'; // Ensure it's visible even if there's an error
-                });
-            }
-        }
-
-        // Handle srcset cleanup for problematic images (from simple version)
-        if (img.hasAttribute('srcset')) {
-            const srcset = img.getAttribute('srcset');
-            // Only remove problematic srcset if it contains specific patterns
-            if (srcset.includes('-320w') || srcset.includes('-480w') || srcset.includes('-800w')) {
-                // Check if the image has already errored or if we should remove srcset
-                if (img.naturalHeight === 0 && img.naturalWidth === 0) {
-                    img.removeAttribute('srcset');
-                    img.removeAttribute('sizes');
-                }
-            }
-        }
-    });
-}
 
 // Touch device improvements (from simple version, enhanced)
 function initTouchDevice() {
