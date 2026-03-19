@@ -224,12 +224,12 @@
         <div class="sidebar-section">
           <div class="sidebar-title">Related Stories</div>
           {% for rp in related_posts %}
-          <a href="{% url 'post_detail' rp.slug %}" class="related-item">
-            {% if rp.featured_image %}
-              <img class="lazy-image related-thumb"
-                   data-src="{% if rp.featured_image.name|slice:':4' == 'http' %}{{ rp.featured_image.name }}{% else %}{{ rp.featured_image.url }}{% endif %}"
-                   alt="">
-            {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
+            <a href="{% url 'post_detail' rp.slug %}" class="related-item">
+              {% if rp.get_image_url %}
+                <img class="lazy-image related-thumb"
+                     data-src="{{ rp.get_image_url }}"
+                     alt="">
+              {% else %}<div class="related-placeholder"><i class="fas fa-image"></i></div>{% endif %}
             <div>
               <div class="related-title">{{ rp.title }}</div>
               <div class="related-date">{{ rp.published_date|date:"M d, Y" }}</div>
