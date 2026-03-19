@@ -22,6 +22,29 @@ import bleach
 
 # ===== BASIC VIEWS =====
 
+def format_content(text):
+    """Convert plain text content into proper HTML paragraphs."""
+    if not text:
+        return ''
+    # If content already has HTML tags leave it alone
+    if '<p>' in text or '<div>' in text or '<h2>' in text:
+        return text
+    # Split on double newlines or single newlines
+    import re
+    paragraphs = re.split(r'\n\n+|\n', text)
+    formatted = ''
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+        # Detect headings — lines that are short and don't end with punctuation
+        if len(para) < 80 and not para.endswith(('.', ',', '?', '!')):
+            formatted += f'<h3>{para}</h3>\n'
+        else:
+            formatted += f'<p>{para}</p>\n'
+    return formatted
+
+
 def home(request):
     featured_posts = Post.objects.filter(is_featured=True).select_related('category', 'author')[:3]
     latest_posts = Post.objects.all().select_related('category', 'author')[:8]
@@ -372,7 +395,7 @@ def post_article(request):
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=article_content,
+                content=format_content(article_content),
                 excerpt=article_description,
                 author=author,
                 category=category_obj,
@@ -917,7 +940,7 @@ def publish_draft(request, draft_id):
             post = Post.objects.create(
                 title=draft.title[:500],
                 slug=slug,
-                content=draft.content,
+                content=format_content(draft.content),
                 excerpt=draft.summary[:500] if draft.summary else draft.title[:500],
                 author=author,
                 category=category_obj,

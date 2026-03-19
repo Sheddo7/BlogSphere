@@ -13,6 +13,24 @@ import time
 import re
 import random
 
+def format_content(text):
+    if not text:
+        return ''
+    if '<p>' in text or '<div>' in text or '<h2>' in text:
+        return text
+    import re
+    paragraphs = re.split(r'\n\n+|\n', text)
+    formatted = ''
+    for para in paragraphs:
+        para = para.strip()
+        if not para:
+            continue
+        if len(para) < 80 and not para.endswith(('.', ',', '?', '!')):
+            formatted += f'<h3>{para}</h3>\n'
+        else:
+            formatted += f'<p>{para}</p>\n'
+    return formatted
+
 
 class OpenRouterService:
     """Service for interacting with OpenRouter API (free tier, 50-1000 requests/day)"""
@@ -621,7 +639,7 @@ class EnhancedNewsFetcher:
             post = Post.objects.create(
                 title=article['title'][:200],
                 slug=slug,
-                content=content,
+                content=format_content(content),
                 excerpt=article.get('description', '')[:200] or article.get('title', '')[:200],
                 author=author,
                 category=category_obj,
