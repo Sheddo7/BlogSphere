@@ -141,19 +141,9 @@
   .carousel-btn.prev{left:.85rem;}
   .carousel-btn.next{right:.85rem;}
 
-  /* Dots */
-  .carousel-dots{
-    position:absolute;
-    bottom:1rem;
-    left:50%;
-    transform:translateX(-50%);
-    display:flex;
-    gap:.45rem;
-    z-index:10;
-  }
   .carousel-dot{
-    width:6px;
-    height:6px;
+    width:5px;
+    height:5px;
     border-radius:50%;
     background:rgba(255,255,255,.4);
     cursor:pointer;
@@ -163,7 +153,7 @@
   }
   .carousel-dot.active{
     background:#fff;
-    width:20px;
+    width:12px;
     border-radius:3px;
   }
 
@@ -233,14 +223,21 @@
     .carousel-meta{font-size:.67rem;}
     .carousel-dots{bottom:.65rem;}
     .carousel-dot{
-        width:5px !important;
-        height:5px !important;
+        width:4px !important;
+        height:4px !important;
     }
     .carousel-dot.active{
         width:14px !important;
     }
   }
   @media(max-width:480px){
+    .carousel-dot{
+        width:3px !important;
+        height:3px !important;
+    }
+    .carousel-dot.active{
+        width:8px !important;
+    }
     .carousel-slide img,.carousel-fallback{height:180px;}
     .carousel-title{font-size:.88rem;}
     .carousel-btn{display:none !important;}
