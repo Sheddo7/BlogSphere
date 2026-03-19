@@ -312,7 +312,6 @@
           </div>
           <button class="carousel-btn prev" id="carouselPrev" aria-label="Previous">&#8249;</button>
           <button class="carousel-btn next" id="carouselNext" aria-label="Next">&#8250;</button>
-          <div class="carousel-dots" id="carouselDots"></div>
           <div class="carousel-progress" id="carouselProgress"></div>
         </div>
       </div>
@@ -406,7 +405,6 @@
 (function() {
   // Carousel code - ensures one slide per frame
   const track = document.getElementById('carouselTrack');
-  const dotsWrap = document.getElementById('carouselDots');
   const progress = document.getElementById('carouselProgress');
   const prevBtn = document.getElementById('carouselPrev');
   const nextBtn = document.getElementById('carouselNext');
@@ -419,7 +417,6 @@
   if (totalSlides <= 1) {
     if (prevBtn) prevBtn.style.display = 'none';
     if (nextBtn) nextBtn.style.display = 'none';
-    if (dotsWrap) dotsWrap.style.display = 'none';
     if (progress) progress.style.display = 'none';
     return;
   }
@@ -428,33 +425,15 @@
   const DELAY = 5000;
   let autoTimer;
 
-  // Create dots
-  dotsWrap.innerHTML = '';
-  for (let i = 0; i < totalSlides; i++) {
-    const dot = document.createElement('button');
-    dot.className = 'carousel-dot' + (i === 0 ? ' active' : '');
-    dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
-    dot.addEventListener('click', () => {
-      goToSlide(i);
-      resetAuto();
-    });
-    dotsWrap.appendChild(dot);
-  }
+
 
   function goToSlide(index) {
     currentIndex = (index + totalSlides) % totalSlides;
     // Use the width of the first slide as reference (all slides same size)
     const slideWidth = slides[0].getBoundingClientRect().width;
     track.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
-    updateDots();
   }
 
-  function updateDots() {
-    const dots = dotsWrap.querySelectorAll('.carousel-dot');
-    dots.forEach((dot, i) => {
-      dot.classList.toggle('active', i === currentIndex);
-    });
-  }
 
   function startProgress() {
     if (!progress) return;
