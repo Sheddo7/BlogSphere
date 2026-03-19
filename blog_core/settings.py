@@ -12,7 +12,7 @@ ADMIN_URL = os.environ.get('ADMIN_URL', 'admin/')
 # --- Security ---
 SECRET_KEY = os.environ['SECRET_KEY']
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = ['blogsphere.up.railway.app']
+ALLOWED_HOSTS = ['blogsphere.up.railway.app' 'blogsphere.ng', 'www.blogsphere.ng',]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -125,7 +125,11 @@ NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')
 APSCHEDULER_DATETIME_FORMAT = "N j, Y, f:s a"
 APSCHEDULER_RUN_NOW_TIMEOUT = 25
 
-CSRF_TRUSTED_ORIGINS = ['https://blogsphere.up.railway.app']
+CSRF_TRUSTED_ORIGINS = [
+    'https://blogsphere.ng',
+    'https://www.blogsphere.ng',
+    'https://blogsphere.up.railway.app',
+]
 
 # Google Analytics
 GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', '')
@@ -138,7 +142,7 @@ DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@blogsphere.ng
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 # Site Configuration
-SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.up.railway.app')
+SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.ng')
 SITE_NAME = 'BlogSphere'
 
 # Social Media
