@@ -273,9 +273,9 @@
 
             {% for post in featured_posts %}
             <a href="{% url 'post_detail' post.slug %}" class="carousel-slide">
-              {% if post.featured_image %}
+              {% if post.get_image_url %}
                 <img class="lazy-image"
-                     data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                     data-src="{{ post.get_image_url }}"
                      alt="{{ post.title }}"
                      {% if forloop.first %}loading="eager"{% else %}loading="lazy"{% endif %}>
               {% else %}
@@ -334,9 +334,9 @@
         {% for post in latest_posts|slice:"1:8" %}
           {% if post not in featured_posts %}
           <a href="{% url 'post_detail' post.slug %}" class="side-card">
-            {% if post.featured_image %}
+            {% if post.get_image_url %}
               <img class="lazy-image side-img"
-                   data-src="{% if post.featured_image.name|slice:':4' == 'http' %}{{ post.featured_image.name }}{% else %}{{ post.featured_image.url }}{% endif %}"
+                   data-src="{{ post.get_image_url }}"
                    alt="">
             {% else %}
               <div class="side-placeholder"><i class="fas fa-image"></i></div>
