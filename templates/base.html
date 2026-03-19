@@ -511,14 +511,41 @@
         });
         // Close mobile menu on nav link click
         var collapse = document.querySelector('.navbar-collapse');
-        document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
-            link.addEventListener('click', function() {
-                if (window.innerWidth <= 992 && collapse && collapse.classList.contains('show')) {
-                    bootstrap.Collapse.getInstance(collapse).hide();
+        document.addEventListener('DOMContentLoaded', function() {
+            // Strip bad srcset attributes
+            document.querySelectorAll('img[srcset]').forEach(function(img) {
+                if (img.srcset.includes('-320w') || img.srcset.includes('-480w')) {
+                    img.removeAttribute('srcset');
+                    img.removeAttribute('sizes');
                 }
+            });
+
+            // Hamburger toggle — open and close
+            const navbarToggler = document.querySelector('.navbar-toggler');
+            const navbarCollapse = document.querySelector('.navbar-collapse');
+
+            if (navbarToggler && navbarCollapse) {
+                // Close when clicking outside
+                document.addEventListener('click', function(e) {
+                    const isOpen = navbarCollapse.classList.contains('show');
+                    const clickedInsideNav = navbarCollapse.contains(e.target);
+                    const clickedToggler = navbarToggler.contains(e.target);
+                if (isOpen && !clickedInsideNav && !clickedToggler) {
+                bootstrap.Collapse.getInstance(navbarCollapse)?.hide();
+                }
+            });
+
+            // Close when clicking a nav link
+            document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+                link.addEventListener('click', function() {
+                    if (window.innerWidth <= 992 && navbarCollapse.classList.contains('show')) {
+                        bootstrap.Collapse.getInstance(navbarCollapse)?.hide();
+                    }
+                });
             });
         });
     });
+
     window.addEventListener('error', function(e) {
         if (e.target.tagName === 'IMG') {
             var s = e.target.src;

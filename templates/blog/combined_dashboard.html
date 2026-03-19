@@ -446,7 +446,14 @@ function displayFetchedArticles() {
 async function saveArticleAsDraft(index) {
     const article = fetchedArticles[index];
 
-    showToast('🤖 Processing article with AI... (10-40 seconds)', 'info');
+    // Find the button and show loading state
+    const btn = document.querySelector(`button[onclick="saveArticleAsDraft(${index})"]`);
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.disabled = true;
+    }
+
+    showToast('🤖 Processing article with AI... please wait', 'info');
 
     try {
         const response = await fetch('{% url "save_as_draft" %}', {
@@ -462,22 +469,25 @@ async function saveArticleAsDraft(index) {
 
         if (data.success) {
             showToast(`✅ Saved as draft! (${data.word_count} words)`, 'success');
-
-            // Remove from fetched list
             fetchedArticles.splice(index, 1);
             displayFetchedArticles();
-
-            // Reload drafts
             await loadDrafts();
             if (window.LazyLoad) LazyLoad.refresh();
         } else {
             showToast('Error: ' + data.message, 'danger');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-save"></i> Save as Draft';
+                btn.disabled = false;
+            }
         }
     } catch (error) {
         showToast('Error saving draft', 'danger');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-save"></i> Save as Draft';
+            btn.disabled = false;
+        }
     }
 }
-
 async function saveAllAsDrafts() {
     if (fetchedArticles.length === 0) {
         showToast('No articles to save', 'warning');

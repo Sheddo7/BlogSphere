@@ -628,10 +628,9 @@ class EnhancedNewsFetcher:
                 published_date=timezone.now(),
             )
 
-            post.tags.add('news', 'auto-generated', article.get('category', 'general').lower())
+            post.tags.add('news')
 
-            if article.get('ai_processed'):
-                post.tags.add('ai-rewritten')
+
 
             print(f"✅ Created blog post: {post.title}")
             return post

@@ -930,8 +930,7 @@ def publish_draft(request, draft_id):
             for tag in tags:
                 post.tags.add(tag)
 
-            if draft.ai_processed:
-                post.tags.add('ai-rewritten')
+
 
             draft.status = 'published'
             draft.created_as_post = True
