@@ -95,19 +95,19 @@ class OpenRouterService:
 
     REWRITE THE ARTICLE NOW IN PROPER HOUSE STYLE WITH HTML FORMATTING:"""
 
-        headers = {{
-            "Authorization": f"Bearer {{self.api_key}}",
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://blogsphere.ng/",
             "X-Title": "BlogSphere News"
-        }}
+        }
 
-        payload = {{
+        payload = {
             "model": self.model,
-            "messages": [{{"role": "user", "content": prompt}}],
+            "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.6,
             "max_tokens": 4096
-        }}
+        }
 
         try:
             response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
@@ -133,16 +133,16 @@ class OpenRouterService:
                 word_count = len(re.sub(r'<[^>]+>', '', text).split())
                 summary = ' '.join(re.sub(r'<[^>]+>', '', text).split()[:200])
 
-                return {{
+                return {
                     'success': True,
                     'content': text,
                     'summary': summary,
                     'word_count': word_count
-                }}
+                }
             else:
-                return {{'success': False, 'error': f"HTTP {{response.status_code}}: {{response.text}}"}}
+                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
         except Exception as e:
-            return {{'success': False, 'error': str(e)}}
+            return {'success': False, 'error': str(e)}
 
     def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
         """Generic method for direct chat interactions (optional)."""
