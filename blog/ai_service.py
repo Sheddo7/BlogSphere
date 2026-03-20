@@ -43,8 +43,8 @@ class OpenRouterService:
         else:
             self.base_url = "https://openrouter.ai/api/v1/chat/completions"
             # Use the free router – automatically picks the best available free model
-            #self.model = "openrouter/free"
-            self.model = "meta-llama/llama-3.1-8b-instruct:free"
+            self.model = "openrouter/free"
+            #self.model = "meta-llama/llama-3.1-8b-instruct:free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
         """Paraphrase article using OpenRouter with consistent professional style."""
