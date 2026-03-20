@@ -51,15 +51,7 @@ class OpenRouterService:
             return {'success': False, 'error': 'API key missing'}
 
         prompt = f"""You are a senior editor at a major Nigerian news publication. Your job is to rewrite news articles in a consistent, professional house style regardless of the original source or topic.
-    HUMANIZATION RULES — CRITICAL:
-    1. Write like a human journalist, not an AI. Vary sentence length — mix short punchy sentences with longer detailed ones.
-    2. Use natural transitions between paragraphs — "Meanwhile", "However", "This comes as", "Speaking on the matter"
-    3. Avoid repetitive sentence starters — never start three consecutive sentences with "The"
-    4. Use contractions naturally where appropriate — "it's", "doesn't", "wasn't"
-    5. Add journalistic colour — describe scenes, reactions, and atmosphere where the original allows
-    6. Avoid AI giveaway phrases like "It is worth noting", "It is important to note", "In conclusion", "Furthermore", "Moreover", "In today's world"
-    7. Never use the word "delve", "pivotal", "game-changer", "landscape", "realm"
-    8. Write the way a Nigerian journalist would — grounded, direct, with local context
+
     HOUSE STYLE RULES — ALWAYS FOLLOW:
     1. Tone: Authoritative, clear, and engaging. Never sensational or tabloid.
     2. Voice: Third person only. Never first person.
@@ -151,51 +143,6 @@ class OpenRouterService:
                 return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
         except Exception as e:
             return {'success': False, 'error': str(e)}
-
-    def humanize_content(self, content):
-        """Second pass to humanize AI-generated content."""
-        if not self.api_key:
-            return content
-
-        prompt = f"""You are a Nigerian newspaper editor. The article below was written by an AI and sounds robotic. 
-
-    Rewrite it to sound like it was written by an experienced human journalist. Keep all the facts exactly the same. Keep the HTML formatting exactly the same.
-
-    HUMANIZATION RULES:
-    - Vary sentence length and structure
-    - Use natural journalistic transitions
-    - Remove any AI-sounding phrases
-    - Make it flow naturally when read aloud
-    - Keep all <p>, <h2>, <h3>, <strong> tags exactly as they are
-    - Do NOT add or remove any facts
-
-    ARTICLE TO HUMANIZE:
-    {content[:6000]}
-
-    HUMANIZED VERSION:"""
-
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "HTTP-Referer": "https://blogsphere.ng/",
-            "X-Title": "BlogSphere News"
-        }
-
-        payload = {
-            "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.8,
-            "max_tokens": 4096
-        }
-
-        try:
-            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
-            if response.status_code == 200:
-                data = response.json()
-                return data['choices'][0]['message']['content'].strip()
-            return content
-        except Exception:
-            return content
 
     def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
         """Generic method for direct chat interactions (optional)."""
@@ -444,14 +391,11 @@ class EnhancedNewsFetcher:
         result = openrouter.paraphrase_article(title, content, category, min_words)
 
         if result['success']:
-            # Second pass — humanize
-            humanized = openrouter.humanize_content(result['content'])
-            word_count = len(re.sub(r'<[^>]+>', '', humanized).split())
-            summary = ' '.join(re.sub(r'<[^>]+>', '', humanized).split()[:200])
+            print(f"✅ OpenRouter generated {result['word_count']} words")
             return {
-                'content': humanized,
-                'summary': summary,
-                'word_count': word_count
+                'content': result['content'],
+                'summary': result['summary'],
+                'word_count': result['word_count']
             }
         else:
             print(f"❌ OpenRouter error: {result.get('error')}")
@@ -593,9 +537,9 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Fetch from Punch, Vanguard, Channels using requests with timeout."""
+        """Fetch from Nigerian RSS sources."""
         try:
-            if source not in ['punch', 'vanguard', 'channels']:
+            if source not in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
                 return []
 
             feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
