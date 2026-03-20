@@ -255,7 +255,39 @@ class EnhancedNewsFetcher:
                 'entertainment': 'https://www.channelstv.com/category/entertainment/feed/',
                 'politics': 'https://www.channelstv.com/category/politics/feed/',
             }
-        }
+        },
+        'thisday': {
+            'base_url': 'https://www.thisdaylive.com',
+            'category_urls': {
+                'news': 'https://www.thisdaylive.com/index.php/feed/',
+                'politics': 'https://www.thisdaylive.com/index.php/category/politics/feed/',
+                'economy': 'https://www.thisdaylive.com/index.php/category/business/feed/',
+                'technology': 'https://www.thisdaylive.com/index.php/category/technology/feed/',
+                'entertainment': 'https://www.thisdaylive.com/index.php/category/entertainment/feed/',
+            }
+        },
+        'premiumtimes': {
+            'base_url': 'https://www.premiumtimesng.com',
+            'category_urls': {
+                'news': 'https://www.premiumtimesng.com/feed',
+                'politics': 'https://www.premiumtimesng.com/category/news/politics-news/feed',
+                'economy': 'https://www.premiumtimesng.com/category/business/feed',
+                'technology': 'https://www.premiumtimesng.com/category/tech/feed',
+                'entertainment': 'https://www.premiumtimesng.com/category/entertainment-news/feed',
+                'sport': 'https://www.premiumtimesng.com/category/sports/feed',
+            }
+        },
+        'pulse': {
+            'base_url': 'https://www.pulse.ng',
+            'category_urls': {
+                'news': 'https://www.pulse.ng/rss',
+                'entertainment': 'https://www.pulse.ng/entertainment/rss',
+                'sport': 'https://www.pulse.ng/sports/rss',
+                'politics': 'https://www.pulse.ng/politics/rss',
+                'economy': 'https://www.pulse.ng/business/rss',
+                'technology': 'https://www.pulse.ng/tech/rss',
+            }
+        },
     }
 
     # === SCRAPING & OPENROUTER PROCESSING ===
@@ -505,9 +537,9 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Fetch from Punch, Vanguard, Channels using requests with timeout."""
+        """Fetch from Nigerian RSS sources."""
         try:
-            if source not in ['punch', 'vanguard', 'channels']:
+            if source not in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
                 return []
 
             feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
@@ -624,7 +656,7 @@ class EnhancedNewsFetcher:
                     )
                 elif source == 'bbc':
                     articles = EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source)
-                elif source in ['punch', 'vanguard', 'channels']:
+                elif source in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
                     articles = EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source)
                 else:
                     continue
