@@ -51,7 +51,17 @@ class OpenRouterService:
             return {'success': False, 'error': 'API key missing'}
 
         prompt = f"""You are a senior editor at a major Nigerian news publication. Your job is to rewrite news articles in a consistent, professional house style regardless of the original source or topic.
-
+    
+    HUMANIZATION RULES — CRITICAL:
+    1. Write like a human journalist, not an AI. Vary sentence length — mix short punchy sentences with longer detailed ones.
+    2. Use natural transitions between paragraphs — "Meanwhile", "However", "This comes as", "Speaking on the matter"
+    3. Avoid repetitive sentence starters — never start three consecutive sentences with "The"
+    4. Use contractions naturally where appropriate — "it's", "doesn't", "wasn't"
+    5. Add journalistic colour — describe scenes, reactions, and atmosphere where the original allows
+    6. Avoid AI giveaway phrases like "It is worth noting", "It is important to note", "In conclusion", "Furthermore", "Moreover", "In today's world"
+    7. Never use the word "delve", "crucial", "pivotal", "game-changer", "landscape", "realm"
+    8. Write the way a Nigerian journalist would — grounded, direct, with local context
+    
     HOUSE STYLE RULES — ALWAYS FOLLOW:
     1. Tone: Authoritative, clear, and engaging. Never sensational or tabloid.
     2. Voice: Third person only. Never first person.
