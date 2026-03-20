@@ -46,63 +46,79 @@ class OpenRouterService:
             self.model = "openrouter/free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
-        """Paraphrase article using OpenRouter's free models with enhanced 500+ word generation."""
+        """Paraphrase article using OpenRouter with consistent professional style."""
         if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
-        prompt = f"""You are a professional news writer. Rewrite the article below into a well-structured, engaging news piece.
+        prompt = f"""You are a senior editor at a major Nigerian news publication. Your job is to rewrite news articles in a consistent, professional house style regardless of the original source or topic.
 
-        STRICT FORMATTING RULES — FOLLOW EXACTLY:
-        1. Write MINIMUM {min_words} words
-        2. Use proper HTML formatting with these tags only: <p>, <h2>, <h3>, <strong>, <blockquote>
-        3. Every paragraph MUST be wrapped in <p> tags
-        4. Use <h2> for main section headings
-        5. Use <h3> for sub-headings
-        6. Use <strong> to highlight key facts, names, and figures
-        7. Use <blockquote> for notable quotes
-        8. NO bullet points, NO numbered lists, NO markdown
-        9. DO NOT mention the original source
-        10. DO NOT add facts not in the original article
+    HOUSE STYLE RULES — ALWAYS FOLLOW:
+    1. Tone: Authoritative, clear, and engaging. Never sensational or tabloid.
+    2. Voice: Third person only. Never first person.
+    3. Tense: Past tense for events that happened. Present tense for ongoing situations.
+    4. Names: Use full name on first mention, surname only after.
+    5. Numbers: Spell out one to nine. Use digits for 10 and above.
+    6. Currency: Always specify currency — ₦ for naira, $ for dollars.
+    7. Quotes: Use double quotation marks. Always attribute quotes clearly.
+    8. Length: Minimum {min_words} words. No maximum.
+    9. No sensational language — avoid words like "bombshell", "shocking", "explosive"
+    10. No speculation — only report what is confirmed in the original article
 
-        REQUIRED STRUCTURE:
-        <h2>Opening Section Title</h2>
-        <p>Strong opening paragraph with who, what, when, where, why. At least 100 words.</p>
+    STRICT HTML FORMATTING — NO EXCEPTIONS:
+    - Every paragraph MUST be wrapped in <p></p> tags
+    - Use <h2> for main section headings — 2 to 3 per article
+    - Use <h3> for sub-headings where needed
+    - Use <strong> for key names, figures, and facts on first mention
+    - Use <blockquote> for direct quotes longer than one sentence
+    - NO bullet points, NO numbered lists, NO markdown, NO plain text outside tags
 
-        <h2>Main Details</h2>
-        <p>Detailed paragraph expanding on the key facts. At least 150 words.</p>
+    REQUIRED ARTICLE STRUCTURE:
+    <p>[Lead paragraph — answers who, what, when, where, why in 2-3 sentences. Most important fact first.]</p>
 
-        <p>Second paragraph with more context and background. At least 100 words.</p>
+    <p>[Second paragraph — expands on the lead with key details and context.]</p>
 
-        <h2>Background and Context</h2>
-        <p>Background information and implications. At least 100 words.</p>
+    <h2>[Descriptive section heading]</h2>
+    <p>[Body paragraph with supporting details.]</p>
 
-        <p>Final paragraph with conclusion or what happens next. At least 80 words.</p>
+    <p>[Body paragraph with background and context.]</p>
 
-        Category: {category}
-        Original Title: {title}
-        Original Content: {content[:8000]}
+    <h2>[Another descriptive section heading]</h2>
+    <p>[Further details, reactions, or implications.]</p>
 
-        NOW WRITE YOUR ARTICLE USING PROPER HTML PARAGRAPHS:"""
+    <p>[Closing paragraph — what happens next or broader significance.]</p>
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
+    CATEGORY: {category}
+    TITLE: {title}
+
+    ORIGINAL CONTENT:
+    {content[:8000]}
+
+    REWRITE THE ARTICLE NOW IN PROPER HOUSE STYLE WITH HTML FORMATTING:"""
+
+        headers = {{
+            "Authorization": f"Bearer {{self.api_key}}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://blogsphere.up.railway.app/",
+            "HTTP-Referer": "https://blogsphere.ng/",
             "X-Title": "BlogSphere News"
-        }
+        }}
 
-        payload = {
+        payload = {{
             "model": self.model,
-            "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.7,
+            "messages": [{{"role": "user", "content": prompt}}],
+            "temperature": 0.6,
             "max_tokens": 4096
-        }
+        }}
 
         try:
             response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
             if response.status_code == 200:
                 data = response.json()
                 text = data['choices'][0]['message']['content'].strip()
+
+                # Strip any markdown code fences if model adds them
+                text = re.sub(r'^```html\n?', '', text)
+                text = re.sub(r'\n?```$', '', text)
+
                 # Remove duplicate sentences
                 sentences = re.split(r'(?<=[.!?])\s+', text)
                 seen = set()
@@ -113,18 +129,20 @@ class OpenRouterService:
                         seen.add(norm)
                         unique.append(s)
                 text = ' '.join(unique)
-                word_count = len(text.split())
-                summary = ' '.join(text.split()[:200])
-                return {
+
+                word_count = len(re.sub(r'<[^>]+>', '', text).split())
+                summary = ' '.join(re.sub(r'<[^>]+>', '', text).split()[:200])
+
+                return {{
                     'success': True,
                     'content': text,
                     'summary': summary,
                     'word_count': word_count
-                }
+                }}
             else:
-                return {'success': False, 'error': f"HTTP {response.status_code}: {response.text}"}
+                return {{'success': False, 'error': f"HTTP {{response.status_code}}: {{response.text}}"}}
         except Exception as e:
-            return {'success': False, 'error': str(e)}
+            return {{'success': False, 'error': str(e)}}
 
     def generate_response(self, prompt, temperature=0.7, max_tokens=4096):
         """Generic method for direct chat interactions (optional)."""
