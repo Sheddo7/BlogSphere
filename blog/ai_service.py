@@ -44,7 +44,6 @@ class OpenRouterService:
             self.base_url = "https://openrouter.ai/api/v1/chat/completions"
             # Use the free router – automatically picks the best available free model
             self.model = "openrouter/free"
-            #self.model = "meta-llama/llama-3.1-8b-instruct:free"
 
     def paraphrase_article(self, title, content, category, min_words=500):
         """Paraphrase article using OpenRouter with consistent professional style."""
@@ -52,14 +51,6 @@ class OpenRouterService:
             return {'success': False, 'error': 'API key missing'}
 
         prompt = f"""You are a senior editor at a major Nigerian news publication. Your job is to rewrite news articles in a consistent, professional house style regardless of the original source or topic.
-    
-    ACCURACY RULES — NON-NEGOTIABLE:
-    1. Only use facts, names, quotes, and figures from the original content
-    2. Do not invent quotes, statistics, or details not in the original
-    3. Do not add background information not present in the original
-    4. If the original is short, write a shorter article — do not pad with invented content
-    5. Every factual claim must come directly from the original content
-    
     HUMANIZATION RULES — CRITICAL:
     1. Write like a human journalist, not an AI. Vary sentence length — mix short punchy sentences with longer detailed ones.
     2. Use natural transitions between paragraphs — "Meanwhile", "However", "This comes as", "Speaking on the matter"
@@ -67,9 +58,8 @@ class OpenRouterService:
     4. Use contractions naturally where appropriate — "it's", "doesn't", "wasn't"
     5. Add journalistic colour — describe scenes, reactions, and atmosphere where the original allows
     6. Avoid AI giveaway phrases like "It is worth noting", "It is important to note", "In conclusion", "Furthermore", "Moreover", "In today's world"
-    7. Never use the word "delve", "crucial", "pivotal", "game-changer", "landscape", "realm"
+    7. Never use the word "delve", "pivotal", "game-changer", "landscape", "realm"
     8. Write the way a Nigerian journalist would — grounded, direct, with local context
-    
     HOUSE STYLE RULES — ALWAYS FOLLOW:
     1. Tone: Authoritative, clear, and engaging. Never sensational or tabloid.
     2. Voice: Third person only. Never first person.
@@ -163,33 +153,26 @@ class OpenRouterService:
             return {'success': False, 'error': str(e)}
 
     def humanize_content(self, content):
-        """Humanize AI content to sound like a real journalist."""
+        """Second pass to humanize AI-generated content."""
         if not self.api_key:
             return content
 
-        prompt = f"""You are a senior Nigerian newspaper editor doing a final polish on an article before publication.
+        prompt = f"""You are a Nigerian newspaper editor. The article below was written by an AI and sounds robotic. 
 
-    The article below was written by a junior reporter and needs editing to sound more natural and human. 
+    Rewrite it to sound like it was written by an experienced human journalist. Keep all the facts exactly the same. Keep the HTML formatting exactly the same.
 
-    YOUR EDITING RULES:
-    1. Keep ALL facts, names, dates, and figures exactly as they are — do not change any facts
-    2. Keep ALL HTML tags exactly as they are — <p>, <h2>, <h3>, <strong>, <blockquote>
-    3. Vary sentence length — mix short sentences with longer ones
-    4. Replace robotic transitions with natural ones:
-       - Replace "Furthermore" → "Beyond this" or remove entirely
-       - Replace "Moreover" → "What's more" or restructure
-       - Replace "It is worth noting" → just state the fact directly
-       - Replace "In conclusion" → "As things stand" or similar
-       - Replace "Additionally" → restructure the sentence
-    5. Remove these words entirely: "delve", "crucial", "pivotal", "realm", "landscape", "game-changer", "robust", "leverage", "utilize"
-    6. Make the opening sentence punchy and direct
-    7. Ensure every paragraph flows naturally into the next
-    8. The final result must read like it was written by an experienced human journalist
+    HUMANIZATION RULES:
+    - Vary sentence length and structure
+    - Use natural journalistic transitions
+    - Remove any AI-sounding phrases
+    - Make it flow naturally when read aloud
+    - Keep all <p>, <h2>, <h3>, <strong> tags exactly as they are
+    - Do NOT add or remove any facts
 
-    ARTICLE TO POLISH:
+    ARTICLE TO HUMANIZE:
     {content[:6000]}
 
-    POLISHED VERSION (keep all HTML tags, only improve the writing):"""
+    HUMANIZED VERSION:"""
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -201,20 +184,15 @@ class OpenRouterService:
         payload = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.75,
+            "temperature": 0.8,
             "max_tokens": 4096
         }
 
         try:
-            response = requests.post(
-                self.base_url, headers=headers, json=payload, timeout=60
-            )
+            response = requests.post(self.base_url, headers=headers, json=payload, timeout=60)
             if response.status_code == 200:
                 data = response.json()
-                text = data['choices'][0]['message']['content'].strip()
-                text = re.sub(r'^```html\n?', '', text)
-                text = re.sub(r'\n?```$', '', text)
-                return text
+                return data['choices'][0]['message']['content'].strip()
             return content
         except Exception:
             return content
@@ -369,73 +347,59 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def scrape_article_content(url):
-        """Scrape with multiple strategies and quality checks."""
+        """Robust scraping with fallback to article description if available."""
         try:
             print(f"🔍 Scraping: {url[:70]}...")
-
             user_agents = [
                 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
-                'Googlebot/2.1 (+http://www.google.com/bot.html)',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
             ]
-
             headers = {
                 'User-Agent': random.choice(user_agents),
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate',
                 'Referer': 'https://www.google.com/',
                 'DNT': '1',
-                'Connection': 'keep-alive',
             }
+            time.sleep(random.uniform(1, 3))
 
-            time.sleep(random.uniform(1, 2))
-            response = requests.get(url, headers=headers, timeout=20, allow_redirects=True)
+            response = requests.get(url, headers=headers, timeout=15, allow_redirects=True)
             response.raise_for_status()
 
-            # Detect consent/paywall pages
-            block_markers = [
-                'Before you continue', 'Accept all', 'cookies and data',
-                'subscribe to continue', 'sign in to read', 'premium content',
-                'create a free account'
-            ]
-            if any(marker.lower() in response.text.lower() for marker in block_markers):
-                print("❌ Blocked page detected")
+            consent_markers = ['Before you continue', 'Accept all', 'Reject all', 'cookies and data', 'privacy settings']
+            if any(marker in response.text for marker in consent_markers):
+                print("❌ Consent page detected – cannot scrape")
                 return None
 
             soup = BeautifulSoup(response.content, 'html.parser')
+            for tag in soup(['script', 'style', 'nav', 'footer', 'header', 'aside', 'iframe', 'form', 'button']):
+                tag.decompose()
 
-            # Remove noise
-            for tag in soup(['script', 'style', 'nav', 'footer', 'header',
-                             'aside', 'iframe', 'form', 'button', 'figure',
-                             '.advertisement', '.ad', '.social-share',
-                             '.related-posts', '.comments']):
-                if hasattr(tag, 'decompose'):
-                    tag.decompose()
-
-            # Try content selectors in order of specificity
             content_selectors = [
-                'article .entry-content',
-                'article .post-content',
-                'article .article-content',
-                '.article-body',
-                '.story-body',
-                '.post-body',
-                '[itemprop="articleBody"]',
                 'article',
-                '.content-area',
-                'main',
+                '[class*="article-content"]',
+                '[class*="article-body"]',
+                '[class*="post-content"]',
+                '[class*="entry-content"]',
+                '[itemprop="articleBody"]',
+                'div.content',
+                'div.main-content',
+                'div.post',
+                '.story-body',
+                '.story-content',
+                '.post-content',
+                '.entry-content',
+                '.article-detail',
+                '.article-text',
             ]
 
             content_area = None
             for selector in content_selectors:
                 elements = soup.select(selector)
                 if elements:
-                    # Pick the element with the most paragraph text
-                    best = max(elements, key=lambda el: len(el.get_text()))
-                    if len(best.get_text()) > 200:
-                        content_area = best
-                        break
+                    content_area = elements[0]
+                    break
 
             if not content_area:
                 content_area = soup.body
@@ -443,101 +407,84 @@ class EnhancedNewsFetcher:
             if not content_area:
                 return None
 
-            # Extract paragraphs
-            paragraphs = content_area.find_all(['p', 'h2', 'h3', 'h4', 'blockquote'])
+            paragraphs = content_area.find_all(['p', 'h2', 'h3', 'h4'])
             article_text = []
-
             for p in paragraphs:
                 text = p.get_text(strip=True)
-                # Filter out short noise paragraphs
-                if len(text) > 40 and not any(noise in text.lower() for noise in [
-                    'advertisement', 'subscribe', 'follow us', 'share this',
-                    'read also', 'also read', 'related:', 'tags:', 'copyright'
-                ]):
+                if len(text) > 40:
                     article_text.append(text)
 
             full_text = '\n\n'.join(article_text)
+            full_text = re.sub(r'\n\s*\n+', '\n\n', full_text)
 
-            if len(full_text) < 300:
-                print(f"⚠️ Content too short ({len(full_text)} chars)")
+            if len(full_text) < 200:
+                print(f"⚠️  Scraped content too short ({len(full_text)} chars)")
                 return None
 
-            print(f"✅ Scraped {len(full_text)} characters ({len(article_text)} paragraphs)")
+            print(f"✅ Scraped {len(full_text)} characters")
             return full_text[:15000]
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Scraping error: {e}")
             return None
         except Exception as e:
-            print(f"❌ Unexpected error: {e}")
+            print(f"❌ Unexpected scraping error: {e}")
             return None
 
     @staticmethod
     def rewrite_with_ai(title, content, source, category, min_words=500):
-        """Three-pass AI processing: rewrite → humanize → format check."""
+        """Use OpenRouter to paraphrase content – source parameter is ignored."""
         openrouter = OpenRouterService()
         if not openrouter.api_key:
-            print("⚠️ OpenRouter not configured")
+            print("⚠️  OpenRouter not configured, cannot rewrite.")
             return None
 
-        # PASS 1 — Rewrite with facts preserved
-        print(f"📝 Pass 1: Rewriting ({len(content)} chars)...")
+        print(f"📝 Sending to OpenRouter for paraphrasing ({len(content)} chars)...")
+        # We no longer pass the source to the paraphrasing method
         result = openrouter.paraphrase_article(title, content, category, min_words)
 
-        if not result['success']:
-            print(f"❌ Pass 1 failed: {result.get('error')}")
+        if result['success']:
+            # Second pass — humanize
+            humanized = openrouter.humanize_content(result['content'])
+            word_count = len(re.sub(r'<[^>]+>', '', humanized).split())
+            summary = ' '.join(re.sub(r'<[^>]+>', '', humanized).split()[:200])
+            return {
+                'content': humanized,
+                'summary': summary,
+                'word_count': word_count
+            }
+        else:
+            print(f"❌ OpenRouter error: {result.get('error')}")
             return None
-
-        print(f"✅ Pass 1 done: {result['word_count']} words")
-
-        # PASS 2 — Humanize
-        print(f"🧠 Pass 2: Humanizing...")
-        humanized = openrouter.humanize_content(result['content'])
-
-        # PASS 3 — Quality check
-        word_count = len(re.sub(r'<[^>]+>', '', humanized).split())
-
-        if word_count < 200:
-            print(f"⚠️ Output too short ({word_count} words) — using Pass 1 result")
-            humanized = result['content']
-            word_count = result['word_count']
-
-        if '<p>' not in humanized:
-            print("⚠️ No HTML tags found — wrapping in paragraphs")
-            paragraphs = humanized.split('\n\n')
-            humanized = ''.join(f'<p>{p.strip()}</p>' for p in paragraphs if p.strip())
-
-        summary = ' '.join(re.sub(r'<[^>]+>', '', humanized).split()[:200])
-
-        print(f"✅ Final: {word_count} words")
-        return {
-            'content': humanized,
-            'summary': summary,
-            'word_count': word_count
-        }
 
     @staticmethod
     def process_article_with_ai(article_dict):
+        """
+        Process article: scrape content → OpenRouter rewrite.
+        If scraping fails, fall back to the article's description.
+        """
         try:
             url = article_dict.get('url', '')
             title = article_dict.get('title', '')
 
             print(f"\n{'=' * 60}")
             print(f"📰 Processing: {title[:50]}...")
+            print(f"URL: {url[:60]}...")
 
             scraped_content = EnhancedNewsFetcher.scrape_article_content(url)
 
-            if not scraped_content or len(scraped_content) < 300:
-                print("⚠️ Scraping failed or content too short — skipping AI rewrite")
-                article_dict['content'] = article_dict.get('description', title)
-                article_dict['word_count'] = len(article_dict['content'].split())
-                article_dict['ai_processed'] = False
-                return article_dict
+            if not scraped_content or len(scraped_content) < 200:
+                print("⚠️  Scraping failed – falling back to RSS description")
+                description = article_dict.get('description', '') or article_dict.get('title', '')
+                if len(description) < 100:
+                    description = title
+                scraped_content = description
+                print(f"📄 Using description ({len(scraped_content)} chars)")
 
             ai_result = EnhancedNewsFetcher.rewrite_with_ai(
                 title=title,
                 content=scraped_content,
-                source=article_dict.get('source', 'Unknown'),
+                source=article_dict.get('source', 'Unknown'),  # still passed but ignored
                 category=article_dict.get('category', 'NEWS'),
                 min_words=500
             )
@@ -549,7 +496,7 @@ class EnhancedNewsFetcher:
                 article_dict['ai_processed'] = True
                 print(f"✅ SUCCESS: {ai_result['word_count']} words generated")
             else:
-                print("⚠️ OpenRouter failed — saving raw scraped content")
+                print("⚠️  OpenRouter failed – using fallback content")
                 article_dict['content'] = scraped_content[:5000]
                 article_dict['description'] = scraped_content[:300]
                 article_dict['word_count'] = len(scraped_content.split())
@@ -560,7 +507,9 @@ class EnhancedNewsFetcher:
 
         except Exception as e:
             print(f"❌ Processing error: {e}")
-            article_dict['content'] = article_dict.get('description', title)
+            import traceback
+            traceback.print_exc()
+            article_dict['content'] = article_dict.get('description', article_dict.get('title', 'No content'))
             article_dict['word_count'] = len(article_dict['content'].split())
             article_dict['ai_processed'] = False
             return article_dict
@@ -644,9 +593,9 @@ class EnhancedNewsFetcher:
 
     @staticmethod
     def fetch_nigerian_rss(source, category='news', limit=10):
-        """Fetch from Nigerian RSS sources."""
+        """Fetch from Punch, Vanguard, Channels using requests with timeout."""
         try:
-            if source not in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
+            if source not in ['punch', 'vanguard', 'channels']:
                 return []
 
             feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
