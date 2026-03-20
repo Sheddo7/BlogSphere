@@ -50,30 +50,41 @@ class OpenRouterService:
         if not self.api_key:
             return {'success': False, 'error': 'API key missing'}
 
-        prompt = f"""You are a professional news writer for a major publication. Rewrite the article below into a comprehensive, well-structured news piece.
+        prompt = f"""You are a professional news writer. Rewrite the article below into a well-structured, engaging news piece.
 
-**CRITICAL REQUIREMENTS - FOLLOW EXACTLY**:
-1. MINIMUM {min_words} WORDS - This is NON-NEGOTIABLE. Your output MUST be at least {min_words} words.
-2. DO NOT add new facts, quotes, names, dates, or locations not in the original.
-3. Preserve ALL key details exactly as they appear.
-4. Use completely original wording - rewrite every sentence in your own words.
-5. DO NOT mention the original source - write as original reporting.
-6. Structure properly: strong lead, detailed body paragraphs, conclusion.
+        STRICT FORMATTING RULES — FOLLOW EXACTLY:
+        1. Write MINIMUM {min_words} words
+        2. Use proper HTML formatting with these tags only: <p>, <h2>, <h3>, <strong>, <blockquote>
+        3. Every paragraph MUST be wrapped in <p> tags
+        4. Use <h2> for main section headings
+        5. Use <h3> for sub-headings
+        6. Use <strong> to highlight key facts, names, and figures
+        7. Use <blockquote> for notable quotes
+        8. NO bullet points, NO numbered lists, NO markdown
+        9. DO NOT mention the original source
+        10. DO NOT add facts not in the original article
 
-**ARTICLE STRUCTURE (REQUIRED)**:
-- Opening Paragraph (100-150 words): Strong lead with who, what, when, where, why
-- Main Body (300-400 words): Detailed information, context, quotes, explanations
-- Additional Context (100+ words): Background, implications, related information
+        REQUIRED STRUCTURE:
+        <h2>Opening Section Title</h2>
+        <p>Strong opening paragraph with who, what, when, where, why. At least 100 words.</p>
 
-**Category**: {category}
+        <h2>Main Details</h2>
+        <p>Detailed paragraph expanding on the key facts. At least 150 words.</p>
 
-**ORIGINAL TITLE**: {title}
+        <p>Second paragraph with more context and background. At least 100 words.</p>
 
-**ORIGINAL CONTENT**:
-{content[:8000]}
+        <h2>Background and Context</h2>
+        <p>Background information and implications. At least 100 words.</p>
 
-**NOW WRITE YOUR COMPREHENSIVE {min_words}+ WORD ARTICLE**:
-(Remember: Structure it properly and ensure you write AT LEAST {min_words} words)"""
+        <p>Final paragraph with conclusion or what happens next. At least 80 words.</p>
+
+        Category: {category}
+        Original Title: {title}
+        Original Content: {content[:8000]}
+
+        
+        NOW WRITE YOUR COMPREHENSIVE {min_words}+ WORD ARTICLE**:
+        (Remember: Structure it properly and ensure you write AT LEAST {min_words} words)"""
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
