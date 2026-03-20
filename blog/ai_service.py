@@ -82,9 +82,7 @@ class OpenRouterService:
         Original Title: {title}
         Original Content: {content[:8000]}
 
-        
-        NOW WRITE YOUR COMPREHENSIVE {min_words}+ WORD ARTICLE**:
-        (Remember: Structure it properly and ensure you write AT LEAST {min_words} words)"""
+        NOW WRITE YOUR ARTICLE USING PROPER HTML PARAGRAPHS:"""
 
         headers = {
             "Authorization": f"Bearer {self.api_key}",
