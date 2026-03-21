@@ -1,10 +1,10 @@
 # blog_core/urls.py - ORIGINAL VERSION
+from django.views.generic import RedirectView
 from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-# ADD THESE IMPORTS:
-from blog import views  # ← ADD THIS LINE HERE
+from blog import views
 from django.contrib.sitemaps.views import sitemap
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticViewSitemap
 from django.views.generic import TemplateView
@@ -23,6 +23,12 @@ urlpatterns = [
     #path('accounts/', include('accounts.urls')),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
     path('robots.txt', views.robots_txt, name='robots_txt'),
+    path(settings.ADMIN_URL, admin.site.urls),
+    path('favicon.ico', RedirectView.as_view(
+            url='/static/favicon.ico', permanent=True
+        )),
+        path('', include('blog.urls')),
+
 ]
 
 if settings.DEBUG:
