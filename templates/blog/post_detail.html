@@ -3,6 +3,15 @@
 
 {% block title %}{{ post.title }} — BlogSphere{% endblock %}
 
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ post.title }}{% endblock %}
+{% block og_description %}{{ post.excerpt|default:post.title }}{% endblock %}
+{% block og_image %}{% if post.get_image_url %}{{ post.get_image_url }}{% else %}{{ default_social_image }}{% endif %}{% endblock %}
+{% block twitter_card %}summary_large_image{% endblock %}
+{% block twitter_title %}{{ post.title }}{% endblock %}
+{% block twitter_description %}{{ post.excerpt|default:post.title }}{% endblock %}
+{% block twitter_image %}{% if post.get_image_url %}{{ post.get_image_url }}{% else %}{{ default_social_image }}{% endif %}{% endblock %}
+
 {% block content %}
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,400&display=swap');
@@ -229,13 +238,29 @@
 
       <!-- Share bar -->
       <div class="share-bar">
-        <span class="share-label">Share</span>
-        <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-tw"><i class="fab fa-x-twitter"></i> X</a>
-        <a href="https://wa.me/?text={{ post.title|urlencode }}%20{{ request.build_absolute_uri }}" target="_blank" class="share-btn share-wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}" target="_blank" class="share-btn share-fb"><i class="fab fa-facebook-f"></i> Facebook</a>
-        <button onclick="copyLink()" class="share-btn share-copy" id="copyBtn"><i class="fas fa-link"></i> Copy link</button>
-      </div>
+          <!-- X/Twitter -->
+          <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri }}"
+             target="_blank" rel="noopener" class="share-btn share-tw">
+              <i class="fab fa-x-twitter"></i> X
+          </a>
 
+          <!-- WhatsApp -->
+          <a href="https://api.whatsapp.com/send?text={{ post.title|urlencode }}%20-%20{{ request.build_absolute_uri|urlencode }}"
+             target="_blank" rel="noopener" class="share-btn share-wa">
+              <i class="fab fa-whatsapp"></i> WhatsApp
+          </a>
+
+          <!-- Facebook -->
+          <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}&quote={{ post.title|urlencode }}"
+             target="_blank" rel="noopener" class="share-btn share-fb">
+              <i class="fab fa-facebook-f"></i> Facebook
+          </a>
+
+          <!-- Copy link -->
+          <button onclick="copyLink()" class="share-btn share-copy" id="copyBtn">
+              <i class="fas fa-link"></i> Copy link
+          </button>
+      </div>
     </div>
 
     <!-- SIDEBAR -->
