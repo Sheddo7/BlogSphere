@@ -1023,7 +1023,6 @@ def terms_of_service(request):
 
 
 def contact(request):
-    """Contact Us page and form handler"""
     if request.method == 'POST':
         try:
             name = request.POST.get('name', '')
@@ -1049,30 +1048,26 @@ Message:
 {message}
             """
 
-            try:
-                send_mail(
-                    subject=full_subject,
-                    message=full_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[settings.CONTACT_EMAIL],
-                    fail_silently=False,
-                )
+            from django.core.mail import send_mail
+            send_mail(
+                subject=full_subject,
+                message=full_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[settings.CONTACT_EMAIL],
+                fail_silently=False,
+            )
 
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
-                })
-            except Exception as email_error:
-                print(f"Email error: {email_error}")
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Thank you for your message! We will get back to you soon.'
-                })
+            return JsonResponse({
+                'success': True,
+                'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
+            })
 
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return JsonResponse({
                 'success': False,
-                'message': 'An error occurred. Please try again or email us directly at info@blogsphere.ng'
+                'message': f'Error: {str(e)}'
             })
 
     return render(request, 'blog/contact.html')
