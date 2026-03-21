@@ -135,11 +135,18 @@ CSRF_TRUSTED_ORIGINS = [
 GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', '')
 
 # Contact Form Email
-CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@blogsphere.ng')
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@blogsphere.ng')
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
 
-# Email Backend (development - prints to console)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@blogsphere.ng')
+CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@blogsphere.ng')
 
 # Site Configuration
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.ng')
