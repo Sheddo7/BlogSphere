@@ -72,26 +72,20 @@
                     </div>
                 </div>
 
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <h4 class="card-title mb-3">
-                                <i class="fas fa-share-alt" style="color:#c0392b;"></i> Follow Us
-                            </h4>
-                            <div class="d-flex flex-column gap-2">
-                                <a href="{{ twitter_url }}"
-                                   style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;border:1.5px solid #111;border-radius:2px;text-decoration:none;color:#111;font-size:.85rem;font-weight:600;transition:all .18s;"
-                                   onmouseover="this.style.background='#111';this.style.color='#fff'"
-                                   onmouseout="this.style.background='transparent';this.style.color='#111'">
-                                    <i class="fab fa-x-twitter"></i> Twitter/X — @BlogSphereNG
-                                </a>
-                                <a href="{{ facebook_url }}"
-                                   style="display:flex;align-items:center;gap:.6rem;padding:.65rem 1rem;border:1.5px solid #1877f2;border-radius:2px;text-decoration:none;color:#1877f2;font-size:.85rem;font-weight:600;transition:all .18s;"
-                                   onmouseover="this.style.background='#1877f2';this.style.color='#fff'"
-                                   onmouseout="this.style.background='transparent';this.style.color='#1877f2'">
-                                    <i class="fab fa-facebook-f"></i> Facebook — @BlogSphereNG
-                                </a>
-                            </div>
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">
+                            <i class="fas fa-share-alt" style="color:#c0392b;"></i> Follow Us
+                        </h4>
+                        <div class="d-flex flex-column">
+                            <a href="{{ twitter_url }}" class="social-follow-btn social-x">
+                                <span style="font-size:1rem;font-weight:900;line-height:1;">𝕏</span>
+                                Twitter/X — @BlogSphereNG
+                            </a>
+                            <a href="{{ facebook_url }}" class="social-follow-btn social-fb">
+                                <i class="fab fa-facebook-f"></i>
+                                Facebook — @BlogSphereNG
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -219,4 +213,55 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
     });
 });
 </script>
+
+<style>
+.social-follow-btn {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .65rem 1rem;
+    border-radius: 2px;
+    text-decoration: none;
+    font-size: .85rem;
+    font-weight: 700;
+    transition: all .18s;
+    margin-bottom: .5rem;
+}
+.social-x {
+    border: 1.5px solid #111;
+    color: #111;
+    background: transparent;
+}
+.social-x:hover {
+    background: #111;
+    color: #fff;
+}
+.social-fb {
+    border: 1.5px solid #1877f2;
+    color: #1877f2;
+    background: transparent;
+}
+.social-fb:hover {
+    background: #1877f2;
+    color: #fff;
+}
+@media (prefers-color-scheme: dark) {
+    .social-x {
+        border-color: #fff;
+        color: #fff;
+    }
+    .social-x:hover {
+        background: #fff;
+        color: #111;
+    }
+    .social-fb {
+        border-color: #4e94f5;
+        color: #4e94f5;
+    }
+    .social-fb:hover {
+        background: #4e94f5;
+        color: #fff;
+    }
+}
+</style>
 {% endblock %}
