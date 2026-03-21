@@ -231,6 +231,41 @@ document.getElementById('contactForm').addEventListener('submit', function(e) {
 </script>
 
 <style>
+
+.faq-btn {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    cursor: pointer;
+}
+.faq-btn:hover {
+    color: #c0392b;
+}
+.faq-body {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: .95rem;
+    line-height: 1.8;
+    color: #555;
+}
+.faq-icon {
+    color: #c0392b;
+    font-size: .8rem;
+}
+@media (prefers-color-scheme: dark) {
+    .faq-btn {
+        color: #f0f0f0;
+    }
+    .faq-btn:hover {
+        color: #c0392b;
+    }
+    .faq-body {
+        color: #aaa;
+    }
+    .faq-item {
+        border-color: #2a2a2a !important;
+    }
+}
 .social-follow-btn {
     display: flex;
     align-items: center;
