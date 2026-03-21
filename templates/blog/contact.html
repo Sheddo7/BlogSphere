@@ -96,81 +96,77 @@
                 <div class="card-body">
                     <h3 class="mb-4">Frequently Asked Questions</h3>
 
-                    <div class="accordion accordion-flush" id="faqAccordion">
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading1">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#faq1"
-                                        aria-expanded="false"
-                                        aria-controls="faq1">
-                                    How can I submit a news tip?
-                                </button>
-                            </h2>
-                            <div id="faq1" class="accordion-collapse collapse"
-                                 aria-labelledby="heading1">
-                                <div class="accordion-body">
-                                    You can submit news tips by emailing info@blogsphere.ng or using the contact form above with "Editorial/Content" as the subject.
-                                </div>
+                    <div id="faqAccordion">
+
+                        <div class="faq-item border-bottom py-3">
+                            <button class="faq-btn d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start fw-semibold py-1"
+                                    onclick="toggleFaq(this)">
+                                How can I submit a news tip?
+                                <i class="fas fa-chevron-down faq-icon ms-2" style="transition:transform .25s;flex-shrink:0;"></i>
+                            </button>
+                            <div class="faq-body" style="display:none;padding-top:.75rem;color:#555;line-height:1.7;">
+                                You can submit news tips by emailing info@blogsphere.ng or using the contact form above with "Editorial/Content" as the subject.
                             </div>
                         </div>
 
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading2">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#faq2"
-                                        aria-expanded="false"
-                                        aria-controls="faq2">
-                                    How do I report an error in an article?
-                                </button>
-                            </h2>
-                            <div id="faq2" class="accordion-collapse collapse"
-                                 aria-labelledby="heading2">
-                                <div class="accordion-body">
-                                    We take accuracy seriously. Please use the contact form with "Complaint/Report Error" as the subject, and provide details about the error and the article URL.
-                                </div>
+                        <div class="faq-item border-bottom py-3">
+                            <button class="faq-btn d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start fw-semibold py-1"
+                                    onclick="toggleFaq(this)">
+                                How do I report an error in an article?
+                                <i class="fas fa-chevron-down faq-icon ms-2" style="transition:transform .25s;flex-shrink:0;"></i>
+                            </button>
+                            <div class="faq-body" style="display:none;padding-top:.75rem;color:#555;line-height:1.7;">
+                                We take accuracy seriously. Please use the contact form with "Complaint/Report Error" as the subject and provide details about the error and the article URL.
                             </div>
                         </div>
 
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading3">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#faq3"
-                                        aria-expanded="false"
-                                        aria-controls="faq3">
-                                    Can I advertise on BlogSphere?
-                                </button>
-                            </h2>
-                            <div id="faq3" class="accordion-collapse collapse"
-                                 aria-labelledby="heading3">
-                                <div class="accordion-body">
-                                    Yes! We offer various advertising options. Please email advertising@blogsphere.ng or use the contact form with "Advertising" as the subject.
-                                </div>
+                        <div class="faq-item border-bottom py-3">
+                            <button class="faq-btn d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start fw-semibold py-1"
+                                    onclick="toggleFaq(this)">
+                                Can I advertise on BlogSphere?
+                                <i class="fas fa-chevron-down faq-icon ms-2" style="transition:transform .25s;flex-shrink:0;"></i>
+                            </button>
+                            <div class="faq-body" style="display:none;padding-top:.75rem;color:#555;line-height:1.7;">
+                                Yes! We offer various advertising options. Please email info@blogsphere.ng or use the contact form with "Advertising" as the subject.
                             </div>
                         </div>
 
-                        <div class="accordion-item">
-                            <h2 class="accordion-header" id="heading5">
-                                <button class="accordion-button collapsed" type="button"
-                                        data-bs-toggle="collapse"
-                                        data-bs-target="#faq5"
-                                        aria-expanded="false"
-                                        aria-controls="faq5">
-                                    What is your response time?
-                                </button>
-                            </h2>
-                            <div id="faq5" class="accordion-collapse collapse"
-                                 aria-labelledby="heading5">
-                                <div class="accordion-body">
-                                    We strive to respond to all inquiries within 24-48 hours during business days.
-                                </div>
+                        <div class="faq-item py-3">
+                            <button class="faq-btn d-flex justify-content-between align-items-center w-100 border-0 bg-transparent text-start fw-semibold py-1"
+                                    onclick="toggleFaq(this)">
+                                What is your response time?
+                                <i class="fas fa-chevron-down faq-icon ms-2" style="transition:transform .25s;flex-shrink:0;"></i>
+                            </button>
+                            <div class="faq-body" style="display:none;padding-top:.75rem;color:#555;line-height:1.7;">
+                                We strive to respond to all inquiries within 24-48 hours during business days. Urgent matters may receive faster responses.
                             </div>
                         </div>
+
                     </div>
                 </div>
             </div>
+
+            <script>
+            function toggleFaq(btn) {
+                const body = btn.nextElementSibling;
+                const icon = btn.querySelector('.faq-icon');
+                const isOpen = body.style.display === 'block';
+
+                // Close all other open FAQs
+                document.querySelectorAll('.faq-body').forEach(function(b) {
+                    b.style.display = 'none';
+                });
+                document.querySelectorAll('.faq-icon').forEach(function(i) {
+                    i.style.transform = 'rotate(0deg)';
+                });
+
+                // If it was closed, open it
+                if (!isOpen) {
+                    body.style.display = 'block';
+                    icon.style.transform = 'rotate(180deg)';
+                }
+            }
+            </script>
 
             <!-- Business Hours -->
             <div class="alert alert-info mt-4">
