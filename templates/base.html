@@ -32,6 +32,8 @@
     <meta property="og:title" content="{% block og_title %}{{ block.super }}{% endblock %}">
     <meta property="og:description" content="{% block og_description %}{{ block.super }}{% endblock %}">
     <meta property="og:image" content="{% block og_image %}{{ default_social_image }}{% endblock %}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:site_name" content="{{ site_name }}">
 
     <!-- Twitter -->
@@ -304,7 +306,58 @@
             color: #fff; transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(192,57,43,.4);
         }
-
+        .social-follow-btn {
+            display: flex;
+            align-items: center;
+            gap: .8rem;
+            padding: .85rem 1.2rem;
+            border-radius: 3px;
+            text-decoration: none;
+            font-size: .95rem;
+            font-weight: 700;
+            font-family: 'Source Serif 4', Georgia, serif;
+            transition: all .2s;
+            margin-bottom: .65rem;
+            letter-spacing: .01em;
+        }
+        .social-x {
+            border: 2px solid #111;
+            color: #111;
+            background: transparent;
+        }
+        .social-x:hover {
+            background: #111;
+            color: #fff;
+            transform: translateX(4px);
+        }
+        .social-fb {
+            border: 2px solid #1877f2;
+            color: #1877f2;
+            background: transparent;
+        }
+        .social-fb:hover {
+            background: #1877f2;
+            color: #fff;
+            transform: translateX(4px);
+        }
+        @media (prefers-color-scheme: dark) {
+            .social-x {
+                border-color: #f0f0f0;
+                color: #f0f0f0;
+            }
+            .social-x:hover {
+                background: #f0f0f0;
+                color: #111;
+            }
+            .social-fb {
+                border-color: #4e94f5;
+                color: #4e94f5;
+            }
+            .social-fb:hover {
+                background: #4e94f5;
+                color: #fff;
+            }
+        }
 
         /* Copyright */
         .footer-bottom {
@@ -426,8 +479,14 @@
                         Home for sharp journalism, breaking news, and thoughtful perspectives across politics, economy, entertainment, and beyond.
                     </p>
                     <div class="social-links">
-                        <a href="{{ social_twitter_url }}" aria-label="X">
-                        <a href="{{ social_facebook_url }}" aria-label="Facebook">
+                        <a href="{{ social_twitter_url }}" class="social-follow-btn social-x">
+                            <span style="font-size:1.1rem;font-weight:900;line-height:1;">𝕏</span>
+                            Twitter/X — @BlogSphereNG
+                        </a>
+                        <a href="{{ social_facebook_url }}" class="social-follow-btn social-fb">
+                            <i class="fab fa-facebook-f" style="font-size:1rem;"></i>
+                            Facebook — @BlogSphereNG
+                        </a>
                     </div>
                 </div>
 
