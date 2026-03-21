@@ -146,4 +146,4 @@ SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.ng')
 SITE_NAME = 'BlogSphere'
 
 # Social Media
-TWITTER_HANDLE = os.environ.get('TWITTER_HANDLE', '@BlogSphereNG')
+TWITTER_URL = os.environ.get('TWITTER_URL', '#')

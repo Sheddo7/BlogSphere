@@ -18,7 +18,8 @@ def seo_defaults(request):
     return {
         'site_name': getattr(settings, 'SITE_NAME', 'BlogSphere'),
         'site_url': site_url,
-        'twitter_handle': getattr(settings, 'TWITTER_HANDLE', '@BlogSphereNG'),
+        'social_twitter_url': getattr(settings, 'TWITTER_URL', '#'),
+        'social_facebook_url': getattr(settings, 'FACEBOOK_URL', '#'),
         'default_social_image': request.build_absolute_uri(default_social),
         'google_analytics_id': getattr(settings, 'GOOGLE_ANALYTICS_ID', ''),
     }

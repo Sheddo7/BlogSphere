@@ -239,9 +239,12 @@
       <!-- Share bar -->
       <div class="share-bar">
           <!-- X/Twitter -->
-          <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri }}"
-             target="_blank" rel="noopener" class="share-btn share-tw">
-              <i class="fab fa-x-twitter"></i> X
+          <!-- X/Twitter -->
+          <a href="https://twitter.com/intent/tweet?text={{ post.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
+             target="_blank"
+             rel="noopener"
+             class="share-btn share-tw">
+              <span style="font-weight:900;">𝕏</span> X
           </a>
 
           <!-- WhatsApp -->
