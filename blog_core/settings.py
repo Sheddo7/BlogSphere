@@ -154,3 +154,4 @@ SITE_NAME = 'BlogSphere'
 
 # Social Media
 TWITTER_URL = os.environ.get('TWITTER_URL', '#')
+FACEBOOK_URL = os.environ.get('FACEBOOK_URL', '#')
