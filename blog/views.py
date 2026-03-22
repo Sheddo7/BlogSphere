@@ -18,6 +18,7 @@ from .models import Category
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
 import bleach
+import resend
 
 
 # ===== BASIC VIEWS =====
@@ -1024,50 +1025,29 @@ def terms_of_service(request):
 
 def contact(request):
     if request.method == 'POST':
-        try:
-            name = request.POST.get('name', '')
-            email = request.POST.get('email', '')
-            subject_type = request.POST.get('subject', '')
-            message = request.POST.get('message', '')
+        resend.api_key = os.environ.get('RESEND_API_KEY', '')
 
-            if not all([name, email, message]):
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Please fill in all required fields.'
-                })
+        params = {
+            "from": "BlogSphere <noreply@blogsphere.ng>",
+            "to": [settings.CONTACT_EMAIL],
+            "reply_to": email,
+            "subject": f"BlogSphere Contact: {subject_type}",
+            "text": f"""
+        New contact form submission
 
-            full_subject = f"BlogSphere Contact Form: {subject_type}"
-            full_message = f"""
-New contact form submission from BlogSphere
+        Name: {name}
+        Email: {email}
+        Subject: {subject_type}
 
-Name: {name}
-Email: {email}
-Subject: {subject_type}
-
-Message:
-{message}
+        Message:
+        {message}
             """
+        }
 
-            from django.core.mail import send_mail
-            send_mail(
-                subject=full_subject,
-                message=full_message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[settings.CONTACT_EMAIL],
-                fail_silently=False,
-            )
+        resend.Emails.send(params)
 
-            return JsonResponse({
-                'success': True,
-                'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
-            })
+        return JsonResponse({
+            'success': True,
+            'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
+        })
 
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({
-                'success': False,
-                'message': f'Error: {str(e)}'
-            })
-
-    return render(request, 'blog/contact.html')
