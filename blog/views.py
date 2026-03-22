@@ -18,7 +18,7 @@ from .models import Category
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
 import bleach
-import resend
+
 
 
 # ===== BASIC VIEWS =====
@@ -1025,6 +1025,7 @@ def terms_of_service(request):
 
 def contact(request):
     if request.method == 'POST':
+        import resend
         resend.api_key = os.environ.get('RESEND_API_KEY', '')
 
         params = {
