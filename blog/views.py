@@ -1,4 +1,6 @@
 # blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS (COMMENTS REMOVED)
+import os
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count, F
 from django.utils import timezone
@@ -1025,30 +1027,51 @@ def terms_of_service(request):
 
 def contact(request):
     if request.method == 'POST':
-        import resend
-        resend.api_key = os.environ.get('RESEND_API_KEY', '')
+        try:
+            name = request.POST.get('name', '')
+            email = request.POST.get('email', '')
+            subject_type = request.POST.get('subject', '')
+            message = request.POST.get('message', '')
 
-        params = {
-            "from": "BlogSphere <noreply@blogsphere.ng>",
-            "to": [settings.CONTACT_EMAIL],
-            "reply_to": email,
-            "subject": f"BlogSphere Contact: {subject_type}",
-            "text": f"""
-        New contact form submission
+            if not all([name, email, message]):
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Please fill in all required fields.'
+                })
 
-        Name: {name}
-        Email: {email}
-        Subject: {subject_type}
+            import resend
+            resend.api_key = os.environ.get('RESEND_API_KEY', '')
 
-        Message:
-        {message}
-            """
-        }
+            params = {
+                "from": "BlogSphere <noreply@blogsphere.ng>",
+                "to": [settings.CONTACT_EMAIL],
+                "reply_to": email,
+                "subject": f"BlogSphere Contact: {subject_type}",
+                "text": f"""
+New contact form submission
 
-        resend.Emails.send(params)
+Name: {name}
+Email: {email}
+Subject: {subject_type}
 
-        return JsonResponse({
-            'success': True,
-            'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
-        })
+Message:
+{message}
+                """
+            }
 
+            resend.Emails.send(params)
+
+            return JsonResponse({
+                'success': True,
+                'message': 'Thank you for your message! We will get back to you within 24-48 hours.'
+            })
+
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return JsonResponse({
+                'success': False,
+                'message': f'Error: {str(e)}'
+            })
+
+    return render(request, 'blog/contact.html')
