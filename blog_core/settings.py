@@ -152,6 +152,9 @@ CONTACT_EMAIL = os.environ.get('CONTACT_EMAIL', 'info@blogsphere.ng')
 SITE_DOMAIN = os.environ.get('SITE_DOMAIN', 'blogsphere.ng')
 SITE_NAME = 'BlogSphere'
 
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Social Media
 TWITTER_URL = os.environ.get('TWITTER_URL', '#')
 FACEBOOK_URL = os.environ.get('FACEBOOK_URL', '#')

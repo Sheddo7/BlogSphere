@@ -24,7 +24,7 @@
     {% endblock %}
 
     <!-- Canonical URL -->
-    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+    <link rel="canonical" href="https://blogsphere.ng{{ request.path }}">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
