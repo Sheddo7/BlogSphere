@@ -20,7 +20,9 @@ from .models import Category
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.conf import settings
 import bleach
-
+import logging
+from django.shortcuts import render, get_object_or_404, redirect
+logger = logging.getLogger(__name__)
 
 
 # ===== BASIC VIEWS =====
@@ -87,15 +89,17 @@ def post_detail(request, slug):
         category=post.category
     ).exclude(id=post.id).select_related('category')[:3]
 
+    categories = Category.objects.annotate(
+        post_count=Count('posts')
+    ).order_by('name')
+
     context = {
         'post': post,
         'clean_content': clean_content,
         'related_posts': related_posts,
+        'categories': categories,
     }
     return render(request, 'blog/post_detail.html', context)
-
-
-logger = logging.getLogger(__name__)
 
 
 def category_posts(request, slug):
@@ -118,6 +122,7 @@ def category_posts(request, slug):
     except Exception as e:
         logger.error(f"Error in category_posts for slug '{slug}': {e}", exc_info=True)
         return HttpResponseServerError("An internal error occurred.")
+        logger.error(...)
 
 
 def search(request):

@@ -297,9 +297,9 @@
           {% for category in categories %}
           <a href="{% url 'category_posts' category.slug %}" class="cat-list-item">
             {{ category.name }}
-          </a>
             <span>{{ category.post_count }}</span>
-            {% endfor %}
+          </a>
+          {% endfor %}
         </div>
 
         <!-- Latest -->
