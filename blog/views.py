@@ -1075,3 +1075,22 @@ Message:
             })
 
     return render(request, 'blog/contact.html')
+
+
+def tag_posts(request, tag):
+    from taggit.models import Tag
+    from django.shortcuts import get_object_or_404
+
+    tag_obj = get_object_or_404(Tag, slug=tag)
+    posts_list = Post.objects.filter(
+        tags__name__in=[tag_obj.name]
+    ).select_related('category', 'author').distinct().order_by('-published_date')
+
+    paginator = Paginator(posts_list, 12)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    context = {
+        'tag': tag_obj,
+        'page_obj': page_obj,
+    }
+    return render(request, 'blog/tag_posts.html', context)

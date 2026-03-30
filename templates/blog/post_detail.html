@@ -231,7 +231,7 @@
       {% if post.tags.all %}
       <div class="art-tags">
         {% for tag in post.tags.all %}
-        <a href="{% url 'search' %}?q={{ tag }}" class="art-tag"># {{ tag }}</a>
+        <a href="{% url 'tag_posts' tag.slug %}" class="art-tag"># {{ tag }}</a>
         {% endfor %}
       </div>
       {% endif %}

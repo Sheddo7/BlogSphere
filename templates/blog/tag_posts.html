@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}#{{ tag.name }} — BlogSphere{% endblock %}
+
+{% block content %}
+<style>
+  :root{--ink:#111;--paper:#fafaf8;--rule:#e0ddd6;--accent:#c0392b;--mid:#666;--ease:cubic-bezier(0.4,0,0.2,1);}
+  .page-body{animation:pageIn .35s var(--ease) both;}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .tag-banner{border-bottom:2.5px solid var(--ink);padding-bottom:1.2rem;margin-bottom:2rem;}
+  .tag-banner-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);margin-bottom:.4rem;display:block;font-family:'Source Serif 4',serif;}
+  .tag-banner-title{font-family:'Playfair Display',Georgia,serif;font-size:clamp(2rem,5vw,3rem);font-weight:900;color:var(--ink);margin:0 0 .5rem;letter-spacing:-1px;line-height:1;}
+  .tag-banner-count{font-size:.82rem;color:var(--mid);font-family:'Source Serif 4',serif;}
+  .tag-banner-count strong{color:var(--ink);}
+  .news-card{height:100%;border:none;border-radius:2px;background:#fff;overflow:hidden;transition:box-shadow .25s var(--ease),transform .25s var(--ease);}
+  .news-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.10);transform:translateY(-3px);}
+  .nc-img{position:relative;overflow:hidden;height:192px;}
+  .nc-img img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease);}
+  .news-card:hover .nc-img img{transform:scale(1.06);}
+  .nc-placeholder{height:192px;background:linear-gradient(135deg,#ede9e0,#d8d3c8);display:flex;align-items:center;justify-content:center;color:#bbb;font-size:2rem;}
+  .nc-body{padding:.9rem 1rem 1rem;border-top:1px solid var(--rule);}
+  .nc-cat{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--accent);margin-bottom:.35rem;display:block;}
+  .nc-title{font-family:'Playfair Display',Georgia,serif;font-size:.95rem;font-weight:600;line-height:1.42;color:var(--ink);text-decoration:none;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;transition:color .18s;}
+  .nc-title:hover{color:var(--accent);}
+  .nc-meta{font-size:.7rem;color:var(--mid);margin-top:.55rem;font-family:'Source Serif 4',serif;}
+  .pager{display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:2.5rem;}
+  .pager-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:1.5px solid var(--rule);border-radius:2px;font-size:.82rem;font-weight:600;color:var(--ink);text-decoration:none;transition:all .18s;}
+  .pager-btn:hover{border-color:var(--ink);background:var(--ink);color:#fff;}
+  .pager-btn.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .pager-btn.disabled{opacity:.35;pointer-events:none;}
+  @media(prefers-color-scheme:dark){
+    :root{--ink:#f0f0f0;--paper:#0f0f0f;--rule:#2a2a2a;--mid:#888;}
+    .news-card{background:#1e1e1e;}.nc-body{border-top-color:#2a2a2a;}
+    .nc-placeholder{background:linear-gradient(135deg,#1e1e1e,#2a2a2a);}
+  }
+</style>
+
+<div class="container page-body" style="padding-top:2rem;padding-bottom:3rem;">
+    <div class="tag-banner">
+        <span class="tag-banner-label">Tag</span>
+        <h1 class="tag-banner-title"># {{ tag.name }}</h1>
+        <p class="tag-banner-count">
+            <strong>{{ page_obj.paginator.count }}</strong> articles tagged with this topic
+        </p>
+    </div>
+
+    <div class="row g-3">
+        {% for post in page_obj %}
+        <div class="col-lg-3 col-md-6">
+            <div class="news-card">
+                <div class="nc-img">
+                    {% if post.get_image_url %}
+                        <img class="lazy-image"
+                             data-src="{{ post.get_image_url }}"
+                             alt="{{ post.title }}"
+                             loading="lazy">
+                    {% else %}
+                        <div class="nc-placeholder"><i class="fas fa-newspaper"></i></div>
+                    {% endif %}
+                </div>
+                <div class="nc-body">
+                    <span class="nc-cat">{{ post.category.name }}</span>
+                    <a href="{% url 'post_detail' post.slug %}" class="nc-title">{{ post.title|truncatechars:80 }}</a>
+                    <div class="nc-meta">{{ post.published_date|date:"M d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div style="text-align:center;padding:4rem 0;color:var(--mid);">
+                <i class="fas fa-tag" style="font-size:2.5rem;margin-bottom:1rem;display:block;opacity:.3;"></i>
+                No articles with this tag yet.
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav class="pager" aria-label="Pagination">
+        {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="pager-btn">‹</a>
+        {% else %}
+            <span class="pager-btn disabled">‹</span>
+        {% endif %}
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="pager-btn active">{{ num }}</span>
+            {% elif num > page_obj.number|add:"-3" and num < page_obj.number|add:"3" %}
+                <a href="?page={{ num }}" class="pager-btn">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="pager-btn">›</a>
+        {% else %}
+            <span class="pager-btn disabled">›</span>
+        {% endif %}
+    </nav>
+    {% endif %}
+</div>

@@ -288,6 +288,77 @@ class EnhancedNewsFetcher:
                 'technology': 'https://www.pulse.ng/tech/rss',
             }
         },
+        'guardian': {
+            'base_url': 'https://guardian.ng',
+            'category_urls': {
+                'news': 'https://guardian.ng/feed/',
+                'politics': 'https://guardian.ng/category/news/politics/feed/',
+                'economy': 'https://guardian.ng/category/business-services/feed/',
+                'entertainment': 'https://guardian.ng/category/arts/feed/',
+                'sport': 'https://guardian.ng/category/sport/feed/',
+                'technology': 'https://guardian.ng/category/technology/feed/',
+            }
+        },
+        'dailypost': {
+            'base_url': 'https://dailypost.ng',
+            'category_urls': {
+                'news': 'https://dailypost.ng/feed/',
+                'politics': 'https://dailypost.ng/category/politics/feed/',
+                'economy': 'https://dailypost.ng/category/business/feed/',
+                'entertainment': 'https://dailypost.ng/category/entertainment/feed/',
+                'sport': 'https://dailypost.ng/category/sports/feed/',
+            }
+        },
+        'thenation': {
+            'base_url': 'https://thenationonlineng.net',
+            'category_urls': {
+                'news': 'https://thenationonlineng.net/feed/',
+                'politics': 'https://thenationonlineng.net/category/politics/feed/',
+                'economy': 'https://thenationonlineng.net/category/business/feed/',
+                'entertainment': 'https://thenationonlineng.net/category/entertainment/feed/',
+                'sport': 'https://thenationonlineng.net/category/sport/feed/',
+            }
+        },
+        'sunnews': {
+            'base_url': 'https://www.sunnewsonline.com',
+            'category_urls': {
+                'news': 'https://www.sunnewsonline.com/feed/',
+                'politics': 'https://www.sunnewsonline.com/category/politics/feed/',
+                'economy': 'https://www.sunnewsonline.com/category/business/feed/',
+                'entertainment': 'https://www.sunnewsonline.com/category/entertainment/feed/',
+                'sport': 'https://www.sunnewsonline.com/category/sports/feed/',
+            }
+        },
+        'leadership': {
+            'base_url': 'https://leadership.ng',
+            'category_urls': {
+                'news': 'https://leadership.ng/feed/',
+                'politics': 'https://leadership.ng/category/politics/feed/',
+                'economy': 'https://leadership.ng/category/business/feed/',
+                'entertainment': 'https://leadership.ng/category/entertainment/feed/',
+                'sport': 'https://leadership.ng/category/sports/feed/',
+                'technology': 'https://leadership.ng/category/technology/feed/',
+            }
+        },
+        'businessday': {
+            'base_url': 'https://businessday.ng',
+            'category_urls': {
+                'economy': 'https://businessday.ng/feed/',
+                'news': 'https://businessday.ng/category/news/feed/',
+                'politics': 'https://businessday.ng/category/politics/feed/',
+                'technology': 'https://businessday.ng/category/technology/feed/',
+            }
+        },
+        'tribuneonline': {
+            'base_url': 'https://tribuneonlineng.com',
+            'category_urls': {
+                'news': 'https://tribuneonlineng.com/feed/',
+                'politics': 'https://tribuneonlineng.com/category/politics/feed/',
+                'economy': 'https://tribuneonlineng.com/category/business/feed/',
+                'entertainment': 'https://tribuneonlineng.com/category/entertainment/feed/',
+                'sport': 'https://tribuneonlineng.com/category/sports/feed/',
+            }
+        },
     }
 
     # === SCRAPING & OPENROUTER PROCESSING ===
@@ -539,7 +610,11 @@ class EnhancedNewsFetcher:
     def fetch_nigerian_rss(source, category='news', limit=10):
         """Fetch from Nigerian RSS sources."""
         try:
-            if source not in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
+            if source not in [
+                'punch', 'vanguard', 'channels', 'thisday', 'premiumtimes',
+                'pulse', 'guardian', 'dailypost', 'thenation', 'sunnews',
+                'leadership', 'businessday', 'tribuneonline'
+            ]:
                 return []
 
             feed_url = EnhancedNewsFetcher.SOURCES[source]['category_urls'].get(
@@ -656,7 +731,11 @@ class EnhancedNewsFetcher:
                     )
                 elif source == 'bbc':
                     articles = EnhancedNewsFetcher.fetch_bbc_rss(category, limit_per_source)
-                elif source in ['punch', 'vanguard', 'channels', 'thisday', 'premiumtimes', 'pulse']:
+                elif source in [
+                    'punch', 'vanguard', 'channels', 'thisday', 'premiumtimes',
+                    'pulse', 'guardian', 'dailypost', 'thenation', 'sunnews',
+                    'leadership', 'businessday', 'tribuneonline'
+                ]:
                     articles = EnhancedNewsFetcher.fetch_nigerian_rss(source, category, limit_per_source)
                 else:
                     continue
