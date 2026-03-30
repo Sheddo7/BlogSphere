@@ -1079,9 +1079,16 @@ Message:
 
 def tag_posts(request, tag):
     from taggit.models import Tag
-    from django.shortcuts import get_object_or_404
 
-    tag_obj = get_object_or_404(Tag, slug=tag)
+    try:
+        tag_obj = Tag.objects.get(slug=tag)
+    except Tag.DoesNotExist:
+        try:
+            tag_obj = Tag.objects.get(name__iexact=tag)
+        except Tag.DoesNotExist:
+            from django.http import Http404
+            raise Http404("Tag not found")
+
     posts_list = Post.objects.filter(
         tags__name__in=[tag_obj.name]
     ).select_related('category', 'author').distinct().order_by('-published_date')
