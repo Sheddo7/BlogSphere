@@ -1083,26 +1083,32 @@ Message:
 
 
 def tag_posts(request, tag):
-    from taggit.models import Tag
-
     try:
-        tag_obj = Tag.objects.get(slug=tag)
-    except Tag.DoesNotExist:
+        from taggit.models import Tag
+
         try:
-            tag_obj = Tag.objects.get(name__iexact=tag)
+            tag_obj = Tag.objects.get(slug=tag)
         except Tag.DoesNotExist:
-            from django.http import Http404
-            raise Http404("Tag not found")
+            try:
+                tag_obj = Tag.objects.get(name__iexact=tag)
+            except Tag.DoesNotExist:
+                from django.http import Http404
+                raise Http404("Tag not found")
 
-    posts_list = Post.objects.filter(
-        tags__name__in=[tag_obj.name]
-    ).select_related('category', 'author').distinct().order_by('-published_date')
+        posts_list = Post.objects.filter(
+            tags__name__in=[tag_obj.name]
+        ).select_related('category', 'author').distinct().order_by('-published_date')
 
-    paginator = Paginator(posts_list, 12)
-    page_obj = paginator.get_page(request.GET.get('page'))
+        paginator = Paginator(posts_list, 12)
+        page_obj = paginator.get_page(request.GET.get('page'))
 
-    context = {
-        'tag': tag_obj,
-        'page_obj': page_obj,
-    }
-    return render(request, 'blog/tag_posts.html', context)
+        context = {
+            'tag': tag_obj,
+            'page_obj': page_obj,
+        }
+        return render(request, 'blog/tag_posts.html', context)
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'error': str(e), 'type': type(e).__name__}, status=500)
