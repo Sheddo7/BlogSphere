@@ -1,6 +1,7 @@
 # blog/views.py - COMPLETE UPDATED VERSION WITH ALL FUNCTIONS (COMMENTS REMOVED)
 import os
-
+from django.http import HttpResponse
+from django.views.decorators.http import require_GET
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q, Count, F
 from django.utils import timezone
@@ -25,6 +26,13 @@ from django.shortcuts import render, get_object_or_404, redirect
 logger = logging.getLogger(__name__)
 
 
+
+
+@require_GET
+def ads_txt(request):
+    # IMPORTANT: Replace 'pub-0000000000000000' with your actual Publisher ID
+    content = 'google.com, pub-2041187550876537, DIRECT, f08c47fec0942fa0'
+    return HttpResponse(content, content_type='text/plain')
 # ===== BASIC VIEWS =====
 
 def format_content(text):

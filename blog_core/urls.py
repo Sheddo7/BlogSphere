@@ -8,6 +8,7 @@ from blog import views
 from django.contrib.sitemaps.views import sitemap
 from blog.sitemaps import PostSitemap, CategorySitemap, StaticViewSitemap
 from django.views.generic import TemplateView
+from django.urls import path
 
 
 # Sitemap configuration
@@ -24,6 +25,7 @@ urlpatterns = [
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='sitemap'),
     path('robots.txt', views.robots_txt, name='robots_txt'),
     path(settings.ADMIN_URL, admin.site.urls),
+    path('ads.txt', views.ads_txt, name='ads_txt'),
     path('favicon.ico', RedirectView.as_view(
             url='/static/favicon.ico', permanent=True
         )),
